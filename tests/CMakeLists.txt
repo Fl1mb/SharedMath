@@ -2,14 +2,18 @@ cmake_minimum_required(VERSION 3.10)
 project(SharedMathTests)
 
 find_package(GTest REQUIRED)
-add_executable(SharedMathTests SharedMathTests.cxx)
+include(GoogleTest)
+add_executable(SharedMathTests
+    main.cpp
+    test_geometry.cpp
+)
 target_link_libraries(SharedMathTests PRIVATE GTest::GTest GTest::Main)
+target_include_directories(SharedMathTests PRIVATE ${CMAKE_SOURCE_DIR}/include)
 
 enable_testing()
-add_test(NAME SharedMathTests COMMAND SharedMathTests)
-
+gtest_discover_tests(SharedMathTests)
 add_custom_command(
     TARGET SharedMathTests POST_BUILD
     COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
-    COMMENT "Tests on..."
+    COMMENT "Running tests..."
 )

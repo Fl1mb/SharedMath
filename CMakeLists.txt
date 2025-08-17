@@ -7,8 +7,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 option(BUILD_SHARED_LIBS "Build shared library" OFF)
 option(BUILD_EXAMPLES "Make Examples" ON)
 
-add_subdirectory(src)
 add_subdirectory(include)
+add_subdirectory(src)
 add_subdirectory(tests)
 
 if(BUILD_EXAMPLES)

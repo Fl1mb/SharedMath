@@ -3,7 +3,7 @@
 add_library(
     SharedMath
     #Add source Files 
-    algebra.cpp   
+    algebra.cpp 
 )
 
 target_include_directories(SharedMath PUBLIC 
