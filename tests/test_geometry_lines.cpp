@@ -62,6 +62,29 @@ namespace SharedMath::Geometry {
         EXPECT_DOUBLE_EQ(p[2], 0.0);
     }
 
+    TEST(PointTest, BracketOperatorOutOfBounds) {
+        Point<3> p{1.0, 2.0, 3.0};
+        EXPECT_THROW(p[3], std::out_of_range); // Проверка выхода за границы
+    }
+
+    TEST(PointTest, ConstBracketOperator) {
+        const Point<2> p{1.5, 2.5};
+        EXPECT_DOUBLE_EQ(p[0], 1.5); // Проверка const-версии operator[]
+    }
+
+    TEST(PointTest, InequalityOperator) {
+        Point<2> p1{1.0, 2.0};
+        Point<2> p2{1.0, 2.1};
+        EXPECT_TRUE(p1 != p2);
+    }
+
+    TEST(PointTest, ZeroLength) {
+        Point<3> p;
+        EXPECT_DOUBLE_EQ(p[0], 0.0);
+        EXPECT_DOUBLE_EQ(p[1], 0.0);
+        EXPECT_DOUBLE_EQ(p[2], 0.0);
+    }
+
     TEST(LineTest, DefaultConstructor) {
         Line<2> line;
         EXPECT_EQ(line.getFirstPoint(), Point<2>());
@@ -137,4 +160,59 @@ namespace SharedMath::Geometry {
         EXPECT_EQ(line.getFirstPoint(), p1);
         EXPECT_EQ(line.getSecondPoint(), p2);
     }
+
+    TEST(LineTest, DegenerateLine) {
+        Point<2> p{1.0, 1.0};
+        Line<2> line(p, p); // Линия с одинаковыми точками
+        EXPECT_DOUBLE_EQ(line.getLength(), 0.0);
+    }
+
+    TEST(LineTest, VerticalLine) {
+        Line<2> line({0.0, 0.0}, {0.0, 5.0}); // Вертикальная линия
+        EXPECT_DOUBLE_EQ(line.getLength(), 5.0);
+    }
+
+    TEST(LineTest, HorizontalLine) {
+        Line<2> line({0.0, 0.0}, {5.0, 0.0}); // Горизонтальная линия
+        EXPECT_DOUBLE_EQ(line.getLength(), 5.0);
+    }
+
+    TEST(LineTest, 3DLineLength) {
+        Line<3> line({1.0, 2.0, 3.0}, {4.0, 6.0, 9.0});
+        double expected = std::sqrt(3*3 + 4*4 + 6*6);
+        EXPECT_DOUBLE_EQ(line.getLength(), expected);
+    }
+
+    TEST(LineTest, SetPointsWithMove) {
+        Line<2> line;
+        Point<2> p1{1.0, 1.0};
+        Point<2> p2{2.0, 2.0};
+        
+        line.setFirstPoint(std::move(p1));
+        line.setSecondPoint(std::move(p2));
+        
+        EXPECT_EQ(line.getFirstPoint(), Point<2>({1.0, 1.0}));
+        EXPECT_EQ(line.getSecondPoint(), Point<2>({2.0, 2.0}));
+        EXPECT_EQ(p1, Point<2>()); // Проверка, что p1 обнулился
+    }
+
+    TEST(LineEdgeCasesTest, ZeroLengthLine) {
+        Point<2> p{1.0, 1.0};
+        Line<2> line(p, p);
+        EXPECT_DOUBLE_EQ(line.getLength(), 0.0);
+        EXPECT_TRUE(line.getFirstPoint() == line.getSecondPoint());
+    }
+
+    TEST(PointEdgeCasesTest, LargeCoordinates) {
+        Point<2> p{1e300, 1e300};
+        EXPECT_DOUBLE_EQ(p[0], 1e300);
+        EXPECT_DOUBLE_EQ(p[1], 1e300);
+    }
+
+    TEST(LineEdgeCasesTest, LargeCoordinatesLine) {
+        Line<2> line({0.0, 0.0}, {1e200, 1e200});
+        EXPECT_TRUE(std::isinf(line.getLength())); // Проверка на переполнение
+    }
+
+    
 }

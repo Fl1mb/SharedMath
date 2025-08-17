@@ -5,7 +5,8 @@ find_package(GTest REQUIRED)
 include(GoogleTest)
 add_executable(SharedMathTests
     main.cpp
-    test_geometry.cpp
+    test_geometry_lines.cpp
+    test_geometry_polygon.cpp
 )
 target_link_libraries(SharedMathTests PRIVATE GTest::GTest GTest::Main)
 target_include_directories(SharedMathTests PRIVATE ${CMAKE_SOURCE_DIR}/include)

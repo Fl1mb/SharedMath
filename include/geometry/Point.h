@@ -36,8 +36,14 @@ namespace SharedMath{
                 return *this;
             }
 
-            double operator[](size_t index)const{return coords[index];}
-            double& operator[](size_t index){return coords[index];}
+            double operator[](size_t index)const{
+                if(index >= N)throw std::out_of_range("Point::operator[] is out of range");
+                return coords[index];
+            }
+            double& operator[](size_t index){
+                if(index >= N)throw std::out_of_range("Point::operator[] is out of range");
+                return coords[index];
+            }
 
             bool operator==(const Point<N>& other)const{return coords == other.coords;}
             bool operator!=(const Point<N>& other)const{return !(*this == other);}

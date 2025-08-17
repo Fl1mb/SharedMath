@@ -36,6 +36,15 @@ namespace SharedMath
             void setFirstPoint(const Point<N>& point){firstPoint = point;}
             void setSecondPoint(const Point<N>& point){secondPoint = point;}
 
+            void setFirstPoint(Point<N>&& point){
+                firstPoint = point;
+                point.clearPoint();
+            }
+            void setSecondPoint(Point<N>&& point){
+                secondPoint = point;
+                point.clearPoint();
+            }
+
             bool operator==(const Line<N>& other) const{
                 return  firstPoint == other.firstPoint &&
                         secondPoint == other.secondPoint;
