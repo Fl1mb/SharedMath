@@ -10,6 +10,8 @@ namespace SharedMath
         public:
             Parallelogram() = default;
 
+            Parallelogram(const std::array<Point<2>, 4>& points);
+
             Parallelogram(const Parallelogram&) = default;
             Parallelogram(Parallelogram&&) noexcept = default;
             Parallelogram& operator=(const Parallelogram&) = default;

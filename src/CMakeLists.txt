@@ -4,6 +4,7 @@ add_library(
     SharedMath
     #Add source Files 
     algebra.cpp 
+    SharedMath.cpp
 )
 
 target_include_directories(SharedMath PUBLIC 

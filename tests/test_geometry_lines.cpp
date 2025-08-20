@@ -214,5 +214,232 @@ namespace SharedMath::Geometry {
         EXPECT_TRUE(std::isinf(line.getLength())); // Проверка на переполнение
     }
 
+    TEST(Vector2D, DefaultConstructor) {
+        Vector2D vec;
+        EXPECT_NEAR(vec.x(), 0.0, Epsilon);
+        EXPECT_NEAR(vec.y(), 0.0, Epsilon);
+        EXPECT_TRUE(vec.isZero());
+    }
+
+    TEST(Vector2D, PointConstructor) {
+        Point<2> p(3.0, 4.0);
+        Vector2D vec(p);
+        EXPECT_NEAR(vec.x(), 3.0, Epsilon);
+        EXPECT_NEAR(vec.y(), 4.0, Epsilon);
+        EXPECT_NEAR(vec.length(), 5.0, Epsilon);
+    }
+
+    TEST(Vector2D, ComponentConstructor) {
+        Vector2D vec(3.0, 4.0);
+        EXPECT_NEAR(vec.x(), 3.0, Epsilon);
+        EXPECT_NEAR(vec.y(), 4.0, Epsilon);
+        EXPECT_NEAR(vec.length(), 5.0, Epsilon);
+    }
+
+    TEST(Vector2D, TwoPointConstructor) {
+        Point<2> start(1.0, 2.0);
+        Point<2> end(4.0, 6.0);
+        Vector2D vec(start, end);
+        EXPECT_NEAR(vec.x(), 3.0, Epsilon);
+        EXPECT_NEAR(vec.y(), 4.0, Epsilon);
+    }
+
+    TEST(Vector2D, Normalization) {
+        Vector2D vec(3.0, 4.0);
+        Vector2D norm = vec.normalized();
+        EXPECT_NEAR(norm.length(), 1.0, Epsilon);
+        EXPECT_NEAR(norm.x(), 0.6, Epsilon);
+        EXPECT_NEAR(norm.y(), 0.8, Epsilon);
+    }
+
+    TEST(Vector2D, DotProduct) {
+        Vector2D a(1.0, 2.0);
+        Vector2D b(3.0, 4.0);
+        double dot = a.dot(b);
+        EXPECT_NEAR(dot, 11.0, Epsilon); // 1*3 + 2*4 = 11
+    }
+
+    TEST(Vector2D, CrossProduct) {
+        Vector2D a(1.0, 2.0);
+        Vector2D b(3.0, 4.0);
+        double cross = a.cross(b);
+        EXPECT_NEAR(cross, -2.0, Epsilon); // 1*4 - 2*3 = -2
+    }
+
+    TEST(Vector2D, VectorAddition) {
+        Vector2D a(1.0, 2.0);
+        Vector2D b(3.0, 4.0);
+        Vector2D result = a + b;
+        EXPECT_NEAR(result.x(), 4.0, Epsilon);
+        EXPECT_NEAR(result.y(), 6.0, Epsilon);
+    }
+
+    TEST(Vector2D, VectorSubtraction) {
+        Vector2D a(5.0, 6.0);
+        Vector2D b(2.0, 3.0);
+        Vector2D result = a - b;
+        EXPECT_NEAR(result.x(), 3.0, Epsilon);
+        EXPECT_NEAR(result.y(), 3.0, Epsilon);
+    }
+
+    TEST(Vector2D, ScalarMultiplication) {
+        Vector2D a(2.0, 3.0);
+        Vector2D result = a * 2.5;
+        EXPECT_NEAR(result.x(), 5.0, Epsilon);
+        EXPECT_NEAR(result.y(), 7.5, Epsilon);
+    }
+
+    TEST(Vector2D, ScalarDivision) {
+        Vector2D a(6.0, 9.0);
+        Vector2D result = a / 3.0;
+        EXPECT_NEAR(result.x(), 2.0, Epsilon);
+        EXPECT_NEAR(result.y(), 3.0, Epsilon);
+    }
+
+    TEST(Vector2D, ParallelCheck) {
+        Vector2D a(2.0, 4.0);
+        Vector2D b(1.0, 2.0); // b = 0.5 * a
+        EXPECT_TRUE(a.isParallel(b));
+        
+        Vector2D c(2.0, 3.0);
+        EXPECT_FALSE(a.isParallel(c));
+    }
+
+    TEST(Vector2D, PerpendicularCheck) {
+        Vector2D a(1.0, 0.0);
+        Vector2D b(0.0, 1.0);
+        EXPECT_TRUE(a.isPerpendicular(b));
+        
+        Vector2D c(1.0, 1.0);
+        EXPECT_FALSE(a.isPerpendicular(c));
+    }
+
+    TEST(Vector2D, Rotation) {
+        Vector2D vec(1.0, 0.0);
+        Vector2D rotated = vec.rotate(M_PI / 2); // 90 degrees
+        EXPECT_NEAR(rotated.x(), 0.0, Epsilon);
+        EXPECT_NEAR(rotated.y(), 1.0, Epsilon);
+    }
+
+    TEST(Vector2D, NormalVector) {
+        Vector2D vec(3.0, 4.0);
+        Vector2D normal = vec.normal();
+        EXPECT_NEAR(normal.x(), -4.0, Epsilon);
+        EXPECT_NEAR(normal.y(), 3.0, Epsilon);
+        EXPECT_TRUE(vec.isPerpendicular(normal));
+    }
+
+    TEST(Vector3D, DefaultConstructor) {
+        Vector3D vec;
+        EXPECT_NEAR(vec.x(), 0.0, Epsilon);
+        EXPECT_NEAR(vec.y(), 0.0, Epsilon);
+        EXPECT_NEAR(vec.z(), 0.0, Epsilon);
+        EXPECT_TRUE(vec.isZero());
+    }
+
+    TEST(Vector3D, ComponentConstructor) {
+        Vector3D vec(1.0, 2.0, 3.0);
+        EXPECT_NEAR(vec.x(), 1.0, Epsilon);
+        EXPECT_NEAR(vec.y(), 2.0, Epsilon);
+        EXPECT_NEAR(vec.z(), 3.0, Epsilon);
+        EXPECT_NEAR(vec.length(), std::sqrt(14.0), Epsilon);
+    }
+
+    TEST(Vector3D, TwoPointConstructor) {
+        Point<3> start(1.0, 2.0, 3.0);
+        Point<3> end(5.0, 7.0, 9.0);
+        Vector3D vec(start, end);
+        EXPECT_NEAR(vec.x(), 4.0, Epsilon);
+        EXPECT_NEAR(vec.y(), 5.0, Epsilon);
+        EXPECT_NEAR(vec.z(), 6.0, Epsilon);
+    }
+
+    TEST(Vector3D, DotProduct) {
+        Vector3D a(1.0, 2.0, 3.0);
+        Vector3D b(4.0, 5.0, 6.0);
+        double dot = a.dot(b);
+        EXPECT_NEAR(dot, 32.0, Epsilon); // 1*4 + 2*5 + 3*6 = 32
+    }
+
+    TEST(Vector3D, CrossProduct) {
+        Vector3D a(1.0, 2.0, 3.0);
+        Vector3D b(4.0, 5.0, 6.0);
+        Vector3D cross = a.cross(b);
+        EXPECT_NEAR(cross.x(), -3.0, Epsilon); // 2*6 - 3*5 = -3
+        EXPECT_NEAR(cross.y(), 6.0, Epsilon);  // 3*4 - 1*6 = 6
+        EXPECT_NEAR(cross.z(), -3.0, Epsilon); // 1*5 - 2*4 = -3
+    }
+
+    TEST(Vector3D, VectorOperations) {
+        Vector3D a(1.0, 2.0, 3.0);
+        Vector3D b(4.0, 5.0, 6.0);
+        
+        Vector3D sum = a + b;
+        EXPECT_NEAR(sum.x(), 5.0, Epsilon);
+        EXPECT_NEAR(sum.y(), 7.0, Epsilon);
+        EXPECT_NEAR(sum.z(), 9.0, Epsilon);
+        
+        Vector3D diff = a - b;
+        EXPECT_NEAR(diff.x(), -3.0, Epsilon);
+        EXPECT_NEAR(diff.y(), -3.0, Epsilon);
+        EXPECT_NEAR(diff.z(), -3.0, Epsilon);
+        
+        Vector3D scaled = a * 2.0;
+        EXPECT_NEAR(scaled.x(), 2.0, Epsilon);
+        EXPECT_NEAR(scaled.y(), 4.0, Epsilon);
+        EXPECT_NEAR(scaled.z(), 6.0, Epsilon);
+    }
+
+    TEST(Vector3D, ParallelCheck) {
+        Vector3D a(2.0, 4.0, 6.0);
+        Vector3D b(1.0, 2.0, 3.0); // b = 0.5 * a
+        EXPECT_TRUE(a.isParallel(b));
+        
+        Vector3D c(2.0, 3.0, 4.0);
+        EXPECT_FALSE(a.isParallel(c));
+    }
+
+    TEST(Vector3D, PerpendicularCheck) {
+        Vector3D a(1.0, 0.0, 0.0);
+        Vector3D b(0.0, 1.0, 0.0);
+        EXPECT_TRUE(a.isPerpendicular(b));
+        
+        Vector3D c(1.0, 1.0, 0.0);
+        EXPECT_FALSE(a.isPerpendicular(c));
+    }
+
+    TEST(Vector3D, TripleProduct) {
+        Vector3D a(1.0, 0.0, 0.0);
+        Vector3D b(0.0, 1.0, 0.0);
+        Vector3D c(0.0, 0.0, 1.0);
+        
+        double triple = a.tripleProduct(b, c);
+        EXPECT_NEAR(triple, 1.0, Epsilon); // Volume of unit cube
+    }
+
+    TEST(Vector3D, Normalization) {
+        Vector3D vec(2.0, 3.0, 6.0);
+        Vector3D norm = vec.normalized();
+        EXPECT_NEAR(norm.length(), 1.0, Epsilon);
+        EXPECT_NEAR(norm.x(), 2.0/7.0, Epsilon); // 2/7
+        EXPECT_NEAR(norm.y(), 3.0/7.0, Epsilon); // 3/7
+        EXPECT_NEAR(norm.z(), 6.0/7.0, Epsilon); // 6/7
+    }
+
+    TEST(VectorExceptions, NormalizeZeroVector) {
+        Vector2D zero2D;
+        EXPECT_THROW(zero2D.normalized(), std::invalid_argument);
+        
+        Vector3D zero3D;
+        EXPECT_THROW(zero3D.normalized(), std::invalid_argument);
+    }
+
+    TEST(VectorExceptions, DivisionByZero) {
+        Vector2D vec2D(1.0, 1.0);
+        EXPECT_THROW(vec2D / 0.0, std::invalid_argument);
+        
+        Vector3D vec3D(1.0, 1.0, 1.0);
+        EXPECT_THROW(vec3D / 0.0, std::invalid_argument);
+    }
     
 }

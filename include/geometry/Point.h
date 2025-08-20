@@ -1,7 +1,7 @@
 #pragma once
 
-#include "geometry.h"
 #include <array>
+#include <stdexcept>
 #include <utility>
 #include <cstring>
 #include <math.h>
@@ -22,6 +22,17 @@ namespace SharedMath{
             Point(Point<N>&& other) noexcept{
                 coords = other.coords;
                 other.coords.fill(0.0);
+            }
+
+            Point(double x, double y){
+                coords[0] = x;
+                coords[1] = y;
+            }
+
+            Point(double x, double y, double z){
+                coords[0] = x;
+                coords[1] = y;
+                coords[2] = z;
             }
 
             Point& operator=(const Point<N>& other){

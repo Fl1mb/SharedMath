@@ -61,8 +61,8 @@ namespace SharedMath
                 }
                 return sqrt(sum);
             }
-
-        private:
+            
+        protected:
             Point<N> firstPoint;
             Point<N> secondPoint;
         };
