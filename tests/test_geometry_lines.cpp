@@ -4,42 +4,42 @@
 
 namespace SharedMath::Geometry {
     TEST(PointTest, DefaultConstructor) {
-        Point<2> p;
+        Point2D p;
         EXPECT_DOUBLE_EQ(p[0], 0.0);
         EXPECT_DOUBLE_EQ(p[1], 0.0);
     }
 
     TEST(PointTest, InitializerListConstructor) {
-        Point<3> p{1.1, 2.2, 3.3};
+        Point3D p{1.1, 2.2, 3.3};
         EXPECT_DOUBLE_EQ(p[0], 1.1);
         EXPECT_DOUBLE_EQ(p[1], 2.2);
         EXPECT_DOUBLE_EQ(p[2], 3.3);
     }
 
     TEST(PointTest, CopyConstructor) {
-        Point<2> p1{5.0, 10.0};
-        Point<2> p2(p1);
+        Point2D p1{5.0, 10.0};
+        Point2D p2(p1);
         EXPECT_EQ(p1, p2);
     }
 
     TEST(PointTest, MoveConstructor) {
-        Point<2> p1{3.0, 4.0};
-        Point<2> p2(std::move(p1));
+        Point2D p1{3.0, 4.0};
+        Point2D p2(std::move(p1));
         EXPECT_EQ(p2[0], 3.0);
         EXPECT_EQ(p2[1], 4.0);
         EXPECT_EQ(p1[0], 0.0);  // Проверка, что p1 обнулился
     }
 
     TEST(PointTest, AssignmentOperator) {
-        Point<3> p1{1.0, 2.0, 3.0};
-        Point<3> p2;
+        Point3D p1{1.0, 2.0, 3.0};
+        Point3D p2;
         p2 = p1;
         EXPECT_EQ(p1, p2);
     }
 
     TEST(PointTest, MoveAssignmentOperator) {
-        Point<2> p1{7.0, 8.0};
-        Point<2> p2;
+        Point2D p1{7.0, 8.0};
+        Point2D p2;
         p2 = std::move(p1);
         EXPECT_EQ(p2[0], 7.0);
         EXPECT_EQ(p2[1], 8.0);
@@ -47,15 +47,15 @@ namespace SharedMath::Geometry {
     }
 
     TEST(PointTest, EqualityOperator) {
-        Point<2> p1{1.0, 2.0};
-        Point<2> p2{1.0, 2.0};
-        Point<2> p3{3.0, 4.0};
+        Point2D p1{1.0, 2.0};
+        Point2D p2{1.0, 2.0};
+        Point2D p3{3.0, 4.0};
         EXPECT_TRUE(p1 == p2);
         EXPECT_FALSE(p1 == p3);
     }
 
     TEST(PointTest, ClearPoint) {
-        Point<3> p{1.0, 2.0, 3.0};
+        Point3D p{1.0, 2.0, 3.0};
         p.clearPoint();
         EXPECT_DOUBLE_EQ(p[0], 0.0);
         EXPECT_DOUBLE_EQ(p[1], 0.0);
@@ -63,23 +63,23 @@ namespace SharedMath::Geometry {
     }
 
     TEST(PointTest, BracketOperatorOutOfBounds) {
-        Point<3> p{1.0, 2.0, 3.0};
+        Point3D p{1.0, 2.0, 3.0};
         EXPECT_THROW(p[3], std::out_of_range); // Проверка выхода за границы
     }
 
     TEST(PointTest, ConstBracketOperator) {
-        const Point<2> p{1.5, 2.5};
+        const Point2D p{1.5, 2.5};
         EXPECT_DOUBLE_EQ(p[0], 1.5); // Проверка const-версии operator[]
     }
 
     TEST(PointTest, InequalityOperator) {
-        Point<2> p1{1.0, 2.0};
-        Point<2> p2{1.0, 2.1};
+        Point2D p1{1.0, 2.0};
+        Point2D p2{1.0, 2.1};
         EXPECT_TRUE(p1 != p2);
     }
 
     TEST(PointTest, ZeroLength) {
-        Point<3> p;
+        Point3D p;
         EXPECT_DOUBLE_EQ(p[0], 0.0);
         EXPECT_DOUBLE_EQ(p[1], 0.0);
         EXPECT_DOUBLE_EQ(p[2], 0.0);
@@ -87,13 +87,13 @@ namespace SharedMath::Geometry {
 
     TEST(LineTest, DefaultConstructor) {
         Line<2> line;
-        EXPECT_EQ(line.getFirstPoint(), Point<2>());
-        EXPECT_EQ(line.getSecondPoint(), Point<2>());
+        EXPECT_EQ(line.getFirstPoint(), Point2D());
+        EXPECT_EQ(line.getSecondPoint(), Point2D());
     }
 
     TEST(LineTest, ParameterizedConstructor) {
-        Point<2> p1{1.0, 2.0};
-        Point<2> p2{3.0, 4.0};
+        Point2D p1{1.0, 2.0};
+        Point2D p2{3.0, 4.0};
         Line<2> line(p1, p2);
         EXPECT_EQ(line.getFirstPoint(), p1);
         EXPECT_EQ(line.getSecondPoint(), p2);
@@ -106,14 +106,14 @@ namespace SharedMath::Geometry {
     }
 
     TEST(LineTest, MoveConstructor) {
-        Point<2> p1{1.0, 1.0};
-        Point<2> p2{2.0, 2.0};
+        Point2D p1{1.0, 1.0};
+        Point2D p2{2.0, 2.0};
         Line<2> line1(p1, p2);
         Line<2> line2(std::move(line1));
         
         EXPECT_EQ(line2.getFirstPoint(), p1);
         EXPECT_EQ(line2.getSecondPoint(), p2);
-        EXPECT_EQ(line1.getFirstPoint(), Point<2>());  // Проверка, что line1 обнулился
+        EXPECT_EQ(line1.getFirstPoint(), Point2D());  // Проверка, что line1 обнулился
     }
 
     TEST(LineTest, AssignmentOperator) {
@@ -128,9 +128,9 @@ namespace SharedMath::Geometry {
         Line<3> line2;
         line2 = std::move(line1);
         
-        EXPECT_EQ(line2.getFirstPoint(), Point<3>({1.0, 1.0, 1.0}));
-        EXPECT_EQ(line2.getSecondPoint(), Point<3>({2.0, 2.0, 2.0}));
-        EXPECT_EQ(line1.getFirstPoint(), Point<3>());  // Проверка, что line1 обнулился
+        EXPECT_EQ(line2.getFirstPoint(), Point3D({1.0, 1.0, 1.0}));
+        EXPECT_EQ(line2.getSecondPoint(), Point3D({2.0, 2.0, 2.0}));
+        EXPECT_EQ(line1.getFirstPoint(), Point3D());  // Проверка, что line1 обнулился
     }
 
     TEST(LineTest, EqualityOperator) {
@@ -151,8 +151,8 @@ namespace SharedMath::Geometry {
 
     TEST(LineTest, SetPoints) {
         Line<2> line;
-        Point<2> p1{1.0, 2.0};
-        Point<2> p2{3.0, 4.0};
+        Point2D p1{1.0, 2.0};
+        Point2D p2{3.0, 4.0};
         
         line.setFirstPoint(p1);
         line.setSecondPoint(p2);
@@ -162,7 +162,7 @@ namespace SharedMath::Geometry {
     }
 
     TEST(LineTest, DegenerateLine) {
-        Point<2> p{1.0, 1.0};
+        Point2D p{1.0, 1.0};
         Line<2> line(p, p); // Линия с одинаковыми точками
         EXPECT_DOUBLE_EQ(line.getLength(), 0.0);
     }
@@ -185,26 +185,26 @@ namespace SharedMath::Geometry {
 
     TEST(LineTest, SetPointsWithMove) {
         Line<2> line;
-        Point<2> p1{1.0, 1.0};
-        Point<2> p2{2.0, 2.0};
+        Point2D p1{1.0, 1.0};
+        Point2D p2{2.0, 2.0};
         
         line.setFirstPoint(std::move(p1));
         line.setSecondPoint(std::move(p2));
         
-        EXPECT_EQ(line.getFirstPoint(), Point<2>({1.0, 1.0}));
-        EXPECT_EQ(line.getSecondPoint(), Point<2>({2.0, 2.0}));
-        EXPECT_EQ(p1, Point<2>()); // Проверка, что p1 обнулился
+        EXPECT_EQ(line.getFirstPoint(), Point2D({1.0, 1.0}));
+        EXPECT_EQ(line.getSecondPoint(), Point2D({2.0, 2.0}));
+        EXPECT_EQ(p1, Point2D()); // Проверка, что p1 обнулился
     }
 
     TEST(LineEdgeCasesTest, ZeroLengthLine) {
-        Point<2> p{1.0, 1.0};
+        Point2D p{1.0, 1.0};
         Line<2> line(p, p);
         EXPECT_DOUBLE_EQ(line.getLength(), 0.0);
         EXPECT_TRUE(line.getFirstPoint() == line.getSecondPoint());
     }
 
     TEST(PointEdgeCasesTest, LargeCoordinates) {
-        Point<2> p{1e300, 1e300};
+        Point2D p{1e300, 1e300};
         EXPECT_DOUBLE_EQ(p[0], 1e300);
         EXPECT_DOUBLE_EQ(p[1], 1e300);
     }
@@ -222,7 +222,7 @@ namespace SharedMath::Geometry {
     }
 
     TEST(Vector2D, PointConstructor) {
-        Point<2> p(3.0, 4.0);
+        Point2D p(3.0, 4.0);
         Vector2D vec(p);
         EXPECT_NEAR(vec.x(), 3.0, Epsilon);
         EXPECT_NEAR(vec.y(), 4.0, Epsilon);
@@ -237,8 +237,8 @@ namespace SharedMath::Geometry {
     }
 
     TEST(Vector2D, TwoPointConstructor) {
-        Point<2> start(1.0, 2.0);
-        Point<2> end(4.0, 6.0);
+        Point2D start(1.0, 2.0);
+        Point2D end(4.0, 6.0);
         Vector2D vec(start, end);
         EXPECT_NEAR(vec.x(), 3.0, Epsilon);
         EXPECT_NEAR(vec.y(), 4.0, Epsilon);
@@ -346,8 +346,8 @@ namespace SharedMath::Geometry {
     }
 
     TEST(Vector3D, TwoPointConstructor) {
-        Point<3> start(1.0, 2.0, 3.0);
-        Point<3> end(5.0, 7.0, 9.0);
+        Point3D start(1.0, 2.0, 3.0);
+        Point3D end(5.0, 7.0, 9.0);
         Vector3D vec(start, end);
         EXPECT_NEAR(vec.x(), 4.0, Epsilon);
         EXPECT_NEAR(vec.y(), 5.0, Epsilon);

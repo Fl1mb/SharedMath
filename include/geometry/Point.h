@@ -24,17 +24,6 @@ namespace SharedMath{
                 other.coords.fill(0.0);
             }
 
-            Point(double x, double y){
-                coords[0] = x;
-                coords[1] = y;
-            }
-
-            Point(double x, double y, double z){
-                coords[0] = x;
-                coords[1] = y;
-                coords[2] = z;
-            }
-
             Point& operator=(const Point<N>& other){
                 if(*this == other)return *this;
                 coords = other.coords;
@@ -67,6 +56,55 @@ namespace SharedMath{
 
         protected:
             std::array<double, N> coords;
+        };
+
+        class Point2D : public Point<2>{
+        public:
+            Point2D(){
+                coords[0] = 0.0;
+                coords[1] = 0.0;
+            }
+            Point2D(double x, double y){
+                coords[0] = x;
+                coords[1] = y;
+            }
+
+            Point2D(const Point2D& other) = default;
+            Point2D(Point2D&& other) noexcept = default;
+            Point2D& operator=(const Point2D& other) = default;
+            Point2D& operator=(Point2D&& other) noexcept = default;
+
+            double x() const{return coords[0];}
+            double y() const{return coords[1];}
+
+            void setX(double x){coords[0] = x;}
+            void setY(double y){coords[1] = y;}
+
+            ~Point2D() = default;
+        };
+
+        class Point3D : public Point<3>{
+        public:
+            Point3D(){
+                coords[0] = 0.0;
+                coords[1] = 0.0;
+                coords[2] = 0.0;
+            }
+            Point3D(double x, double y, double z){
+                coords[0] = x;
+                coords[1] = y;
+                coords[2] = z;
+            }
+
+            double x() const{return coords[0];}
+            double y() const{return coords[1];}
+            double z() const{return coords[2];}
+
+            void setX(double x){coords[0] = x;}
+            void setY(double y){coords[1] = y;}
+            void setZ(double z){coords[2] = z;}
+
+            ~Point3D() = default;
         };
     } // namespace Geometry
     

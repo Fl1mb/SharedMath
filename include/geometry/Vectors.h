@@ -7,16 +7,16 @@ namespace SharedMath
 {
     namespace Geometry
     {
-        class Vector2D : public Line<2>{
+        class Vector2D : public Line2D{
         public:
-            Vector2D() : Line<2>(){}
-            Vector2D(const Point<2>& start, const Point<2>& end) : Line<2>(start, end) {}
-            Vector2D(double x, double y) : Line<2>(Point<2>(0,0), Point<2>(x,y)) {}
+            Vector2D() : Line2D(){}
+            Vector2D(const Point2D& start, const Point2D& end) : Line2D(start, end) {}
+            Vector2D(double x, double y) : Line2D(Point2D(0,0), Point2D(x,y)) {}
 
-            explicit Vector2D(const Point<2>& point) : Line<2>(Point<2>(0,0), point) {}
+            explicit Vector2D(const Point2D& point) : Line2D(Point2D(0,0), point) {}
 
             double length() const{
-                return Line<2>::getLength();
+                return Line2D::getLength();
             }
 
             double x() const { return getSecondPoint()[0] - getFirstPoint()[0]; }
@@ -83,9 +83,9 @@ namespace SharedMath
                 return Vector2D(-y(), x());
             }
 
-            static double getAngle(const Line<2>& first, const Line<2>& second){
-                Vector2D vec1(first.getFirstPoint(), first.getSecondPoint());
-                Vector2D vec2(second.getFirstPoint(), second.getSecondPoint());
+            static double getAngle(const Line2D& first, const Line2D& second){
+                Vector2D vec1(first.getFirstPoint2D(), first.getSecondPoint2D());
+                Vector2D vec2(second.getFirstPoint2D(), second.getSecondPoint2D());
                 
                 double dotProduct = vec1.dot(vec2);
                 
@@ -104,20 +104,20 @@ namespace SharedMath
             }
         };
 
-        class Vector3D : public Line<3>{
+        class Vector3D : public Line3D{
         public:
-            Vector3D() : Line<3>() {}
-            Vector3D(const Point<3>& start, const Point<3>& end) : Line<3>(start, end) {}
-            Vector3D(double x, double y, double z) : Line<3>(Point<3>(0, 0, 0), Point<3>(x, y, z)) {}
+            Vector3D() : Line3D() {}
+            Vector3D(const Point3D& start, const Point3D& end) : Line3D(start, end) {}
+            Vector3D(double x, double y, double z) : Line3D(Point3D(0, 0, 0), Point3D(x, y, z)) {}
 
-            explicit Vector3D(const Point<3>& point) : Line<3>(Point<3>(0, 0, 0), point) {}
+            explicit Vector3D(const Point3D& point) : Line3D(Point3D(0, 0, 0), point) {}
 
             double x() const { return getSecondPoint()[0] - getFirstPoint()[0]; }
             double y() const { return getSecondPoint()[1] - getFirstPoint()[1]; }
             double z() const { return getSecondPoint()[2] - getFirstPoint()[2]; }
 
             double length() const {
-                return Line<3>::getLength();
+                return Line3D::getLength();
             }
 
             Vector3D normalized() const {
@@ -178,9 +178,9 @@ namespace SharedMath
                 return dot(b.cross(c));
             }
 
-            static double getAngle(const Line<3>& first, const Line<3>& second){
-                Vector3D vec1(first.getFirstPoint(), first.getSecondPoint());
-                Vector3D vec2(second.getFirstPoint(), second.getSecondPoint());
+            static double getAngle(const Line3D& first, const Line3D& second){
+                Vector3D vec1(first.getFirstPoint3D(), first.getSecondPoint3D());
+                Vector3D vec2(second.getFirstPoint3D(), second.getSecondPoint3D());
                 
                 double dotProduct = vec1.dot(vec2);
 

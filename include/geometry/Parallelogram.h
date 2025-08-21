@@ -1,6 +1,7 @@
 #pragma once
 #include "Point.h"
 #include "Polygon.h"
+#include <algorithm>
 
 namespace SharedMath
 {
@@ -25,7 +26,7 @@ namespace SharedMath
             virtual double perimeter() const override;
 
         protected:
-            
+            Point<2>& findDownLeftPoint(const std::array<Point<2>, 4>& points) const;
         };
 
     } // namespace Geometry
