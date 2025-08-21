@@ -1,5 +1,5 @@
 #pragma once
-
+#include "../constans.h"
 #include <array>
 #include <stdexcept>
 #include <utility>

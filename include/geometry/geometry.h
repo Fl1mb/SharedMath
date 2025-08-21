@@ -1,6 +1,7 @@
 #pragma once
 #include "../constans.h"
 #include "Point.h"
+#include "Rectangle.h"
 #include "Line.h"
 #include "Vectors.h"
 #include "Polygon.h"

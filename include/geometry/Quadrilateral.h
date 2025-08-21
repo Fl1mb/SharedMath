@@ -6,11 +6,7 @@ namespace SharedMath
 {
     namespace Geometry
     {
-        class Quadrilateral{
-        public:
-
-            
-        };
+        
         
     } // namespace Geometry
     

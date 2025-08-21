@@ -3,7 +3,10 @@
 add_library(
     SharedMath
     #Add source Files 
-    algebra.cpp 
+    geometry/Parallelogram.cpp
+    geometry/Polygon.cpp
+    geometry/Rectangle.cpp
+
     SharedMath.cpp
 )
 

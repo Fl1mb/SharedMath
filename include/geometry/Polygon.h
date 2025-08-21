@@ -21,12 +21,7 @@ namespace SharedMath
             static_assert(VertexCount > 2, "Polygon must have Vertex > 2");
             
             Polygon() = default;
-            explicit Polygon(const std::array<Point<2>, VertexCount>& vertices) : VerticesPoints(vertices){}
-
-            enum COORD{
-                X_COORD = 0,
-                Y_COORD = 1
-            };
+            explicit Polygon(const std::array<Point2D, VertexCount>& vertices) : VerticesPoints(vertices){}
 
             Polygon(const Polygon&) = default;
             Polygon(Polygon&&) noexcept = default;
@@ -37,11 +32,11 @@ namespace SharedMath
             bool operator==(const Polygon& other)const {return VerticesPoints == other.VerticesPoints;}
             bool operator!=(const Polygon& other)const {return !(*this == other);}
 
-            const Point<2>& vertex(size_t index) const{
+            const Point2D& vertex(size_t index) const{
                 if(index >= VertexCount)throw std::invalid_argument("Polygon::vertex index out of range");
                 return VerticesPoints[index];
             }
-            Point<2>& vertex(size_t index){
+            Point2D& vertex(size_t index){
                 if(index >= VertexCount)throw std::invalid_argument("Polygon::vertex index out of range");
                 return VerticesPoints[index];
             }
@@ -50,8 +45,8 @@ namespace SharedMath
                 double sum = 0.0;
                 for(size_t i = 0; i < VertexCount; ++i){
                     size_t j = (i + 1) % VertexCount;
-                    sum += (VerticesPoints[i][X_COORD] * VerticesPoints[j][Y_COORD]) - 
-                       (VerticesPoints[j][X_COORD] * VerticesPoints[i][Y_COORD]);
+                    sum += (VerticesPoints[i].x() * VerticesPoints[j].y()) - 
+                       (VerticesPoints[j].x() * VerticesPoints[i].y());
                 }
                 return std::abs(sum) / 2.0;
             }
@@ -65,17 +60,17 @@ namespace SharedMath
             }
 
         protected:
-            std::array<Point<2>, VertexCount> VerticesPoints;
+            std::array<Point2D, VertexCount> VerticesPoints;
 
-            static double distance(const Point<2>& firstPoint, const Point<2>& secondPoint){
-                double dx = secondPoint[X_COORD] - firstPoint[X_COORD];
-                double dy = secondPoint[Y_COORD] - firstPoint[Y_COORD];
+            static double distance(const Point2D& firstPoint, const Point2D& secondPoint){
+                double dx = secondPoint.x() - firstPoint.x();
+                double dy = secondPoint.y() - firstPoint.y();
                 return std::hypot(dx, dy); 
             }
 
-            static double crossProduct(const Point<2>& first, const Point<2>& second, const Point<2>& third){
-                return (second[X_COORD] - first[X_COORD] * (third[Y_COORD] - first[Y_COORD])-
-                        second[Y_COORD] - first[Y_COORD] * (third[X_COORD] - first[X_COORD]));
+            static double crossProduct(const Point2D& first, const Point2D& second, const Point2D& third){
+                return (second.x() - first.x() * (third.y() - first.y())-
+                        second.y() - first.y() * (third.x() - first.x()));
             }
             
         };

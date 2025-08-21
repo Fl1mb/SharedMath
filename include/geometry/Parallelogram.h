@@ -1,7 +1,12 @@
 #pragma once
 #include "Point.h"
 #include "Polygon.h"
+#include "Vectors.h"
+#include "../constans.h"
+#include <math.h>
 #include <algorithm>
+#include <stdexcept>
+#include <vector>
 
 namespace SharedMath
 {
@@ -11,7 +16,7 @@ namespace SharedMath
         public:
             Parallelogram() = default;
 
-            Parallelogram(const std::array<Point<2>, 4>& points);
+            Parallelogram(const std::array<Point2D, 4>& points);
 
             Parallelogram(const Parallelogram&) = default;
             Parallelogram(Parallelogram&&) noexcept = default;
@@ -19,18 +24,21 @@ namespace SharedMath
             Parallelogram& operator=(Parallelogram&&) noexcept = default;
             ~Parallelogram() override = default;
 
-            static bool isParallelogram(const std::array<Point<2>, 4>& vertices);
+            static bool isParallelogram(const std::array<Point2D, 4>& vertices);
 
-            //TODO
             virtual double area() const override;
             virtual double perimeter() const override;
 
+            void SetVertices(const std::array<Point2D, 4>& vertices);
+            decltype(auto) GetVertices() const {return VerticesPoints;}
+
         protected:
-            Point<2>& findDownLeftPoint(const std::array<Point<2>, 4>& points) const;
+            static Point2D findDownLeftPoint(const std::array<Point2D, 4>& points);
+            static Point2D findDownRightPoint(const std::array<Point2D, 4>& points);
+            static Point2D findUpLeftPoint(const std::array<Point2D, 4>& points);
+            static Point2D findUpRightPoint(const std::array<Point2D, 4>& points);
         };
 
     } // namespace Geometry
     
-    
 } // namespace SharedMath
-
