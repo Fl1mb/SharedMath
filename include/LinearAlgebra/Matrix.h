@@ -143,6 +143,58 @@ namespace SharedMath
             static constexpr bool isContiguous() {
                 return true;
             }
+
+            class MatrixCommaInitializer {
+            public:
+                MatrixCommaInitializer(Matrix& mat) 
+                    : matrix(mat), row(0), col(0), count(0) 
+                {
+                    for (auto& vec : matrix.data) {
+                        vec = Vector<Cols>();
+                    }
+                }
+
+                MatrixCommaInitializer& operator,(double value) {
+                    if (row >= Rows) {
+                        throw std::out_of_range("Too many values for matrix rows");
+                    }
+                    
+                    matrix[row][col] = value;
+                    count++;
+                    col++;
+                    
+                    if (col >= Cols) {
+                        col = 0;
+                        row++;
+                    }
+                    
+                    return *this;
+                }
+                Matrix& finalize() {
+                    if (count != Rows * Cols) {
+                        throw std::runtime_error("Not enough values for matrix initialization");
+                    }
+                    return matrix;
+                }
+
+                operator Matrix&() { 
+                    finalize();
+                    return matrix; 
+                }
+
+            private:
+                Matrix& matrix;
+                size_t row;
+                size_t col;
+                size_t count;
+            };
+
+            MatrixCommaInitializer operator<<(double firstValue) {
+                MatrixCommaInitializer initializer(*this);
+                initializer, firstValue;
+                return initializer;
+            }
+
         private:
             std::array<Vector<Cols>, Rows> data;
         };

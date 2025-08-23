@@ -332,3 +332,36 @@ TEST(MatrixTest, FromRowMajorArray) {
     EXPECT_DOUBLE_EQ(matrix[1][0], 30.0);
     EXPECT_DOUBLE_EQ(matrix[1][1], 40.0);
 }
+
+TEST(MatrixTest, CommaInitialization) {
+    Matrix<3, 3> mat;
+    mat << 1, 2, 3,
+           4, 5, 6,
+           7, 8, 9;
+
+    EXPECT_DOUBLE_EQ(mat[0][0], 1.0);
+    EXPECT_DOUBLE_EQ(mat[0][1], 2.0);
+    EXPECT_DOUBLE_EQ(mat[0][2], 3.0);
+    EXPECT_DOUBLE_EQ(mat[1][0], 4.0);
+    EXPECT_DOUBLE_EQ(mat[1][1], 5.0);
+    EXPECT_DOUBLE_EQ(mat[1][2], 6.0);
+    EXPECT_DOUBLE_EQ(mat[2][0], 7.0);
+    EXPECT_DOUBLE_EQ(mat[2][1], 8.0);
+    EXPECT_DOUBLE_EQ(mat[2][2], 9.0);
+}
+
+TEST(MatrixTest, CommaInitialization4x4) {
+    Matrix<4, 4> mat;
+    mat << 1,  2,  3,  4,
+           5,  6,  7,  8,
+           9,  10, 11, 12,
+           13, 14, 15, 16;
+
+    // Проверка нескольких элементов
+    EXPECT_DOUBLE_EQ(mat[0][0], 1.0);
+    EXPECT_DOUBLE_EQ(mat[0][3], 4.0);
+    EXPECT_DOUBLE_EQ(mat[3][0], 13.0);
+    EXPECT_DOUBLE_EQ(mat[3][3], 16.0);
+}
+
+
