@@ -1,8 +1,8 @@
 #pragma once
-#include "Point.h"
+#include "../Point.h"
 #include "Polygon.h"
-#include "Vectors.h"
-#include "../constans.h"
+#include "../Vectors.h"
+#include "../../constans.h"
 #include <math.h>
 #include <algorithm>
 #include <stdexcept>

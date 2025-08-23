@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Polygon.h"
-#include "Vectors.h"
+#include "../Vectors.h"
 #include <algorithm>
 
 namespace SharedMath

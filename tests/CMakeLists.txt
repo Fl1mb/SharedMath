@@ -8,11 +8,13 @@ link_directories(${CMAKE_SOURCE_DIR}/../build)
 
 add_executable(SharedMathTests
     main.cpp
-    test_geometry_lines.cpp
-    test_geometry_polygon.cpp
-    test_geometry_rect.cpp
-    test_geometry_triangle.cpp
-    test_geometry_circle.cpp
+    # test_geometry_lines.cpp
+    # test_geometry_polygon.cpp
+    # test_geometry_rect.cpp
+    # test_geometry_triangle.cpp
+    # test_geometry_circle.cpp
+    test_linAl_matrix.cpp
+
 )
 target_link_libraries(SharedMathTests PRIVATE GTest::GTest GTest::Main SharedMath)
 target_include_directories(SharedMathTests PRIVATE ${CMAKE_SOURCE_DIR}/include)

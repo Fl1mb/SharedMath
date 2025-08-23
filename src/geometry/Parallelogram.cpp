@@ -1,4 +1,4 @@
-#include "../include/geometry/Parallelogram.h"
+#include "../include/geometry/Planimetry/Parallelogram.h"
 
 using namespace SharedMath::Geometry;
 

@@ -4,7 +4,6 @@ add_library(
     SharedMath
     #Add source Files 
     geometry/Parallelogram.cpp
-    geometry/Polygon.cpp
     geometry/Rectangle.cpp
     geometry/Triangle.cpp
 

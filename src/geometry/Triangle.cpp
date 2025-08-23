@@ -1,4 +1,4 @@
-#include "../include/geometry/Triangle.h"
+#include "../include/geometry/Planimetry/Triangle.h"
 
 using namespace SharedMath::Geometry;
 
