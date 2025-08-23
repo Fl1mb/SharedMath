@@ -29,9 +29,6 @@ namespace SharedMath
             virtual double area() const override;
             virtual double perimeter() const override;
 
-            void SetVertices(const std::array<Point2D, 4>& vertices);
-            decltype(auto) GetVertices() const {return VerticesPoints;}
-
         protected:
             static Point2D findDownLeftPoint(const std::array<Point2D, 4>& points);
             static Point2D findDownRightPoint(const std::array<Point2D, 4>& points);

@@ -6,6 +6,7 @@ add_library(
     geometry/Parallelogram.cpp
     geometry/Polygon.cpp
     geometry/Rectangle.cpp
+    geometry/Triangle.cpp
 
     SharedMath.cpp
 )

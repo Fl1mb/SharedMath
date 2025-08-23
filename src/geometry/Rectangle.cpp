@@ -8,7 +8,7 @@ Rectangle::Rectangle(const std::array<Point2D, 4>& points) {
     if (!isRectangle(points)) {
         throw std::invalid_argument("Points do not form a rectangle");
     }
-    SetVertices(orderRectanglePoints(points));
+    setVertices(orderRectanglePoints(points));
 }
 
 Rectangle::Rectangle(const Point2D& bottomLeft, const Point2D& topRight) {
@@ -24,7 +24,7 @@ Rectangle::Rectangle(const Point2D& bottomLeft, const Point2D& topRight) {
         Point2D(x1, y2)
     };
     
-    SetVertices(points);
+    setVertices(points);
 }
 
 Rectangle::Rectangle(const Point2D& position, double width, double height) {
@@ -39,7 +39,7 @@ Rectangle::Rectangle(const Point2D& position, double width, double height) {
         Point2D(position.x(), position.y() + height)
     };
     
-    SetVertices(points);
+    setVertices(points);
 }
 
 bool Rectangle::isRectangle(const std::array<Point2D, 4>& vertices) {
@@ -54,12 +54,12 @@ bool Rectangle::isRectangle(const std::array<Point2D, 4>& vertices) {
 }
 
 double Rectangle::getWidth() const {
-    const auto& vertices = GetVertices();
+    const auto& vertices = getVertices();
     return Vector2D(vertices[0], vertices[1]).length();
 }
 
 double Rectangle::getHeight() const {
-    const auto& vertices = GetVertices();
+    const auto& vertices = getVertices();
     return Vector2D(vertices[0], vertices[3]).length();
 }
 
@@ -70,7 +70,7 @@ double Rectangle::getAspectRatio() const {
 }
 
 Point2D Rectangle::getCenter() const {
-    const auto& vertices = GetVertices();
+    const auto& vertices = getVertices();
     return Point2D(
         (vertices[0].x() + vertices[2].x()) / 2.0,
         (vertices[0].y() + vertices[2].y()) / 2.0
@@ -78,19 +78,19 @@ Point2D Rectangle::getCenter() const {
 }
 
 Point2D Rectangle::getBottomLeft() const {
-    return GetVertices()[0];
+    return getVertices()[0];
 }
 
 Point2D Rectangle::getBottomRight() const {
-    return GetVertices()[1];
+    return getVertices()[1];
 }
 
 Point2D Rectangle::getTopLeft() const {
-    return GetVertices()[3];
+    return getVertices()[3];
 }
 
 Point2D Rectangle::getTopRight() const {
-    return GetVertices()[2];
+    return getVertices()[2];
 }
 
 void Rectangle::setSize(double width, double height) {
@@ -106,7 +106,7 @@ void Rectangle::setSize(double width, double height) {
         Point2D(bottomLeft.x(), bottomLeft.y() + height)
     };
     
-    SetVertices(points);
+    setVertices(points);
 }
 
 void Rectangle::setPosition(const Point2D& position) {
@@ -120,15 +120,15 @@ void Rectangle::setPosition(const Point2D& position) {
         Point2D(position.x(), position.y() + height)
     };
     
-    SetVertices(points);
+    setVertices(points);
 }
 
 void Rectangle::move(const Vector2D& offset) {
-    auto vertices = GetVertices();
+    auto vertices = getVertices();
     for (auto& vertex : vertices) {
         vertex = Point2D(vertex.x() + offset.x(), vertex.y() + offset.y());
     }
-    SetVertices(vertices);
+    setVertices(vertices);
 }
 
 void Rectangle::scale(double factor) {
@@ -137,7 +137,7 @@ void Rectangle::scale(double factor) {
     }
     
     Point2D center = getCenter();
-    auto vertices = GetVertices();
+    auto vertices = getVertices();
     
     for (auto& vertex : vertices) {
         Vector2D vec(center, vertex);
@@ -145,7 +145,7 @@ void Rectangle::scale(double factor) {
                          center.y() + vec.y() * factor);
     }
     
-    SetVertices(vertices);
+    setVertices(vertices);
 }
 
 void Rectangle::scale(double widthFactor, double heightFactor) {
@@ -154,7 +154,7 @@ void Rectangle::scale(double widthFactor, double heightFactor) {
     }
     
     Point2D center = getCenter();
-    auto vertices = GetVertices();
+    auto vertices = getVertices();
     
     for (auto& vertex : vertices) {
         double dx = (vertex.x() - center.x()) * widthFactor;
@@ -162,7 +162,7 @@ void Rectangle::scale(double widthFactor, double heightFactor) {
         vertex = Point2D(center.x() + dx, center.y() + dy);
     }
     
-    SetVertices(vertices);
+    setVertices(vertices);
 }
 
 bool Rectangle::isSquare() const {
@@ -172,7 +172,7 @@ bool Rectangle::isSquare() const {
 }
 
 bool Rectangle::contains(const Point2D& point) const {
-    const auto& vertices = GetVertices();
+    const auto& vertices = getVertices();
     double minX = std::min({vertices[0].x(), vertices[1].x(), vertices[2].x(), vertices[3].x()});
     double maxX = std::max({vertices[0].x(), vertices[1].x(), vertices[2].x(), vertices[3].x()});
     double minY = std::min({vertices[0].y(), vertices[1].y(), vertices[2].y(), vertices[3].y()});
@@ -183,8 +183,8 @@ bool Rectangle::contains(const Point2D& point) const {
 }
 
 bool Rectangle::intersects(const Rectangle& other) const {
-    const auto& thisVertices = GetVertices();
-    const auto& otherVertices = other.GetVertices();
+    const auto& thisVertices = getVertices();
+    const auto& otherVertices = other.getVertices();
     
     double thisMinX = std::min({thisVertices[0].x(), thisVertices[1].x(), thisVertices[2].x(), thisVertices[3].x()});
     double thisMaxX = std::max({thisVertices[0].x(), thisVertices[1].x(), thisVertices[2].x(), thisVertices[3].x()});
@@ -201,8 +201,8 @@ bool Rectangle::intersects(const Rectangle& other) const {
 }
 
 bool Rectangle::operator==(const Rectangle& other) const {
-    const auto& thisVertices = GetVertices();
-    const auto& otherVertices = other.GetVertices();
+    const auto& thisVertices = getVertices();
+    const auto& otherVertices = other.getVertices();
     
     for (size_t i = 0; i < 4; ++i) {
         if (thisVertices[i] != otherVertices[i]) {

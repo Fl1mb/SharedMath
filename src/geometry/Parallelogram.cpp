@@ -78,12 +78,6 @@ Point2D Parallelogram::findUpRightPoint(const std::array<Point2D, 4>& points){
     return result;
 }
 
-void Parallelogram::SetVertices(const std::array<Point2D, 4>& vertices){
-    if(!isParallelogram(vertices)){
-        throw std::invalid_argument("Vertices can not create parallelogram");
-    }
-    VerticesPoints = vertices;
-}
 
 Parallelogram::Parallelogram(const std::array<Point2D, 4>& points){
     if(!isParallelogram(points)) {
@@ -112,11 +106,11 @@ Parallelogram::Parallelogram(const std::array<Point2D, 4>& points){
     orderedPoints[2] = remainingPoints[2];
     orderedPoints[3] = remainingPoints[1];
     
-    SetVertices(orderedPoints);
+    setVertices(orderedPoints);
 }
 
 double Parallelogram::area() const {
-    const auto& vertices = GetVertices();
+    const auto& vertices = getVertices();
     
     Vector2D v1(vertices[0], vertices[1]);
     Vector2D v2(vertices[0], vertices[3]);
@@ -126,7 +120,7 @@ double Parallelogram::area() const {
 }
 
 double Parallelogram::perimeter() const {
-    const auto& vertices = GetVertices();
+    const auto& vertices = getVertices();
     
     double side1 = Vector2D(vertices[0], vertices[1]).length();
     double side2 = Vector2D(vertices[1], vertices[2]).length();

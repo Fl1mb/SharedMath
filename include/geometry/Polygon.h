@@ -59,6 +59,11 @@ namespace SharedMath
                 return sum;
             }
 
+            void setVertices(const std::array<Point2D, VertexCount>& points){
+                VerticesPoints = points;
+            }
+            decltype(auto) getVertices() const{return VerticesPoints;}
+
         protected:
             std::array<Point2D, VertexCount> VerticesPoints;
 
