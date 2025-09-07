@@ -32,6 +32,11 @@ MatrixOperations::transpose(MatrixPtr A){
     return context_.executeUnary(A);
 }
 
+double MatrixOperations::trace(MatrixPtr A){
+    context_.setScalarStrategy(factory_.createScalarStrategy(OperationType::TRACE));
+    return context_.executeScalar(A);
+}
+
 void MatrixOperations::setCustomBinaryStrategy(std::unique_ptr<BinaryMatrixOperationStrategy> strategy){
     context_.setBinaryStrategy(std::move(strategy));
 }

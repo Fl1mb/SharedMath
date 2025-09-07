@@ -17,6 +17,10 @@ namespace SharedMath::LinearAlgebra
             unaryStrategy_ = std::move(strategy);
         }
 
+        void setScalarStrategy(std::unique_ptr<ScalarMatrixOperationStrategy> strategy){
+            scalarStrategy_ = std::move(strategy);
+        }
+
         MatrixPtr executeBinary(MatrixPtr A, MatrixPtr B) {
             if (!binaryStrategy_) {
                 throw std::runtime_error("Binary strategy not set");
@@ -43,6 +47,19 @@ namespace SharedMath::LinearAlgebra
             return unaryStrategy_->execute(A);
         }
 
+        double executeScalar(MatrixPtr A){
+            if(!scalarStrategy_){
+                throw std::runtime_error("Scalar strategy not set");
+            }
+            if(!A){
+                throw std::invalid_argument("Matrix cannot be null");
+            }
+            if(!scalarStrategy_->isSupported(*A)){
+                throw std::invalid_argument("Matrix is not supported bu current strategy");
+            }
+            return scalarStrategy_->execute(A);
+        }
+
         bool canExecuteBinary(const AbstractMatrix& A, const AbstractMatrix& B) const {
             return binaryStrategy_ && binaryStrategy_->isSupported(A, B);
         }
@@ -50,10 +67,9 @@ namespace SharedMath::LinearAlgebra
         bool canExecuteUnary(const AbstractMatrix& A) const {
             return unaryStrategy_ && unaryStrategy_->isSupported(A);
         }
-
-        
     private:
         std::unique_ptr<BinaryMatrixOperationStrategy> binaryStrategy_;
         std::unique_ptr<UnaryMatrixOperationStrategy> unaryStrategy_;
+        std::unique_ptr<ScalarMatrixOperationStrategy> scalarStrategy_;
     };
 } // namespace SharedMath::LinearAlgebra

@@ -24,6 +24,10 @@ void MatrixStrategyFactory::registerStrategies(){
     unaryStrategies_[OperationType::TRANSPOSE] = [](){
         return std::make_unique<MatrixTransposeStrategy>();
     };
+
+    scalarStrategies_[OperationType::TRACE] = [](){
+        return std::make_unique<MatrixTraceStrategy>();
+    };
 }
 
 MatrixStrategyFactory::BinaryStrategy 
@@ -42,4 +46,13 @@ MatrixStrategyFactory::createUnaryStrategy(OperationType type){
         return iter->second();
     }
     throw std::invalid_argument("Unknows type of unary operation");
+}
+
+MatrixStrategyFactory::ScalarStrategy 
+MatrixStrategyFactory::createScalarStrategy(OperationType type){
+    auto iter = scalarStrategies_.find(type);
+    if(iter != scalarStrategies_.end()){
+        return iter->second();
+    }
+    throw std::invalid_argument("Uknowns type of scalar operation");
 }

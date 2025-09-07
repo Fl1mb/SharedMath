@@ -27,5 +27,14 @@ namespace SharedMath
             virtual bool isSupported(const AbstractMatrix& A, const AbstractMatrix& B) const = 0;
         };
 
+        class ScalarMatrixOperationStrategy{
+        public:
+            using MatrixPtr = std::shared_ptr<AbstractMatrix>;  
+
+            virtual ~ScalarMatrixOperationStrategy() = default;
+
+            virtual double execute(MatrixPtr A) = 0;
+            virtual bool isSupported(const AbstractMatrix& A) const = 0;
+        };
     } // namespace LinearAlgebra
 } // namespace SharedMath

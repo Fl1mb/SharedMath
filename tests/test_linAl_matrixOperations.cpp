@@ -386,3 +386,18 @@ TEST(MatrixOperationsTest, ValidationChecks) {
     EXPECT_THROW(ops.add(A, B), std::invalid_argument);
     EXPECT_THROW(ops.multiply(A, B), std::invalid_argument);
 }
+
+TEST(MatrixOperationsTest, TraceChecks){
+    MatrixOperations ops;
+
+    auto matrix = std::make_shared<DynamicMatrix>(2, 2);
+
+    matrix->set(0, 0, 1); matrix->set(0, 1, 2); 
+    matrix->set(1, 0, 4); matrix->set(1, 1, 5);
+
+    EXPECT_EQ(ops.trace(matrix), 6.0);
+
+    auto invalid_matrix = std::make_shared<DynamicMatrix>(4, 6);
+
+    EXPECT_ANY_THROW(ops.trace(invalid_matrix));
+}
