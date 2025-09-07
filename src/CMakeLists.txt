@@ -8,6 +8,8 @@ add_library(
     geometry/Triangle.cpp
 
     LinearAlgebra/MatrixView.cpp
+    LinearAlgebra/MatrixOperationFactory.cpp
+    LinearAlgebra/MatrixOperations.cpp
 
     SharedMath.cpp
 )
