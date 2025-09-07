@@ -1,88 +1,58 @@
 #pragma once
 #include "Matrix.h"
+#include <memory>
 
 namespace SharedMath
 {
     namespace LinearAlgebra
     {
-        template<size_t ViewRows, size_t ViewCols, typename MatrixType>
         class MatrixView {
         public:
-            MatrixView(MatrixType& matrix, 
-                       size_t startRow_ = 0, 
-                       size_t startCol_ = 0)
-                : data(matrix),
-                  startRow(startRow_),
-                  startCol(startCol_)
-            {
-                validateIndices();
-            }
+            MatrixView() = default;
 
-            double& operator()(size_t row, size_t col) {
-                checkBounds(row, col);
-                return data[startRow + row][startCol + col];
-            }
+            MatrixView(AbstractMatrix* matrix);
+            MatrixView(size_t startRow, size_t endRow, size_t startCol, size_t endCol, AbstractMatrix* matrix_);
+            MatrixView(const MatrixView&) = default;
+            MatrixView(MatrixView&&) noexcept = default;
 
-            const double& operator()(size_t row, size_t col) const {
-                checkBounds(row, col);
-                return data[startRow + row][startCol + col];
-            }
+            MatrixView& operator=(const MatrixView&) = default;
+            MatrixView& operator=(MatrixView&&) noexcept = default;
 
-            Vector<ViewCols> row(size_t rowIndex) const {
-                checkBounds(rowIndex, 0);
-                Vector<ViewCols> result;
-                for(size_t col = 0; col < ViewCols; ++col){
-                    result[col] = data[startRow + rowIndex][startCol + col];
+            ~MatrixView() = default;
+
+            size_t rows() const;
+            size_t cols() const;
+
+            double get(size_t row, size_t col) const;
+            void set(size_t row, size_t col, double val); \
+
+            double operator()(size_t row, size_t col) const;
+            double& operator()(size_t row, size_t col);
+
+            MatrixView subView(size_t startRow, size_t endRow, size_t startCol, size_t endCol) const;
+            
+            template<size_t Rows, size_t Cols>
+            std::shared_ptr<Matrix<Rows, Cols>> toMatrix() const{
+                if (rows() != Rows || cols() != Cols) {
+                    throw std::invalid_argument("View size doesn't match template parameters");
                 }
-                return result;
-            }
-
-            Vector<ViewRows> column(size_t colIndex) const {
-                checkBounds(0, colIndex);
-                Vector<ViewRows> result;
-                for(size_t row = 0; row < ViewRows; ++row){
-                    result[row] = data[startRow + row][startCol + colIndex];
-                }
-                return result;
-            }
-
-            static constexpr size_t rows() { return ViewRows; }
-            static constexpr size_t columns() { return ViewCols; }
-
-            Matrix<ViewRows, ViewCols> toMatrix() const {
-                Matrix<ViewRows, ViewCols> result;
-                for (size_t i = 0; i < ViewRows; ++i) {
-                    for (size_t j = 0; j < ViewCols; ++j) {
-                        result[i][j] = data[startRow + i][startCol + j];
+                auto ResultMatrix = std::make_shared<Matrix<Rows, Cols>>();
+                for(size_t i = 0; i < Rows; ++i){
+                    for(size_t j = 0; j < Cols; ++j){
+                        (*ResultMatrix)[i][j] = get(i, j);
                     }
                 }
-                return result;
+                return ResultMatrix;
             }
 
         private:
-            void validateIndices() const {
-                if(startRow + ViewRows > data.rows() ||
-                   startCol + ViewCols > data.cols()){
-                    throw std::out_of_range("MatrixView indices out of range");
-                }
-            }
+            void checkIndices(size_t row, size_t col) const;
 
-            void checkBounds(size_t row, size_t col) const {
-                if(row >= ViewRows || col >= ViewCols){
-                    throw std::out_of_range("MatrixView access out of bounds");
-                }
-            }
-
-            MatrixType& data;
-            size_t startRow;
-            size_t startCol;
-        };
-
-        template<size_t ViewRows, size_t ViewCols, typename MatrixType>
-        auto CreateMatrixView(MatrixType& matrix, 
-                             size_t startRow = 0, 
-                             size_t startCol = 0) {
-            return MatrixView<ViewRows, ViewCols, MatrixType>(matrix, startRow, startCol);
-        }
+            size_t StartRowIdx;
+            size_t StartColIdx;
+            size_t EndRowIdx;
+            size_t EndColIdx;  
+            AbstractMatrix* matrix;
+        }; 
     } // namespace LinearAlgebra
 } // namespace SharedMath

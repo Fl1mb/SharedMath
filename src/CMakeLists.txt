@@ -7,6 +7,8 @@ add_library(
     geometry/Rectangle.cpp
     geometry/Triangle.cpp
 
+    LinearAlgebra/MatrixView.cpp
+
     SharedMath.cpp
 )
 

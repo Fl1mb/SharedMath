@@ -2,20 +2,21 @@
 
 #include "VectorN.h"
 #include <memory>
+#include "AbstractMatrix.h"
 
 namespace SharedMath
 {
     namespace LinearAlgebra
     {
         template<size_t Rows, size_t Cols>
-        class Matrix{
+        class Matrix : public AbstractMatrix{
         public:
-            Matrix(){data.fill({});}
+            Matrix(){data.fill(Vector<Cols>());}
             Matrix(const Matrix&) = default;
             Matrix(Matrix&&) noexcept = default;
             Matrix& operator=(const Matrix&) = default;
             Matrix& operator=(Matrix&&) noexcept = default;
-            ~Matrix() = default;
+            virtual ~Matrix() override = default;
 
             Matrix(std::initializer_list<std::initializer_list<double>> values){
                 if(values.size() != Rows){
@@ -70,14 +71,14 @@ namespace SharedMath
                 return result;
             }
 
-            static constexpr size_t rows(){return Rows;}
-            static constexpr size_t cols(){return Cols;}
+            size_t rows() const override {return Rows;}
+            size_t cols() const override {return Cols;}
 
-            double* toPtr(){
+            double* toPtr() override{
                 return &(data[0][0]);
             }
 
-            const double* toPtr() const{
+            const double* toPtr() const override{
                 return &(data[0][0]);
             }
 
@@ -93,6 +94,24 @@ namespace SharedMath
                     throw std::out_of_range("Row index is out of range");
                 }
                 return &(data[row][0]);
+            }
+
+            double get(size_t row, size_t col) const override{
+                if( (row < 0 || col < 0) || 
+                    (row >= Rows || col >= Cols))throw std::runtime_error("Invalid index of element in matrix");
+                return data[row][col];
+            }
+
+            double& get(size_t row, size_t col) override{
+                if( (row < 0 || col < 0) || 
+                    (row >= Rows || col >= Cols))throw std::runtime_error("Invalid index of element in matrix");
+                return data[row][col];
+            }
+
+            void set(size_t row, size_t col, double val) override{
+                if( (row < 0 || col < 0) || 
+                    (row >= Rows || col >= Cols))throw std::runtime_error("Invalid index of element in matrix");
+                data[row][col] = val;
             }
 
             std::array<double, Rows * Cols> toRowMajorArray() const{
@@ -130,7 +149,6 @@ namespace SharedMath
                     }
                 }
             }
-
 
             static constexpr size_t dataSizeBytes() {
                 return Rows * Cols * sizeof(double);
