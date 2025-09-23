@@ -28,6 +28,10 @@ void MatrixStrategyFactory::registerStrategies(){
     scalarStrategies_[OperationType::TRACE] = [](){
         return std::make_unique<MatrixTraceStrategy>();
     };
+
+    scalarStrategies_[OperationType::DETERMINANT] = [](){
+        return std::make_unique<MatrixDeterminantStrategy>();
+    };
 }
 
 MatrixStrategyFactory::BinaryStrategy 

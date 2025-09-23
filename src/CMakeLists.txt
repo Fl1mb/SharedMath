@@ -10,6 +10,7 @@ add_library(
     LinearAlgebra/MatrixView.cpp
     LinearAlgebra/MatrixOperationFactory.cpp
     LinearAlgebra/MatrixOperations.cpp
+    LinearAlgebra/LUDecomposition.cpp
 
     SharedMath.cpp
 )

@@ -17,6 +17,7 @@ namespace SharedMath::LinearAlgebra
         MatrixPtr transpose(MatrixPtr A);
 
         double trace(MatrixPtr A);
+        double determinant(MatrixPtr A);
 
         void setCustomBinaryStrategy(std::unique_ptr<BinaryMatrixOperationStrategy> strategy);
         void setCustomUnaryStrategy(std::unique_ptr<UnaryMatrixOperationStrategy> strategy);

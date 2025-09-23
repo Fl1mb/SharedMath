@@ -37,6 +37,11 @@ double MatrixOperations::trace(MatrixPtr A){
     return context_.executeScalar(A);
 }
 
+double MatrixOperations::determinant(MatrixPtr A){
+    context_.setScalarStrategy(factory_.createScalarStrategy(OperationType::DETERMINANT));
+    return context_.executeScalar(A);
+}
+
 void MatrixOperations::setCustomBinaryStrategy(std::unique_ptr<BinaryMatrixOperationStrategy> strategy){
     context_.setBinaryStrategy(std::move(strategy));
 }

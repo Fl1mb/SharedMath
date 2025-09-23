@@ -12,6 +12,7 @@ namespace SharedMath
         
         class DynamicMatrix : public AbstractMatrix{
         public:
+            DynamicMatrix() = default;
             DynamicMatrix(size_t rows, size_t cols) : 
                 rows_(rows), cols_(cols), data_(rows, std::vector<double>(cols, 0.0)) {}
             
@@ -49,6 +50,29 @@ namespace SharedMath
                     }
                 }
                 return result;
+            }
+
+            DynamicMatrix operator*(const DynamicMatrix& other) const{
+                if(cols() != other.rows()){
+                    throw std::invalid_argument("Matrices are not supported for multiplication");
+                }
+
+                DynamicMatrix resultMatrix(rows(), other.cols());
+
+                for(size_t i = 0; i < rows(); ++i){
+                    for(size_t j = 0; j < other.cols(); ++j){
+                        double sum = 0.0;
+
+                        for(size_t r = 0; r < cols(); ++r){
+                            double mul = get(i, r) * other.get(r, j);
+                            sum += mul;
+                        }
+
+                        resultMatrix.set(i, j, sum);
+                    }
+                }
+
+                return resultMatrix;
             }
 
             virtual ~DynamicMatrix() override = default;

@@ -207,6 +207,4 @@ TEST(MatrixViewTest, ConstMatrixAccess) {
     EXPECT_DOUBLE_EQ(view.get(0, 0), 1.0);
     EXPECT_DOUBLE_EQ(view.get(1, 1), 5.0);
     
-    // Но нельзя модифицировать через const матрицу
-    // (это вызовет ошибку компиляции, если попытаться вызвать set на const матрице)
 }
