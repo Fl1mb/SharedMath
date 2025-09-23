@@ -1,6 +1,7 @@
 #pragma once
 
 #include "MatrixOperationsStrategy.h"
+#include "LUDecomposition.h"
 
 namespace SharedMath::LinearAlgebra
 {
@@ -9,7 +10,19 @@ namespace SharedMath::LinearAlgebra
         virtual ~MatrixDeterminantStrategy() override = default;
 
         double execute(MatrixPtr A) override{
-
+            if(!isSupported(*A)){
+                throw std::invalid_argument("Matrix is not square. Cannot calculate det");
+            }
+            LUDecomposition lu(A);
+            try{
+                lu.MakeDecomposition();
+                return lu.Determinant();
+            }catch(const std::exception& ex){
+                return lu.Determinant();
+                throw std::runtime_error(std::string("Could not calculate determinant: ") + std::string(ex.what()));
+            }catch(...){
+                throw;
+            }
         }
         bool isSupported(const AbstractMatrix& A) const override{
             return A.cols() == A.rows();

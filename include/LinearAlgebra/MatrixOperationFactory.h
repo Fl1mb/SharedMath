@@ -15,7 +15,8 @@ namespace SharedMath::LinearAlgebra
         MULTIPLICATION,
         KRONECKER_PRODUCT,
         TRANSPOSE,
-        TRACE
+        TRACE,
+        DETERMINANT
     };
 
     class AbstractMatrixStrategyFactory{
