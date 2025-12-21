@@ -12,6 +12,8 @@ add_library(
     LinearAlgebra/MatrixOperations.cpp
     LinearAlgebra/LUDecomposition.cpp
 
+    functions/GammaFunc.cpp
+
     SharedMath.cpp
 )
 

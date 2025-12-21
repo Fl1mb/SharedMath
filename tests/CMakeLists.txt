@@ -14,7 +14,9 @@ add_executable(SharedMathTests
     # test_geometry_triangle.cpp
     # test_geometry_circle.cpp
     # test_linAl_matrix.cpp
-    test_linAl_matrixOperations.cpp
+    # test_linAl_matrixOperations.cpp
+    # test_functions.cpp
+    test_binary_tree.cpp
 
 )
 target_link_libraries(SharedMathTests PRIVATE GTest::GTest GTest::Main SharedMath)
