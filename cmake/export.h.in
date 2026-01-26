@@ -1,0 +1,36 @@
+#ifndef @PROJECT_NAME_UPPER@_EXPORT_H
+#define @PROJECT_NAME_UPPER@_EXPORT_H
+
+#if defined(_MSC_VER) || defined(__CYGWIN__) || defined(__MINGW32__) || defined( __BCPLUSPLUS__) || defined( __MWERKS__)
+#  if defined(@PROJECT_NAME_UPPER@_LIBRARY)
+#    define @PROJECT_NAME_UPPER@_EXPORT __declspec(dllexport)
+#  else
+#    define @PROJECT_NAME_UPPER@_EXPORT __declspec(dllimport)
+#  endif
+#else
+#  if defined(@PROJECT_NAME_UPPER@_LIBRARY)
+#    define @PROJECT_NAME_UPPER@_EXPORT __attribute__ ((visibility ("default")))
+#  else
+#    define @PROJECT_NAME_UPPER@_EXPORT
+#  endif
+#endif
+
+#ifndef @PROJECT_NAME_UPPER@_DEPRECATED
+#  define @PROJECT_NAME_UPPER@_DEPRECATED __attribute__ ((__deprecated__))
+#endif
+
+#ifndef @PROJECT_NAME_UPPER@_DEPRECATED_EXPORT
+#  define @PROJECT_NAME_UPPER@_DEPRECATED_EXPORT @PROJECT_NAME_UPPER@_EXPORT @PROJECT_NAME_UPPER@_DEPRECATED
+#endif
+
+#ifndef @PROJECT_NAME_UPPER@_DEPRECATED_NO_EXPORT
+#  define @PROJECT_NAME_UPPER@_DEPRECATED_NO_EXPORT @PROJECT_NAME_UPPER@_DEPRECATED
+#endif
+
+#if 0 /* DEFINE_NO_DEPRECATED */
+#  ifndef @PROJECT_NAME_UPPER@_NO_DEPRECATED
+#    define @PROJECT_NAME_UPPER@_NO_DEPRECATED
+#  endif
+#endif
+
+#endif /* @PROJECT_NAME_UPPER@_EXPORT_H */
