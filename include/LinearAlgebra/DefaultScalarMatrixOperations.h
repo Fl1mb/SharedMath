@@ -18,10 +18,7 @@ namespace SharedMath::LinearAlgebra
                 lu.MakeDecomposition();
                 return lu.Determinant();
             }catch(const std::exception& ex){
-                return lu.Determinant();
                 throw std::runtime_error(std::string("Could not calculate determinant: ") + std::string(ex.what()));
-            }catch(...){
-                throw;
             }
         }
         bool isSupported(const AbstractMatrix& A) const override{

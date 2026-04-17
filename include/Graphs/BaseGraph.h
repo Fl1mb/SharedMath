@@ -10,9 +10,9 @@ namespace SharedMath::Graphs
 {
     template<typename T>
     struct GraphNode{
-        GraphNode(T Data) : 
-            data(Data), 
-            childs(std::vector<GraphNode*>(nullptr)),
+        GraphNode(T Data) :
+            data(Data),
+            childs(std::vector<GraphNode*>()),
             parent(nullptr),
             isRoot(false)
             {}
@@ -21,7 +21,7 @@ namespace SharedMath::Graphs
         std::vector<GraphNode*> childs;
         T data;
         GraphNode* parent {nullptr};
-        bool isRoot {nullptr};
+        bool isRoot {false};
     };
 
     template<typename T>
@@ -30,7 +30,7 @@ namespace SharedMath::Graphs
         BaseGraph(T rootData);
         virtual ~BaseGraph();
 
-        GraphNode<T>* getRoot() const {return root};
+        GraphNode<T>* getRoot() const {return root;}
         GraphNode<T>* findNode(T data) const;
 
         void clear();
@@ -46,10 +46,7 @@ namespace SharedMath::Graphs
 
     template<typename T>
     inline BaseGraph<T>::BaseGraph(T rootData){
-        this->root = new T();
-        root->childs = std::vector<GraphNode<T>*>(nullptr);
-        root->data = rootData;
-        root->parent = nullptr;
+        this->root = new GraphNode<T>(rootData);
         root->isRoot = true;
     }
 
@@ -108,8 +105,8 @@ namespace SharedMath::Graphs
                 if(node->data == data)return node;
 
                 auto childNodes = node->childs;
-                for(const auto* childNode : childNodes){
-                    if(!childNode)
+                for(auto* childNode : childNodes){
+                    if(childNode)
                         nodesQueue.push(childNode);
                 }
             }

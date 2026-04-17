@@ -83,34 +83,31 @@ namespace SharedMath
             }
 
             double* rowPtr(size_t row){
-                if(row > Rows){
+                if(row >= Rows){
                     throw std::out_of_range("Row index is out of range");
                 }
                 return &(data[row][0]);
             }
 
             const double* rowPtr(size_t row) const{
-                if(row > Rows){
+                if(row >= Rows){
                     throw std::out_of_range("Row index is out of range");
                 }
                 return &(data[row][0]);
             }
 
             double get(size_t row, size_t col) const override{
-                if( (row < 0 || col < 0) || 
-                    (row >= Rows || col >= Cols))throw std::runtime_error("Invalid index of element in matrix");
+                if(row >= Rows || col >= Cols)throw std::runtime_error("Invalid index of element in matrix");
                 return data[row][col];
             }
 
             double& get(size_t row, size_t col) override{
-                if( (row < 0 || col < 0) || 
-                    (row >= Rows || col >= Cols))throw std::runtime_error("Invalid index of element in matrix");
+                if(row >= Rows || col >= Cols)throw std::runtime_error("Invalid index of element in matrix");
                 return data[row][col];
             }
 
             void set(size_t row, size_t col, double val) override{
-                if( (row < 0 || col < 0) || 
-                    (row >= Rows || col >= Cols))throw std::runtime_error("Invalid index of element in matrix");
+                if(row >= Rows || col >= Cols)throw std::runtime_error("Invalid index of element in matrix");
                 data[row][col] = val;
             }
 

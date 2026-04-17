@@ -74,8 +74,8 @@ namespace SharedMath
             }
 
             static double crossProduct(const Point2D& first, const Point2D& second, const Point2D& third){
-                return (second.x() - first.x() * (third.y() - first.y())-
-                        second.y() - first.y() * (third.x() - first.x()));
+                return ((second.x() - first.x()) * (third.y() - first.y()) -
+                        (second.y() - first.y()) * (third.x() - first.x()));
             }
             
         };
