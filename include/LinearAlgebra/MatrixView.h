@@ -1,12 +1,13 @@
 #pragma once
 #include "Matrix.h"
+#include <sharedmath_linearalgebra_export.h>
 #include <memory>
 
 namespace SharedMath
 {
     namespace LinearAlgebra
     {
-        class MatrixView {
+        class SHAREDMATH_LINEARALGEBRA_EXPORT MatrixView {
         public:
             MatrixView() = default;
 
@@ -24,7 +25,7 @@ namespace SharedMath
             size_t cols() const;
 
             double get(size_t row, size_t col) const;
-            void set(size_t row, size_t col, double val); \
+            void set(size_t row, size_t col, double val);
 
             double operator()(size_t row, size_t col) const;
             double& operator()(size_t row, size_t col);

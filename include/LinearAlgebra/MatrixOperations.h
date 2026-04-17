@@ -2,10 +2,11 @@
 
 #include "MatrixOperationsContext.h"
 #include "MatrixOperationFactory.h"
+#include <sharedmath_linearalgebra_export.h>
 
 namespace SharedMath::LinearAlgebra
 {
-    class MatrixOperations{
+    class SHAREDMATH_LINEARALGEBRA_EXPORT MatrixOperations{
     public:
         using MatrixPtr = std::shared_ptr<AbstractMatrix>;
 

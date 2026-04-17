@@ -1,25 +1,20 @@
+add_subdirectory(core)
+add_subdirectory(LinearAlgebra)
+add_subdirectory(geometry)
+add_subdirectory(functions)
+add_subdirectory(Graphs)
+add_subdirectory(DSP)
 
+# Umbrella target — links every module so users can do:
+#   target_link_libraries(myapp PRIVATE SharedMath::SharedMath)
+add_library(SharedMath INTERFACE)
+add_library(SharedMath::SharedMath ALIAS SharedMath)
 
-add_library(
-    SharedMath
-    #Add source Files 
-    geometry/Parallelogram.cpp
-    geometry/Rectangle.cpp
-    geometry/Triangle.cpp
-
-    LinearAlgebra/MatrixView.cpp
-    LinearAlgebra/MatrixOperationFactory.cpp
-    LinearAlgebra/MatrixOperations.cpp
-    LinearAlgebra/LUDecomposition.cpp
-
-    functions/GammaFunc.cpp
-
-    SharedMath.cpp
+target_link_libraries(SharedMath INTERFACE
+    SharedMath_Core
+    SharedMath_LinearAlgebra
+    SharedMath_Geometry
+    SharedMath_Functions
+    SharedMath_Graphs
+    SharedMath_DSP
 )
-
-target_include_directories(SharedMath PUBLIC 
-    ${CMAKE_CURRENT_SOURCE_DIR}/../include
-)
-
-install(TARGETS SharedMath DESTINATION SharedMathLib)
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../include/SharedMath DESTINATION include)

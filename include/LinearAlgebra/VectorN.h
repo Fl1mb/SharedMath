@@ -72,7 +72,7 @@ namespace SharedMath
             }
 
             Vector normalized() const{
-                double length = norm;
+                double length = norm();
                 if(length < Epsilon){
                     throw std::runtime_error("Cannot normalize zero vector");
                 }

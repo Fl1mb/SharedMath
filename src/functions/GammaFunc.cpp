@@ -4,7 +4,7 @@
 using namespace SharedMath::Functions;
 
 double GammaFunction::value(double x){
-    if(abs(x - 0.0) == Epsilon)return 1;
+    if(std::abs(x) < Epsilon)return 1.0;
     auto result = value({x, 0.0});
     return std::real(result);
 }
