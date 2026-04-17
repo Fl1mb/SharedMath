@@ -4,6 +4,7 @@
 #include "DefaultBinaryMatrixStrategies.h"
 #include "DefaultUnaryMatrixStrategies.h"
 #include "DefaultScalarMatrixOperations.h"
+#include <sharedmath_export.h>
 #include <memory>
 #include <functional>
 
@@ -19,7 +20,7 @@ namespace SharedMath::LinearAlgebra
         DETERMINANT
     };
 
-    class AbstractMatrixStrategyFactory{
+    class SHAREDMATH_EXPORT AbstractMatrixStrategyFactory{
     public:
         
         using BinaryStrategyCreator = std::function<std::unique_ptr<BinaryMatrixOperationStrategy>()>;
@@ -43,7 +44,7 @@ namespace SharedMath::LinearAlgebra
     };
 
 
-    class MatrixStrategyFactory : public AbstractMatrixStrategyFactory{
+    class SHAREDMATH_EXPORT MatrixStrategyFactory : public AbstractMatrixStrategyFactory{
     public:
         
         MatrixStrategyFactory();    
