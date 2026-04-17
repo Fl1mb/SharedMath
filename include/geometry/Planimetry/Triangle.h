@@ -2,13 +2,14 @@
 
 #include "Polygon.h"
 #include "../Vectors.h"
+#include <sharedmath_export.h>
 #include <algorithm>
 
 namespace SharedMath
 {
     namespace Geometry
     {
-        class Triangle : public Polygon<3>{
+        class SHAREDMATH_EXPORT Triangle : public Polygon<3>{
         public:
             Triangle() = default;
             Triangle(const Triangle&) = default;
