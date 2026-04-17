@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "develop**"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    name: "${{ matrix.os }} · ${{ matrix.compiler.cc }} · ${{ matrix.build_type }} · shared=${{ matrix.shared }}"
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-20.04, ubuntu-22.04, ubuntu-24.04]
+        build_type: [Debug, Release]
+        shared: [OFF, ON]
+        compiler:
+          - { cc: gcc,   cxx: g++ }
+          - { cc: clang, cxx: clang++ }
+        exclude:
+          # Clang is tested only on the latest runner to keep matrix manageable
+          - { os: ubuntu-20.04, compiler: { cc: clang, cxx: clang++ } }
+          - { os: ubuntu-22.04, compiler: { cc: clang, cxx: clang++ } }
+
+    env:
+      CC:        ${{ matrix.compiler.cc }}
+      CXX:       ${{ matrix.compiler.cxx }}
+      BUILD_DIR: build
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install build tools
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y --no-install-recommends ninja-build
+
+      # Cache FetchContent downloads (googletest) between runs
+      - name: Cache FetchContent
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.BUILD_DIR }}/_deps
+          key: fetchcontent-gtest-${{ matrix.os }}-${{ hashFiles('tests/CMakeLists.txt') }}
+          restore-keys: fetchcontent-gtest-${{ matrix.os }}-
+
+      - name: Configure
+        run: |
+          cmake -B $BUILD_DIR -G Ninja \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -DSharedMath_SHARED_LIBS=${{ matrix.shared }} \
+            -DSharedMath_BUILD_TESTS=ON \
+            -DSharedMath_FETCH_GTEST=ON \
+            -DSharedMath_BUILD_EXAMPLES=OFF
+
+      - name: Build
+        run: cmake --build $BUILD_DIR --parallel
+
+      - name: Test
+        run: ctest --test-dir $BUILD_DIR --output-on-failure --parallel $(nproc)
+
+      - name: Upload test artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: "test-logs-${{ matrix.os }}-${{ matrix.compiler.cc }}-${{ matrix.build_type }}-shared${{ matrix.shared }}"
+          path: ${{ env.BUILD_DIR }}/Testing/
+          retention-days: 7
