@@ -34,18 +34,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install build tools
+      - name: Install build tools and GTest
         run: |
           sudo apt-get update -q
-          sudo apt-get install -y --no-install-recommends ninja-build
-
-      # Cache FetchContent downloads (googletest) between runs
-      - name: Cache FetchContent
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.BUILD_DIR }}/_deps
-          key: fetchcontent-gtest-${{ matrix.os }}-${{ hashFiles('tests/CMakeLists.txt') }}
-          restore-keys: fetchcontent-gtest-${{ matrix.os }}-
+          sudo apt-get install -y --no-install-recommends \
+            ninja-build \
+            libgtest-dev \
+            libgmock-dev
 
       - name: Configure
         run: |
@@ -53,7 +48,6 @@ jobs:
             -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
             -DSharedMath_SHARED_LIBS=${{ matrix.shared }} \
             -DSharedMath_BUILD_TESTS=ON \
-            -DSharedMath_FETCH_GTEST=ON \
             -DSharedMath_BUILD_EXAMPLES=OFF
 
       - name: Build
