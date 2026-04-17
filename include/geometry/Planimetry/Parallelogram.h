@@ -3,7 +3,7 @@
 #include "Polygon.h"
 #include "../Vectors.h"
 #include "../../constans.h"
-#include <sharedmath_export.h>
+#include <sharedmath_geometry_export.h>
 #include <math.h>
 #include <algorithm>
 #include <stdexcept>
@@ -13,7 +13,7 @@ namespace SharedMath
 {
     namespace Geometry
     {
-        class SHAREDMATH_EXPORT Parallelogram : public Polygon<4>{
+        class SHAREDMATH_GEOMETRY_EXPORT Parallelogram : public Polygon<4>{
         public:
             Parallelogram() = default;
 

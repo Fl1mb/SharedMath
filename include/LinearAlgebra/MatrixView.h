@@ -1,13 +1,13 @@
 #pragma once
 #include "Matrix.h"
-#include <sharedmath_export.h>
+#include <sharedmath_linearalgebra_export.h>
 #include <memory>
 
 namespace SharedMath
 {
     namespace LinearAlgebra
     {
-        class SHAREDMATH_EXPORT MatrixView {
+        class SHAREDMATH_LINEARALGEBRA_EXPORT MatrixView {
         public:
             MatrixView() = default;
 
