@@ -63,19 +63,33 @@ if(${PROJECT_NAME}_INSTALL AND NOT CMAKE_SKIP_INSTALL_RULES)
     include(GNUInstallDirs)
     include(CMakePackageConfigHelpers)
 
-    install(TARGETS ${PROJECT_NAME}
+    # INTERFACE targets (no artifacts — just headers + compile requirements)
+    install(TARGETS
+        SharedMath
+        SharedMath_Core
+        SharedMath_Graphs
+        SharedMath_DSP
+        EXPORT ${PROJECT_NAME}_export
+    )
+
+    # Compiled module targets
+    install(TARGETS
+        SharedMath_LinearAlgebra
+        SharedMath_Geometry
+        SharedMath_Functions
         EXPORT  ${PROJECT_NAME}_export
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}   COMPONENT bin
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}   COMPONENT bin
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}   COMPONENT bin
-        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     )
 
     if(MSVC AND BUILD_SHARED_LIBS)
-        install(FILES $<TARGET_PDB_FILE:${PROJECT_NAME}>
-            DESTINATION ${CMAKE_INSTALL_BINDIR}
-            COMPONENT   dbg
-            OPTIONAL)
+        foreach(_mod LinearAlgebra Geometry Functions)
+            install(FILES $<TARGET_PDB_FILE:SharedMath_${_mod}>
+                DESTINATION ${CMAKE_INSTALL_BINDIR}
+                COMPONENT   dbg
+                OPTIONAL)
+        endforeach()
     endif()
 
     install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/
@@ -83,9 +97,11 @@ if(${PROJECT_NAME}_INSTALL AND NOT CMAKE_SKIP_INSTALL_RULES)
         COMPONENT   devel
         FILES_MATCHING PATTERN "*.h")
 
-    install(FILES ${PROJECT_BINARY_DIR}/include/${PROJECT_NAME_LOWER}_export.h
+    # Install generated export headers for each module
+    install(DIRECTORY ${PROJECT_BINARY_DIR}/include/
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-        COMPONENT   devel)
+        COMPONENT   devel
+        FILES_MATCHING PATTERN "*_export.h")
 
     install(EXPORT ${PROJECT_NAME}_export
         FILE        ${PROJECT_NAME}-targets.cmake

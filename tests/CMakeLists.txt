@@ -16,7 +16,7 @@ add_executable(${PROJECT_NAME}Tests
 
 target_link_libraries(${PROJECT_NAME}Tests
     PRIVATE
-        ${PROJECT_NAME}::${PROJECT_NAME}
+        SharedMath::SharedMath
         GTest::GTest
         GTest::Main
 )

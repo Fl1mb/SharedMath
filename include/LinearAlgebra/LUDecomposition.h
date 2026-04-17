@@ -1,11 +1,11 @@
 #pragma once
 #include "DynamicMatrix.h"
-#include <sharedmath_export.h>
+#include <sharedmath_linearalgebra_export.h>
 
 namespace SharedMath::LinearAlgebra
 {
 
-    class SHAREDMATH_EXPORT LUDecomposition
+    class SHAREDMATH_LINEARALGEBRA_EXPORT LUDecomposition
     {
     private:
         DynamicMatrix L;

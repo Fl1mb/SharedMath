@@ -1,14 +1,14 @@
 #pragma once
 
 #include "../constans.h"
-#include <sharedmath_export.h>
+#include <sharedmath_functions_export.h>
 #include <complex>
 
 namespace SharedMath
 {
     namespace Functions
     {
-        class SHAREDMATH_EXPORT GammaFunction{
+        class SHAREDMATH_FUNCTIONS_EXPORT GammaFunction{
             public:
                 static double value(double x);
                 static std::complex<double> value(const std::complex<double>& z);

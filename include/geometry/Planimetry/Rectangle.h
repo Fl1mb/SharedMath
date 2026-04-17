@@ -5,7 +5,7 @@ namespace SharedMath
 {
     namespace Geometry
     {
-        class SHAREDMATH_EXPORT Rectangle : public Parallelogram {
+        class SHAREDMATH_GEOMETRY_EXPORT Rectangle : public Parallelogram {
         public:
             Rectangle() = default;
 
