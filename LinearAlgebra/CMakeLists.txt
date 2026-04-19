@@ -5,6 +5,8 @@ add_library(SharedMath_LinearAlgebra
     src/MatrixOperationFactory.cpp
     src/MatrixOperations.cpp
     src/LUDecomposition.cpp
+    src/Tensor.cpp
+    src/MatrixFunctions.cpp
 )
 add_library(SharedMath::LinearAlgebra ALIAS SharedMath_LinearAlgebra)
 
