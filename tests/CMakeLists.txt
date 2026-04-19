@@ -4,6 +4,8 @@ include(GoogleTest)
 add_executable(${PROJECT_NAME}Tests
     main.cpp
     test_binary_tree.cpp
+    test_tensor.cpp
+    test_matrixfunctions.cpp
     # test_geometry_lines.cpp
     # test_geometry_polygon.cpp
     # test_geometry_rect.cpp

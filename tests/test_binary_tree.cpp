@@ -2,7 +2,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
-#include "../include/Graphs/BinaryTree.h"
+#include "Graphs/BinaryTree.h"
 
 using namespace SharedMath::Graphs;
 
