@@ -1,5 +1,5 @@
 #pragma once
-#include "../constans.h"
+#include "constans.h"
 #include "Point.h"
 #include "Planimetry/Rectangle.h"
 #include "Planimetry/Triangle.h"

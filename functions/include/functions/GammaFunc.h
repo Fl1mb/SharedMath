@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../constans.h"
+#include "constans.h"
 #include <sharedmath_functions_export.h>
 #include <complex>
 
