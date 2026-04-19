@@ -46,7 +46,26 @@ message(STATUS "[${PROJECT_NAME}] Top-level:    ${is_top_level}")
 # --------------------------------------------------------------------------- #
 # Subdirectories
 # --------------------------------------------------------------------------- #
-add_subdirectory(src)
+add_subdirectory(core)
+add_subdirectory(LinearAlgebra)
+add_subdirectory(geometry)
+add_subdirectory(functions)
+add_subdirectory(Graphs)
+add_subdirectory(DSP)
+
+# Umbrella target — links every module so users can do:
+#   target_link_libraries(myapp PRIVATE SharedMath::SharedMath)
+add_library(SharedMath INTERFACE)
+add_library(SharedMath::SharedMath ALIAS SharedMath)
+
+target_link_libraries(SharedMath INTERFACE
+    SharedMath_Core
+    SharedMath_LinearAlgebra
+    SharedMath_Geometry
+    SharedMath_Functions
+    SharedMath_Graphs
+    SharedMath_DSP
+)
 
 if(${PROJECT_NAME}_BUILD_TESTS)
     add_subdirectory(tests)
@@ -92,10 +111,12 @@ if(${PROJECT_NAME}_INSTALL AND NOT CMAKE_SKIP_INSTALL_RULES)
         endforeach()
     endif()
 
-    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-        COMPONENT   devel
-        FILES_MATCHING PATTERN "*.h")
+    foreach(_mod core functions LinearAlgebra geometry Graphs DSP)
+        install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${_mod}/include/
+            DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+            COMPONENT   devel
+            FILES_MATCHING PATTERN "*.h")
+    endforeach()
 
     # Install generated export headers for each module
     install(DIRECTORY ${PROJECT_BINARY_DIR}/include/
