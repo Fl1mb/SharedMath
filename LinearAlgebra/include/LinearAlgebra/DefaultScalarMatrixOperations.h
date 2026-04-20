@@ -19,11 +19,12 @@ public:
         LUDecomposition lu(M);
         try {
             lu.MakeDecomposition();
-            return lu.Determinant();
-        } catch (const std::exception& ex) {
-            throw std::runtime_error(
-                std::string("MatrixDeterminantStrategy: ") + ex.what());
+        } catch (const std::runtime_error&) {
+            // MakeDecomposition throws when the matrix is singular.
+            // A singular matrix has determinant 0 — return it, don't rethrow.
+            return 0.0;
         }
+        return lu.Determinant();
     }
 
     bool isSupported(const AbstractMatrix& A) const override {
