@@ -47,9 +47,11 @@ Tensor Tensor::arange(double start, double stop, double step) {
     if (step == 0.0)
         throw std::invalid_argument("Tensor::arange: step must not be zero");
     std::vector<double> v;
+    v.reserve(static_cast<size_t>(std::abs((stop - start) / step)) + 1);
     for (double x = start; step > 0 ? x < stop : x > stop; x += step)
         v.push_back(x);
-    return Tensor({v.size()}, std::move(v));
+    size_t n = v.size();
+    return Tensor({n}, std::move(v));
 }
 
 Tensor Tensor::linspace(double start, double stop, size_t num) {
@@ -78,9 +80,13 @@ Tensor Tensor::from_matrix(size_t rows, size_t cols,
 void Tensor::computeStrides() {
     m_strides.resize(m_shape.size());
     if (m_shape.empty()) return;
-    m_strides.back() = 1;
-    for (int i = static_cast<int>(m_shape.size()) - 2; i >= 0; --i)
-        m_strides[i] = m_strides[i + 1] * m_shape[i + 1];
+    
+    size_t stride = 1;
+    // Идем с конца к началу
+    for (int i = static_cast<int>(m_shape.size()) - 1; i >= 0; --i) {
+        m_strides[i] = stride;      // Текущий stride
+        stride *= m_shape[i];        // Умножаем для следующего измерения
+    }
 }
 
 size_t Tensor::flatIndex(const std::vector<size_t>& idx) const {
