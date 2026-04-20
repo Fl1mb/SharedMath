@@ -13,21 +13,25 @@ namespace SharedMath::LinearAlgebra {
 
 // ─── Internal helpers ─────────────────────────────────────────────────────────
 
+// Copy any AbstractMatrix into a DynamicMatrix (flat row-major storage).
+// If A is already a DynamicMatrix we avoid the virtual-call loop entirely.
 static DynamicMatrix toDynamic(const AbstractMatrix& A) {
-    size_t m = A.rows(), n = A.cols();
-    DynamicMatrix M(m, n);
-    for (size_t i = 0; i < m; ++i)
-        for (size_t j = 0; j < n; ++j)
-            M.set(i, j, A.get(i, j));
-    return M;
+    if (const auto* d = dynamic_cast<const DynamicMatrix*>(&A))
+        return *d;               // already flat — just copy
+    return DynamicMatrix(A);     // deep copy through virtual interface
 }
 
 static DynamicMatrix transposeMatrix(const AbstractMatrix& A) {
+    // Fast path: DynamicMatrix has its own cache-friendly transposed()
+    if (const auto* d = dynamic_cast<const DynamicMatrix*>(&A))
+        return d->transposed();
+
     size_t m = A.rows(), n = A.cols();
     DynamicMatrix M(n, m);
-    for (size_t i = 0; i < m; ++i)
+    for (size_t i = 0; i < m; ++i) {
         for (size_t j = 0; j < n; ++j)
-            M.set(j, i, A.get(i, j));
+            M(j, i) = A.get(i, j);
+    }
     return M;
 }
 
@@ -209,29 +213,24 @@ DynamicMatrix inv(const AbstractMatrix& A) {
 std::pair<DynamicMatrix, DynamicMatrix> qr(const AbstractMatrix& A) {
     size_t m = A.rows(), n = A.cols();
 
-    // Working copy of A as 2-D vector (row-major)
-    std::vector<std::vector<double>> R(m, std::vector<double>(n));
-    for (size_t i = 0; i < m; ++i)
-        for (size_t j = 0; j < n; ++j)
-            R[i][j] = A.get(i, j);
-
-    // Q starts as identity
-    std::vector<std::vector<double>> Q(m, std::vector<double>(m, 0.0));
-    for (size_t i = 0; i < m; ++i) Q[i][i] = 1.0;
+    // Working copies use DynamicMatrix (flat, cache-friendly) instead of
+    // vector<vector<double>> to keep rows contiguous for the dot products.
+    DynamicMatrix R = toDynamic(A);       // m × n
+    DynamicMatrix Q = DynamicMatrix::eye(m); // m × m identity
 
     size_t k_max = std::min(m, n);
     for (size_t k = 0; k < k_max; ++k) {
-        // x = column k of R from row k onwards
+        // x = column k of R starting at row k
         size_t len = m - k;
         std::vector<double> x(len);
-        for (size_t i = 0; i < len; ++i) x[i] = R[k + i][k];
+        for (size_t i = 0; i < len; ++i) x[i] = R(k + i, k);
 
         double norm_x = 0.0;
         for (double v : x) norm_x += v * v;
         norm_x = std::sqrt(norm_x);
         if (norm_x < 1e-14) continue;
 
-        // Householder vector: u = x + sign(x[0]) * ||x|| * e1
+        // Householder reflector: u = x ± ‖x‖ e₁, normalised
         std::vector<double> u = x;
         u[0] += (x[0] >= 0.0 ? 1.0 : -1.0) * norm_x;
         double norm_u = 0.0;
@@ -240,30 +239,27 @@ std::pair<DynamicMatrix, DynamicMatrix> qr(const AbstractMatrix& A) {
         if (norm_u < 1e-14) continue;
         for (double& v : u) v /= norm_u;
 
-        // Apply H = I - 2uu^T from the left to R[k:m, k:n]
+        // Apply H = I − 2uuᵀ from the left to R[k:m, k:n]
         for (size_t j = k; j < n; ++j) {
             double dot = 0.0;
-            for (size_t i = 0; i < len; ++i) dot += u[i] * R[k + i][j];
-            for (size_t i = 0; i < len; ++i) R[k + i][j] -= 2.0 * u[i] * dot;
+            for (size_t i = 0; i < len; ++i) dot += u[i] * R(k + i, j);
+            for (size_t i = 0; i < len; ++i) R(k + i, j) -= 2.0 * u[i] * dot;
         }
 
-        // Apply H from the right to Q (accumulate Q = H_0 * H_1 * ...)
+        // Apply H from the right to Q  (accumulate Q = H₀ H₁ …)
         for (size_t i = 0; i < m; ++i) {
             double dot = 0.0;
-            for (size_t j = 0; j < len; ++j) dot += Q[i][k + j] * u[j];
-            for (size_t j = 0; j < len; ++j) Q[i][k + j] -= 2.0 * dot * u[j];
+            for (size_t j = 0; j < len; ++j) dot += Q(i, k + j) * u[j];
+            for (size_t j = 0; j < len; ++j) Q(i, k + j) -= 2.0 * dot * u[j];
         }
     }
 
-    DynamicMatrix Q_out(m, m), R_out(m, n);
-    for (size_t i = 0; i < m; ++i)
-        for (size_t j = 0; j < m; ++j)
-            Q_out.set(i, j, Q[i][j]);
-    for (size_t i = 0; i < m; ++i)
-        for (size_t j = 0; j < n; ++j)
-            R_out.set(i, j, i <= j ? R[i][j] : 0.0);   // zero below diagonal
+    // Zero out below-diagonal entries of R (numerical noise)
+    for (size_t i = 1; i < m; ++i)
+        for (size_t j = 0; j < std::min(i, n); ++j)
+            R(i, j) = 0.0;
 
-    return {Q_out, R_out};
+    return {Q, R};
 }
 
 // ─── Cholesky decomposition ───────────────────────────────────────────────────

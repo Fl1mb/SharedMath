@@ -1,40 +1,36 @@
 #pragma once
 
-#include "MatrixView.h"
+#include "AbstractMatrix.h"
+#include <memory>
+#include <stdexcept>
 
-namespace SharedMath
-{
-    namespace LinearAlgebra
-    {
+namespace SharedMath::LinearAlgebra {
 
-        class UnaryMatrixOperationStrategy{
-        public:
-            using MatrixPtr = std::shared_ptr<AbstractMatrix>;
-    
-            virtual ~UnaryMatrixOperationStrategy() = default;
-    
-            virtual MatrixPtr execute(MatrixPtr A) = 0;
-            virtual bool isSupported(const AbstractMatrix& A) const = 0;
-        };
+class UnaryMatrixOperationStrategy {
+public:
+    using MatrixPtr = std::shared_ptr<AbstractMatrix>;
 
-        class BinaryMatrixOperationStrategy{
-        public:
-            using MatrixPtr = std::shared_ptr<AbstractMatrix>;    
+    virtual ~UnaryMatrixOperationStrategy() = default;
+    virtual MatrixPtr execute(MatrixPtr A) = 0;
+    virtual bool isSupported(const AbstractMatrix& A) const = 0;
+};
 
-            virtual ~BinaryMatrixOperationStrategy() = default;
+class BinaryMatrixOperationStrategy {
+public:
+    using MatrixPtr = std::shared_ptr<AbstractMatrix>;
 
-            virtual MatrixPtr execute(MatrixPtr A, MatrixPtr B) = 0;
-            virtual bool isSupported(const AbstractMatrix& A, const AbstractMatrix& B) const = 0;
-        };
+    virtual ~BinaryMatrixOperationStrategy() = default;
+    virtual MatrixPtr execute(MatrixPtr A, MatrixPtr B) = 0;
+    virtual bool isSupported(const AbstractMatrix& A, const AbstractMatrix& B) const = 0;
+};
 
-        class ScalarMatrixOperationStrategy{
-        public:
-            using MatrixPtr = std::shared_ptr<AbstractMatrix>;  
+class ScalarMatrixOperationStrategy {
+public:
+    using MatrixPtr = std::shared_ptr<AbstractMatrix>;
 
-            virtual ~ScalarMatrixOperationStrategy() = default;
+    virtual ~ScalarMatrixOperationStrategy() = default;
+    virtual double execute(MatrixPtr A) = 0;
+    virtual bool isSupported(const AbstractMatrix& A) const = 0;
+};
 
-            virtual double execute(MatrixPtr A) = 0;
-            virtual bool isSupported(const AbstractMatrix& A) const = 0;
-        };
-    } // namespace LinearAlgebra
-} // namespace SharedMath
+} // namespace SharedMath::LinearAlgebra

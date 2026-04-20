@@ -1,137 +1,118 @@
-#pragma once 
+#pragma once
 
 #include "MatrixOperationsStrategy.h"
 #include "DynamicMatrix.h"
 
-namespace SharedMath
-{
-    namespace LinearAlgebra
-    {
-        class MatrixAdditionStrategy : public BinaryMatrixOperationStrategy{
-        public:
-            virtual ~MatrixAdditionStrategy() override = default;
-        
-            MatrixPtr execute(MatrixPtr A, MatrixPtr B) override{
-                if(!isSupported(*A, *B)){
-                    throw std::invalid_argument("Matrices are not valid for addition");
-                }
+namespace SharedMath::LinearAlgebra {
 
-                auto matrixResult = std::make_shared<DynamicMatrix>(A->rows(), B->cols());
+class MatrixAdditionStrategy : public BinaryMatrixOperationStrategy {
+public:
+    ~MatrixAdditionStrategy() override = default;
 
-                for(size_t i = 0; i < matrixResult->rows(); ++i){
-                    for(size_t j = 0; j < matrixResult->cols(); ++j){
-                        double sum = A->get(i, j) + B->get(i, j);
-                        matrixResult->set(i, j, sum);
+    MatrixPtr execute(MatrixPtr A, MatrixPtr B) override {
+        if (!isSupported(*A, *B))
+            throw std::invalid_argument("MatrixAdditionStrategy: dimension mismatch");
+
+        size_t m = A->rows(), n = A->cols();
+
+        // Fast path: both operands are DynamicMatrix — use flat-vector ops
+        auto* dA = dynamic_cast<DynamicMatrix*>(A.get());
+        auto* dB = dynamic_cast<DynamicMatrix*>(B.get());
+        if (dA && dB)
+            return std::make_shared<DynamicMatrix>(*dA + *dB);
+
+        // General path: go through virtual interface
+        auto result = std::make_shared<DynamicMatrix>(m, n);
+        for (size_t i = 0; i < m; ++i)
+            for (size_t j = 0; j < n; ++j)
+                (*result)(i, j) = A->get(i, j) + B->get(i, j);
+        return result;
+    }
+
+    bool isSupported(const AbstractMatrix& A, const AbstractMatrix& B) const override {
+        return A.rows() == B.rows() && A.cols() == B.cols();
+    }
+};
+
+class MatrixSubstractionStrategy : public BinaryMatrixOperationStrategy {
+public:
+    ~MatrixSubstractionStrategy() override = default;
+
+    MatrixPtr execute(MatrixPtr A, MatrixPtr B) override {
+        if (!isSupported(*A, *B))
+            throw std::invalid_argument("MatrixSubstractionStrategy: dimension mismatch");
+
+        auto* dA = dynamic_cast<DynamicMatrix*>(A.get());
+        auto* dB = dynamic_cast<DynamicMatrix*>(B.get());
+        if (dA && dB)
+            return std::make_shared<DynamicMatrix>(*dA - *dB);
+
+        size_t m = A->rows(), n = A->cols();
+        auto result = std::make_shared<DynamicMatrix>(m, n);
+        for (size_t i = 0; i < m; ++i)
+            for (size_t j = 0; j < n; ++j)
+                (*result)(i, j) = A->get(i, j) - B->get(i, j);
+        return result;
+    }
+
+    bool isSupported(const AbstractMatrix& A, const AbstractMatrix& B) const override {
+        return A.rows() == B.rows() && A.cols() == B.cols();
+    }
+};
+
+class MatrixMultiplyStrategy : public BinaryMatrixOperationStrategy {
+public:
+    ~MatrixMultiplyStrategy() override = default;
+
+    MatrixPtr execute(MatrixPtr A, MatrixPtr B) override {
+        if (!isSupported(*A, *B))
+            throw std::invalid_argument("MatrixMultiplyStrategy: inner dimensions mismatch");
+
+        // Fast path: both DynamicMatrix — uses cache-friendly i-k-j operator*
+        auto* dA = dynamic_cast<DynamicMatrix*>(A.get());
+        auto* dB = dynamic_cast<DynamicMatrix*>(B.get());
+        if (dA && dB)
+            return std::make_shared<DynamicMatrix>(*dA * *dB);
+
+        // General path with cache-friendly i-k-j loop.
+        // Copies A into a DynamicMatrix so inner-loop rows are contiguous.
+        DynamicMatrix cA(*A), cB(*B);
+        return std::make_shared<DynamicMatrix>(cA * cB);
+    }
+
+    bool isSupported(const AbstractMatrix& A, const AbstractMatrix& B) const override {
+        return A.cols() == B.rows();
+    }
+};
+
+class MatrixKronekerMultiplyStrategy : public BinaryMatrixOperationStrategy {
+public:
+    ~MatrixKronekerMultiplyStrategy() override = default;
+
+    MatrixPtr execute(MatrixPtr A, MatrixPtr B) override {
+        if (!A || !B)
+            throw std::invalid_argument("MatrixKronekerMultiplyStrategy: null operand");
+
+        size_t aR = A->rows(), aC = A->cols();
+        size_t bR = B->rows(), bC = B->cols();
+        auto result = std::make_shared<DynamicMatrix>(aR * bR, aC * bC);
+
+        for (size_t p = 0; p < aR; ++p) {
+            for (size_t q = 0; q < aC; ++q) {
+                double a = A->get(p, q);
+                for (size_t r = 0; r < bR; ++r) {
+                    for (size_t s = 0; s < bC; ++s) {
+                        (*result)(p * bR + r, q * bC + s) = a * B->get(r, s);
                     }
                 }
-
-                return matrixResult;
             }
+        }
+        return result;
+    }
 
-            bool isSupported(const AbstractMatrix& A, const AbstractMatrix& B) const override{
-                return A.rows() == B.rows() && A.cols() == B.cols();
-            }
+    bool isSupported(const AbstractMatrix&, const AbstractMatrix&) const override {
+        return true;
+    }
+};
 
-        };
-
-        class MatrixSubstractionStrategy : public BinaryMatrixOperationStrategy{
-        public:
-            virtual ~MatrixSubstractionStrategy() override = default;
-
-            MatrixPtr execute(MatrixPtr A, MatrixPtr B) override{
-                if(!isSupported(*A, *B)){
-                    throw std::invalid_argument("Matrices are not valid for substraction");
-                }
-
-                auto matrixResult = std::make_shared<DynamicMatrix>(A->rows(), B->cols());
-
-                for(size_t i = 0; i < matrixResult->rows(); ++i){
-                    for(size_t j = 0; j < matrixResult->cols(); ++j){
-                        double sum = A->get(i, j) - B->get(i, j);
-                        matrixResult->set(i, j, sum);
-                    }
-                }
-
-                return matrixResult;
-            }
-
-            bool isSupported(const AbstractMatrix& A, const AbstractMatrix& B) const override{
-                return A.rows() == B.rows() && A.cols() == B.cols();
-            }
-        };
-
-        class MatrixMultiplyStrategy : public BinaryMatrixOperationStrategy{
-        public:
-            virtual ~MatrixMultiplyStrategy() override = default;
-
-            MatrixPtr execute(MatrixPtr A, MatrixPtr B) override{
-                if(!isSupported(*A, *B)){
-                    throw std::invalid_argument("Matrices are not supported for multiplication");
-                }
-
-                auto resultMatrix = std::make_shared<DynamicMatrix>(A->rows(), B->cols());
-
-                for(size_t i = 0; i < A->rows(); i++){
-                    for(size_t j = 0; j < B->cols(); ++j){
-                        double sum = 0.0;
-
-                        for(size_t r = 0; r < A->cols(); ++r){
-                            double mul = A->get(i, r) * B->get(r, j); 
-                            sum += mul;
-                        }
-
-                        resultMatrix->set(i, j, sum);
-                    }
-                }
-                return resultMatrix;
-            }
-
-            bool isSupported(const AbstractMatrix& A, const AbstractMatrix& B) const override{
-                return A.cols() == B.rows();
-            }
-        };
-
-        class MatrixKronekerMultiplyStrategy : public BinaryMatrixOperationStrategy{
-        public:
-            virtual ~MatrixKronekerMultiplyStrategy() override = default;
-
-            MatrixPtr execute(MatrixPtr A, MatrixPtr B) override{
-                if (!A || !B) {
-                    throw std::invalid_argument("Matrices cannot be null");
-                }
-
-                size_t a_rows = A->rows();
-                size_t a_cols = A->cols();
-                size_t b_rows = B->rows();
-                size_t b_cols = B->cols();
-
-                size_t result_rows = a_rows * b_rows;
-                size_t result_cols = a_cols * b_cols;
-
-                auto resultMatrix = std::make_shared<DynamicMatrix>(result_rows, result_cols);
-
-                for (size_t p = 0; p < a_rows; ++p) {
-                    for (size_t q = 0; q < a_cols; ++q) {
-                        double a_val = A->get(p, q);
-                        
-                        for (size_t r = 0; r < b_rows; ++r) {
-                            for (size_t s = 0; s < b_cols; ++s) {
-                                double b_val = B->get(r, s);
-                                size_t i = p * b_rows + r;
-                                size_t j = q * b_cols + s;
-                                
-                                resultMatrix->set(i, j, a_val * b_val);
-                            }
-                        }
-                    }
-                }
-                return resultMatrix;
-            }
-
-
-            bool isSupported(const AbstractMatrix& A, const AbstractMatrix& B) const override{
-                return true;
-            }
-        };
-    } // namespace LinearAlgebra
-} // namespace SharedMath
+} // namespace SharedMath::LinearAlgebra

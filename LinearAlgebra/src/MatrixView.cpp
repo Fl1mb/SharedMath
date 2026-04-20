@@ -20,10 +20,8 @@ MatrixView::MatrixView(size_t startRow, size_t endRow, size_t startCol, size_t e
 {
     if(!matrix){
         throw std::invalid_argument("Matrix is nullptr in MatrixView");
-    } 
-    if(StartRowIdx < 0 || StartColIdx < 0 || EndRowIdx < 0 || EndColIdx < 0){
-        throw std::invalid_argument("Some of index less than 0");
-    }    
+    }
+    // Note: indices are size_t (unsigned), so negative values are impossible.
     if(EndRowIdx > matrix->rows() || EndColIdx > matrix->cols()){
         throw std::invalid_argument("EndIndeces more than matrix have");
     }
