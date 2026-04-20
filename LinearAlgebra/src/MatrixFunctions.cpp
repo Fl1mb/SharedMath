@@ -303,35 +303,45 @@ eig(const AbstractMatrix& A, size_t max_iter)
     DynamicMatrix V = eye(n);
 
     for (size_t iter = 0; iter < max_iter; ++iter) {
-        // Wilkinson shift using the bottom-right 2×2 submatrix
-        double shift = 0.0;
-        if (n >= 2) {
-            double d  = (Ak.get(n-2, n-2) - Ak.get(n-1, n-1)) / 2.0;
-            double b  = Ak.get(n-1, n-2);
-            double sq = std::sqrt(d * d + b * b);
-            shift = Ak.get(n-1, n-1) - (b * b) / (d + (d >= 0 ? sq : -sq));
+        // ① Check convergence BEFORE touching the matrix.
+        //   This avoids computing the Wilkinson shift when Ak is already
+        //   diagonal (e.g. identity), which would produce 0/0 = NaN.
+        {
+            double off = 0.0;
+            for (size_t i = 0; i < n; ++i)
+                for (size_t j = 0; j < n; ++j)
+                    if (i != j) off += Ak(i, j) * Ak(i, j);
+            if (std::sqrt(off) < 1e-10 * static_cast<double>(n)) break;
         }
 
-        // A_shifted = Ak - shift * I
+        // ② Wilkinson shift from the bottom-right 2×2 submatrix.
+        //    Guard: when the sub-diagonal entry b ≈ 0 the last eigenvalue has
+        //    already separated; use Ak(n-1,n-1) as shift to avoid 0/0 = NaN.
+        double shift = 0.0;
+        if (n >= 2) {
+            double b = Ak(n-1, n-2);
+            if (std::abs(b) < 1e-14) {
+                shift = Ak(n-1, n-1);
+            } else {
+                double d  = (Ak(n-2, n-2) - Ak(n-1, n-1)) / 2.0;
+                double sq = std::sqrt(d * d + b * b);
+                shift = Ak(n-1, n-1) - (b * b) / (d + (d >= 0.0 ? sq : -sq));
+            }
+        }
+
+        // ③ A_shifted = Ak − shift·I
         for (size_t i = 0; i < n; ++i)
-            Ak.set(i, i, Ak.get(i, i) - shift);
+            Ak(i, i) -= shift;
 
         auto [Q, R] = qr(Ak);
 
-        // Ak = R * Q + shift * I
+        // ④ Ak = R·Q + shift·I
         Ak = R * Q;
         for (size_t i = 0; i < n; ++i)
-            Ak.set(i, i, Ak.get(i, i) + shift);
+            Ak(i, i) += shift;
 
-        // Accumulate eigenvectors: V = V * Q
+        // ⑤ Accumulate eigenvectors: V = V·Q
         V = V * Q;
-
-        // Convergence: off-diagonal Frobenius norm
-        double off = 0.0;
-        for (size_t i = 0; i < n; ++i)
-            for (size_t j = 0; j < n; ++j)
-                if (i != j) off += Ak.get(i, j) * Ak.get(i, j);
-        if (std::sqrt(off) < 1e-10 * n) break;
     }
 
     // Extract and sort eigenvalues descending
