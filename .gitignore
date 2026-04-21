@@ -18,6 +18,7 @@ CMakeFiles/
 !cmake/*.cmake
 .vscode/
 examples/demo_example
+tests/SharedMathTests
 
 
 # CLion
