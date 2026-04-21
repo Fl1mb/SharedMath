@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-20.04, ubuntu-22.04, ubuntu-24.04]
+        os: [ubuntu-22.04, ubuntu-24.04]
         build_type: [Debug, Release]
         shared: [OFF, ON]
         compiler:
@@ -22,7 +22,6 @@ jobs:
           - { cc: clang, cxx: clang++ }
         exclude:
           # Clang is tested only on the latest runner to keep matrix manageable
-          - { os: ubuntu-20.04, compiler: { cc: clang, cxx: clang++ } }
           - { os: ubuntu-22.04, compiler: { cc: clang, cxx: clang++ } }
 
     env:
