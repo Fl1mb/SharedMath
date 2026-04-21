@@ -10,18 +10,19 @@ namespace SharedMath::Graphs
 {
     template<typename T>
     struct GraphNode{
-        GraphNode(T Data) :
-            data(Data),
-            childs(std::vector<GraphNode*>()),
+        explicit GraphNode(T Data) :
+            data(std::move(Data)),
+            childs(),
             parent(nullptr),
             isRoot(false)
             {}
         ~GraphNode() = default;
 
+        // Member order matches the initializer-list order above (no -Wreorder)
+        T                       data;
         std::vector<GraphNode*> childs;
-        T data;
-        GraphNode* parent {nullptr};
-        bool isRoot {false};
+        GraphNode*              parent  {nullptr};
+        bool                    isRoot  {false};
     };
 
     template<typename T>
@@ -57,22 +58,24 @@ namespace SharedMath::Graphs
 
     template<typename T>
     inline void BaseGraph<T>::clear(){
-        std::queue<GraphNode<T>*> queue;
+        if (!root) return;
 
+        std::queue<GraphNode<T>*> queue;
         queue.push(root);
 
         while(!queue.empty()){
             auto* node = queue.front();
             queue.pop();
             auto childs = getAllChilds(node);
-            
-            for(const auto* child : childs){
+
+            for(auto* child : childs){
                 if(child)
                     queue.push(child);
             }
 
             delete node;
         }
+        root = nullptr;  // prevent dangling pointer
     }
 
     template<typename T>
