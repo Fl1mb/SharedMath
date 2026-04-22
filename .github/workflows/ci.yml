@@ -21,38 +21,43 @@ jobs:
           - { cc: gcc,   cxx: g++ }
           - { cc: clang, cxx: clang++ }
         include:
-          # MSVC on Windows
+          # MSVC on Windows - specify which VS version to use
           - os: windows-latest
             compiler: { cc: cl, cxx: cl }
             build_type: Debug
             shared: OFF
+            vs_version: "2022"
           - os: windows-latest
             compiler: { cc: cl, cxx: cl }
             build_type: Debug
             shared: ON
+            vs_version: "2022"
           - os: windows-latest
             compiler: { cc: cl, cxx: cl }
             build_type: Release
             shared: OFF
+            vs_version: "2022"
           - os: windows-latest
             compiler: { cc: cl, cxx: cl }
             build_type: Release
             shared: ON
+            vs_version: "2022"
         exclude:
-          # Clang is tested only on the latest Ubuntu runner to keep matrix manageable
           - { os: ubuntu-22.04, compiler: { cc: clang, cxx: clang++ } }
           - { os: ubuntu-24.04, compiler: { cc: clang, cxx: clang++ } }
-          # Don't run GCC/Clang on Windows (use MSVC instead)
           - { os: windows-latest, compiler: { cc: gcc, cxx: g++ } }
           - { os: windows-latest, compiler: { cc: clang, cxx: clang++ } }
-
-    env:
-      CC:        ${{ matrix.compiler.cc }}
-      CXX:       ${{ matrix.compiler.cxx }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup Visual Studio (Windows)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+          vsversion: ${{ matrix.vs_version }}
 
       - name: Install build tools and GTest (Ubuntu)
         if: runner.os == 'Linux'
@@ -63,9 +68,8 @@ jobs:
             libgtest-dev \
             libgmock-dev
 
-      - name: Install build tools (Windows)
+      - name: Install Ninja (Windows)
         if: runner.os == 'Windows'
-        shell: pwsh
         run: |
           choco install ninja
           echo "C:\ProgramData\chocolatey\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
@@ -82,15 +86,13 @@ jobs:
 
       - name: Configure (Windows MSVC)
         if: runner.os == 'Windows'
-        shell: pwsh
+        shell: cmd
         run: |
-          cmake -B build -G Ninja `
-            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} `
-            -DSharedMath_SHARED_LIBS=${{ matrix.shared }} `
-            -DSharedMath_BUILD_TESTS=ON `
-            -DSharedMath_BUILD_EXAMPLES=OFF `
-            -DCMAKE_C_COMPILER=cl `
-            -DCMAKE_CXX_COMPILER=cl
+          cmake -B build -G Ninja ^
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} ^
+            -DSharedMath_SHARED_LIBS=${{ matrix.shared }} ^
+            -DSharedMath_BUILD_TESTS=ON ^
+            -DSharedMath_BUILD_EXAMPLES=OFF
 
       - name: Build
         shell: bash
@@ -103,7 +105,7 @@ jobs:
 
       - name: Test (Windows)
         if: runner.os == 'Windows'
-        shell: pwsh
+        shell: cmd
         run: ctest --test-dir build --output-on-failure --parallel
 
       - name: Upload test artifacts on failure
