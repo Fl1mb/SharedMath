@@ -70,7 +70,7 @@ namespace SharedMath
             static double distance(const Point2D& firstPoint, const Point2D& secondPoint){
                 double dx = secondPoint.x() - firstPoint.x();
                 double dy = secondPoint.y() - firstPoint.y();
-                return std::hypot(dx, dy); 
+                return hypot(dx, dy); 
             }
 
             static double crossProduct(const Point2D& first, const Point2D& second, const Point2D& third){

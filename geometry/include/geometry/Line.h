@@ -100,7 +100,7 @@ namespace SharedMath
 
             double getYIntercept() const {
                 double slope = getSlope();
-                if (std::isinf(slope)) {
+                if (isinf(slope)) {
                     return std::numeric_limits<double>::quiet_NaN();
                 }
                 return firstPoint[1] - slope * firstPoint[0];

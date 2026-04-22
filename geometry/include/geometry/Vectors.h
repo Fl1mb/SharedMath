@@ -51,28 +51,28 @@ namespace SharedMath
             }
 
             Vector2D operator/(double scalar) const {
-                if (std::abs(scalar) < Epsilon) {
+                if (abs(scalar) < Epsilon) {
                     throw std::invalid_argument("Division by zero");
                 }
                 return Vector2D(x() / scalar, y() / scalar);
             }
 
             bool isZero() const {
-                return std::abs(x()) < Epsilon && std::abs(y()) < Epsilon;
+                return abs(x()) < Epsilon && abs(y()) < Epsilon;
             }
 
             bool isParallel(const Vector2D& other) const {
                 if (isZero() || other.isZero()) return false;
-                return std::abs(cross(other)) < Epsilon;
+                return abs(cross(other)) < Epsilon;
             }
 
             bool isPerpendicular(const Vector2D& other) const {
-                return std::abs(dot(other)) < Epsilon;
+                return abs(dot(other)) < Epsilon;
             }
 
             Vector2D rotate(double angle) const {
-                double cosA = std::cos(angle);
-                double sinA = std::sin(angle);
+                double cosA = cos(angle);
+                double sinA = sin(angle);
                 return Vector2D(
                     x() * cosA - y() * sinA,
                     x() * sinA + y() * cosA
@@ -100,7 +100,7 @@ namespace SharedMath
                 
                 cosAngle = std::max(-1.0, std::min(1.0, cosAngle));
 
-                return std::acos(cosAngle);
+                return acos(cosAngle);
             }
         };
 
@@ -153,14 +153,14 @@ namespace SharedMath
             }
 
             Vector3D operator/(double scalar) const {
-                if (std::abs(scalar) < 1e-10) {
+                if (abs(scalar) < 1e-10) {
                     throw std::invalid_argument("Division by zero");
                 }
                 return Vector3D(x() / scalar, y() / scalar, z() / scalar);
             }
 
             bool isZero() const {
-                return std::abs(x()) < 1e-10 && std::abs(y()) < 1e-10 && std::abs(z()) < 1e-10;
+                return abs(x()) < 1e-10 && abs(y()) < 1e-10 && abs(z()) < 1e-10;
             }
 
             bool isParallel(const Vector3D& other) const {
@@ -171,7 +171,7 @@ namespace SharedMath
             }
 
             bool isPerpendicular(const Vector3D& other) const {
-                return std::abs(dot(other)) < 1e-10;
+                return abs(dot(other)) < 1e-10;
             }
 
             double tripleProduct(const Vector3D& b, const Vector3D& c) const {
@@ -195,7 +195,7 @@ namespace SharedMath
                 
                 cosAngle = std::max(-1.0, std::min(1.0, cosAngle));
                 
-                return std::acos(cosAngle);
+                return acos(cosAngle);
             }
         };
 
