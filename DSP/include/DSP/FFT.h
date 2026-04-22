@@ -69,13 +69,18 @@ inline std::vector<double> irfft(const std::vector<std::complex<double>>& X,
 {
     if (X.empty() || n == 0) return {};
 
-    // Reconstruct full Hermitian spectrum
     std::vector<std::complex<double>> full(n, {0.0, 0.0});
-    size_t half = n / 2 + 1;
+    size_t half = n / 2 + 1; 
+    size_t unique_count = (n % 2 == 0) ? (n/2 + 1) : ((n+1)/2);
+    
     for (size_t k = 0; k < half && k < X.size(); ++k)
         full[k] = X[k];
-    for (size_t k = 1; k + 1 < half; ++k)
+
+    size_t last_pair = (n % 2 == 0) ? (n/2 - 1) : ((n-1)/2);
+    
+    for (size_t k = 1; k <= last_pair; ++k) {
         full[n - k] = std::conj(X[k]);
+    }
 
     FFTPlan::create(n, {FFTDirection::Inverse, norm}).execute(full);
 

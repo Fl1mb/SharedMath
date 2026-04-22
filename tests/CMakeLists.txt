@@ -8,16 +8,18 @@ add_executable(${PROJECT_NAME}Tests
     test_avl_tree.cpp
     test_adjacency_list_graph.cpp
     test_graph_algorithms.cpp
-    # test_tensor.cpp
-    # test_matrixfunctions.cpp
-    # test_geometry_lines.cpp
-    # test_geometry_polygon.cpp
-    # test_geometry_rect.cpp
-    # test_geometry_triangle.cpp
-    # test_geometry_circle.cpp
-    # test_linAl_matrix.cpp
-    # test_linAl_matrixOperations.cpp
-    # test_functions.cpp
+    test_dsp_fft.cpp
+    test_dsp_windows.cpp
+    test_tensor.cpp
+    test_matrixfunctions.cpp
+    test_geometry_lines.cpp
+    test_geometry_polygon.cpp
+    test_geometry_rect.cpp
+    test_geometry_triangle.cpp
+    test_geometry_circle.cpp
+    test_linAl_matrix.cpp
+    test_linAl_matrixOperations.cpp
+    test_functions.cpp
 )
 
 target_link_libraries(${PROJECT_NAME}Tests
