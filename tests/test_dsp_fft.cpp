@@ -4,7 +4,7 @@
 #include <cmath>
 #include <numeric>
 #include <algorithm>
-#include "DSP/DSP.h"
+#include "DSP/dsp.h"
 
 using namespace SharedMath::DSP;
 using cx = std::complex<double>;
