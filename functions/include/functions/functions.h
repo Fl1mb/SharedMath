@@ -1,13 +1,8 @@
 #pragma once
 
-#include "constans.h"
-#include <complex>
-#include "GammaFunc.h"
+// SharedMath::Functions — umbrella header
+// Usage: #include <functions/functions.h>
 
-namespace SharedMath
-{
-    namespace Functions
-    {
-        
-    } // namespace Functions
-} // namespace SharedMath
+#include "SpecialFunctions.h"   // Γ, ψ, β, Bessel, Legendre, elliptic, …
+#include "Activations.h"        // sigmoid, relu, gelu, swish, softmax, …
+#include "LossFunctions.h"      // mse, cross-entropy, huber, focal, …

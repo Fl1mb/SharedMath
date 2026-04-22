@@ -30,6 +30,7 @@ add_executable(${PROJECT_NAME}Tests
     test_graph_algorithms.cpp
     test_dsp_fft.cpp
     test_dsp_windows.cpp
+    test_dsp_convolution.cpp
     test_tensor.cpp
     test_matrixfunctions.cpp
     test_geometry_lines.cpp
