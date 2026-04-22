@@ -15,8 +15,8 @@ bool Parallelogram::isParallelogram(const std::array<Point2D, 4>& vertices){
     Vector2D v4(vertices[3], vertices[0]);
 
     bool sidesParallel = v1.isParallel(v3) && v2.isParallel(v4);
-    bool sidesEqualLength = std::abs(v1.length() - v3.length()) < Epsilon && 
-                           std::abs(v2.length() - v4.length()) < Epsilon;
+    bool sidesEqualLength = abs(v1.length() - v3.length()) < Epsilon && 
+                           abs(v2.length() - v4.length()) < Epsilon;
 
     // Диагонали должны делиться пополам
     Point2D diagonal1_midpoint((vertices[0].x() + vertices[2].x()) / 2.0,
@@ -24,8 +24,8 @@ bool Parallelogram::isParallelogram(const std::array<Point2D, 4>& vertices){
     Point2D diagonal2_midpoint((vertices[1].x() + vertices[3].x()) / 2.0,
                               (vertices[1].y() + vertices[3].y()) / 2.0);
 
-    bool diagonalsBisect = std::abs(diagonal1_midpoint.x() - diagonal2_midpoint.x()) < Epsilon &&
-                          std::abs(diagonal1_midpoint.y() - diagonal2_midpoint.y()) < Epsilon;
+    bool diagonalsBisect = abs(diagonal1_midpoint.x() - diagonal2_midpoint.x()) < Epsilon &&
+                          abs(diagonal1_midpoint.y() - diagonal2_midpoint.y()) < Epsilon;
 
     return sidesParallel && sidesEqualLength && diagonalsBisect;
 }
@@ -35,7 +35,7 @@ Point2D Parallelogram::findDownLeftPoint(const std::array<Point2D, 4>& points){
     
     for(auto i = 1; i < points.size(); ++i){
         if(points[i].x() < result.x() || 
-           (std::abs(points[i].x() - result.x()) < Epsilon && points[i].y() < result.y())){
+           (abs(points[i].x() - result.x()) < Epsilon && points[i].y() < result.y())){
             result = points[i];
         }
     }
@@ -47,7 +47,7 @@ Point2D Parallelogram::findDownRightPoint(const std::array<Point2D, 4>& points){
     
     for(auto i = 1; i < points.size(); ++i){
         if(points[i].y() < result.y() || 
-           (std::abs(points[i].y() - result.y()) < Epsilon && points[i].x() > result.x())){
+           (abs(points[i].y() - result.y()) < Epsilon && points[i].x() > result.x())){
             result = points[i];
         }
     }
@@ -59,7 +59,7 @@ Point2D Parallelogram::findUpLeftPoint(const std::array<Point2D, 4>& points){
     
     for(auto i = 1; i < points.size(); ++i){
         if(points[i].x() < result.x() || 
-           (std::abs(points[i].x() - result.x()) < Epsilon && points[i].y() > result.y())){
+           (abs(points[i].x() - result.x()) < Epsilon && points[i].y() > result.y())){
             result = points[i];
         }
     }
@@ -71,7 +71,7 @@ Point2D Parallelogram::findUpRightPoint(const std::array<Point2D, 4>& points){
     
     for(auto i = 1; i < points.size(); ++i){
         if(points[i].x() > result.x() || 
-           (std::abs(points[i].x() - result.x()) < Epsilon && points[i].y() > result.y())){
+           (abs(points[i].x() - result.x()) < Epsilon && points[i].y() > result.y())){
             result = points[i];
         }
     }
@@ -99,7 +99,7 @@ Parallelogram::Parallelogram(const std::array<Point2D, 4>& points){
         [&downLeft](const Point2D& a, const Point2D& b) {
             Vector2D va(downLeft, a);
             Vector2D vb(downLeft, b);
-            return std::atan2(va.y(), va.x()) < std::atan2(vb.y(), vb.x());
+            return atan2(va.y(), va.x()) < atan2(vb.y(), vb.x());
         });
     
     orderedPoints[1] = remainingPoints[0];
@@ -116,7 +116,7 @@ double Parallelogram::area() const {
     Vector2D v2(vertices[0], vertices[3]);
     
     double crossProduct = v1.cross(v2);
-    return std::abs(crossProduct);
+    return abs(crossProduct);
 }
 
 double Parallelogram::perimeter() const {
