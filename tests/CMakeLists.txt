@@ -1,5 +1,25 @@
-find_package(GTest REQUIRED)
-include(GoogleTest)
+find_package(GTest QUIET)
+
+if(NOT GTest_FOUND)
+    message(STATUS "System GTest not found, fetching from GitHub...")
+    include(FetchContent)
+    
+    set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
+    set(BUILD_GMOCK OFF CACHE BOOL "" FORCE)
+    
+    FetchContent_Declare(
+        googletest
+        GIT_REPOSITORY https://github.com/google/googletest.git
+        GIT_TAG        v1.14.0
+    )
+    FetchContent_MakeAvailable(googletest)
+
+    set(GTEST_MAIN_TARGET gtest_main)
+else()
+    message(STATUS "Using system GTest")
+    include(GoogleTest)
+    set(GTEST_MAIN_TARGET GTest::gtest_main)
+endif()
 
 add_executable(${PROJECT_NAME}Tests
     main.cpp
@@ -25,14 +45,13 @@ add_executable(${PROJECT_NAME}Tests
 target_link_libraries(${PROJECT_NAME}Tests
     PRIVATE
         SharedMath::SharedMath
-        GTest::GTest
-        GTest::Main
+        ${GTEST_MAIN_TARGET}
 )
 
 enable_testing()
-gtest_discover_tests(${PROJECT_NAME}Tests)
 
-add_custom_command(
-    TARGET ${PROJECT_NAME}Tests POST_BUILD
-    COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
-    COMMENT "Running ${PROJECT_NAME} tests...")
+if(GTest_FOUND)
+    gtest_discover_tests(${PROJECT_NAME}Tests)
+else()
+    add_test(NAME ${PROJECT_NAME}Tests COMMAND ${PROJECT_NAME}Tests)
+endif()
