@@ -40,7 +40,7 @@ add_executable(${PROJECT_NAME}Tests
     # test_geometry_circle.cpp
     # test_linAl_matrix.cpp
     # test_linAl_matrixOperations.cpp
-    # test_functions.cpp
+    test_functions.cpp
 )
 
 target_link_libraries(${PROJECT_NAME}Tests

@@ -1,28 +1,12 @@
-include(GenerateExportHeader)
+# SharedMath::Functions — header-only INTERFACE library
+# All implementations are inline/template functions in .h files.
 
-add_library(SharedMath_Functions
-    src/GammaFunc.cpp
-)
+add_library(SharedMath_Functions INTERFACE)
 add_library(SharedMath::Functions ALIAS SharedMath_Functions)
 
-generate_export_header(SharedMath_Functions
-    EXPORT_MACRO_NAME SHAREDMATH_FUNCTIONS_EXPORT
-    EXPORT_FILE_NAME  ${PROJECT_BINARY_DIR}/include/sharedmath_functions_export.h
-    STATIC_DEFINE     SHAREDMATH_FUNCTIONS_STATIC_DEFINE
+target_include_directories(SharedMath_Functions INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
-target_include_directories(SharedMath_Functions
-    PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-    PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/functions
-)
-
-target_link_libraries(SharedMath_Functions PUBLIC SharedMath_Core)
-
-target_compile_definitions(SharedMath_Functions PUBLIC
-    $<$<NOT:$<BOOL:${BUILD_SHARED_LIBS}>>:SHAREDMATH_FUNCTIONS_STATIC_DEFINE>
-)
-
-sharedmath_configure_module(SharedMath_Functions)
+target_link_libraries(SharedMath_Functions INTERFACE SharedMath_Core)
