@@ -9,3 +9,4 @@
 #include "FFTPlan.h"
 #include "FFT.h"
 #include "Window.h"
+#include "Convolution.h"
