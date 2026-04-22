@@ -267,57 +267,85 @@ inline double besselJ0(double x) {
 inline double besselJ1(double x) {
     double ax = std::abs(x);
     double ans;
+    
     if (ax < 8.0) {
-        double y = x * x;
+        double y = x * x;  
         double p = x * (72362614232.0 + y * (-7895059235.0 + y * (242396853.1
                 + y * (-2972611.439 + y * (15704.48260 + y * (-30.16116360))))));
         double q = 144725228442.0 + y * (2300535178.0 + y * (18583304.74
                 + y * (99447.43394 + y * (376.9991397 + y))));
         ans = p / q;
     } else {
-        double z = 8.0 / ax, y = z * z;
-        double xx = ax - 2.356194491;    // ax − 3π/4
+        double z = 8.0 / ax;
+        double y = z * z;
+        double xx = ax - 2.356194491;  // ax - 3π/4
         double p = 1.0 + y * (0.183105e-2 + y * (-0.3516396496e-4
                 + y * (0.2457520174e-5 + y * (-0.240337019e-6))));
         double q = 0.04687499995 + y * (-0.2002690873e-3
                 + y * (0.8449199096e-5 + y * (-0.88228987e-6
                 + y * 0.105787412e-6)));
         ans = std::sqrt(0.636619772338 / ax) * (std::cos(xx) * p - z * std::sin(xx) * q);
+
     }
-    return (x < 0.0) ? -ans : ans;
+    
+    
+    
+    return ans;  
 }
 
 // Jₙ(x) for integer n — forward recurrence from J₀, J₁
 inline double besselJn(int n, double x) {
-    if (n < 0)  return (n % 2 == 0) ? besselJn(-n, x) : -besselJn(-n, x);
+    if (n < 0) return (n % 2 == 0) ? besselJn(-n, x) : -besselJn(-n, x);
     if (n == 0) return besselJ0(x);
     if (n == 1) return besselJ1(x);
     if (x == 0.0) return 0.0;
-    // Forward recurrence: J_{n+1} = (2n/x)*J_n − J_{n-1}
-    // Stable for x ≥ n; use Miller's backward algorithm for x < n
-    if (std::abs(x) >= n) {
-        double j0 = besselJ0(x), j1 = besselJ1(x);
+    
+    // Для x >= n прямая рекурсия стабильна
+    if (x >= n) {
+        double j0 = besselJ0(x);
+        double j1 = besselJ1(x);
         for (int k = 1; k < n; ++k) {
-            double jk1 = (2.0 * k / x) * j1 - j0;
-            j0 = j1; j1 = jk1;
+            double j_next = (2.0 * k / x) * j1 - j0;
+            j0 = j1;
+            j1 = j_next;
         }
         return j1;
     }
-    // Miller's backward recurrence (normalised via Σ ε_k J_k(x) sum rule)
-    const int NSTART = std::max(n + 10, static_cast<int>(1.1 * n)) + 2;
-    double bjp = 0.0, bj = 1.0, bjm, sum = 0.0;
-    double ans = 0.0;
-    bool accum = false;
-    for (int j = NSTART; j > 0; --j) {
-        bjm = (2.0 * j / x) * bj - bjp;
-        bjp = bj; bj = bjm;
-        if (std::abs(bj) > 1e30) { bj *= 1e-30; bjp *= 1e-30; if (accum) { ans *= 1e-30; sum *= 1e-30; } }
-        if (j == n) accum = true;
-        if (accum) ans = bjp;
-        if (j % 2 == 0) sum += bj;
+    
+    // Miller's backward recurrence algorithm
+    int m = n + 30;  // стартуем достаточно далеко
+    if (x < 1e-6) {
+        // Для малых x используем степенной ряд
+        double term = 1.0;
+        double sum = 0.0;
+        for (int k = 0; k <= n + 10; ++k) {
+            if (k == n) sum = term;
+            term *= - (x * x) / (4.0 * (k + 1) * (k + 1));
+        }
+        return sum * std::pow(0.5 * x, n) / tgamma(n + 1);
     }
-    sum = 2.0 * sum - bj;   // 2*Σ J_{2k} − J₀ = 1  (Neumann's addition theorem)
-    return ans / sum;
+    
+    std::vector<double> j(m + 2, 0.0);
+    j[m] = 1e-30;  // малое начальное значение
+    j[m-1] = 0.0;
+    
+    // Обратная рекурсия
+    for (int k = m - 1; k > 0; --k) {
+        j[k-1] = (2.0 * k / x) * j[k] - j[k+1];
+        if (std::abs(j[k-1]) > 1e30) {
+            // Нормализация для предотвращения переполнения
+            for (int i = k-1; i <= m; ++i) j[i] *= 1e-30;
+        }
+    }
+    
+    // Нормализация: J_0(x) + 2*Σ_{k=1}∞ J_{2k}(x) = 1
+    double sum = j[0];
+    for (int k = 2; k <= m; k += 2) sum += 2.0 * j[k];
+    
+    // Нормируем все значения
+    for (int k = 0; k <= m; ++k) j[k] /= sum;
+    
+    return j[n];
 }
 
 
@@ -615,17 +643,34 @@ inline double ellipticE(double k) {
     if (k < 0.0 || k > 1.0)
         throw std::domain_error("ellipticE: k must be in [0, 1]");
     if (k == 1.0) return 1.0;
-    double a = 1.0, b = std::sqrt(1.0 - k * k);
-    double sum = 2.0 * a * a;
-    double pow2 = 1.0;
-    for (int i = 0; i < 64; ++i) {
-        double an = (a + b) * 0.5, bn = std::sqrt(a * b);
-        pow2 *= 2.0;
-        sum -= pow2 * (an * an - bn * bn);
-        a = an; b = bn;
-        if (std::abs(a - b) < std::abs(a) * 1e-15) break;
+    if (k == 0.0) return detail::SF_PI / 2.0;
+    
+    double a[64], b[64]; 
+    
+    a[0] = 1.0;
+    b[0] = std::sqrt(1.0 - k * k);
+    
+    int n = 0;
+    for (; n < 63; ++n) {
+        a[n+1] = (a[n] + b[n]) * 0.5;
+        b[n+1] = std::sqrt(a[n] * b[n]);
+        if (std::abs(a[n+1] - b[n+1]) < std::abs(a[n+1]) * 1e-15) break;
     }
-    return (detail::SF_PI / (2.0 * a)) * (sum / 2.0);
+    
+    double sum = 0.0;
+    double factor = 1.0;
+    for (int i = 0; i <= n; ++i) {
+        // K(k) = π/(2·a_∞)
+        // E(k) = K(k) · (1 - Σ 2^{i-1}(a_i² - b_i²))
+        double term = factor * (a[i] * a[i] - b[i] * b[i]);
+        sum += term;
+        factor *= 2.0;
+    }
+    
+    double K = detail::SF_PI / (2.0 * a[n]);  
+    double E = K * (1.0 - sum * 0.5);         
+    
+    return E;
 }
 
 
@@ -680,22 +725,32 @@ inline double lambertW(double x) {
 // Uses Euler–Maclaurin summation with 20 correction terms; accurate to ~1e-12.
 inline double riemannZeta(double s) {
     if (s <= 1.0) throw std::domain_error("riemannZeta: s must be > 1");
-    // Direct sum + Euler-Maclaurin correction
-    const int N = 50;
+    
+    // Для s=2 нужно больше членов, так как ряд сходится медленно
+    int N = (s < 3) ? 50 : 20;
+    if (s < 1.5) N = 100;
+    
     double sum = 0.0;
     for (int n = 1; n <= N; ++n)
         sum += 1.0 / std::pow(static_cast<double>(n), s);
-    // Tail integral approximation: ∫_N^∞ x^{-s} dx = N^{1-s}/(s-1)
-    sum += std::pow(static_cast<double>(N), 1.0 - s) / (s - 1.0);
-    // Euler-Maclaurin first correction: N^{-s}/2
-    sum += 0.5 * std::pow(static_cast<double>(N), -s);
-    // Bernoulli correction terms (B_2=1/6, B_4=-1/30, B_6=1/42)
-    double Ns1 = std::pow(static_cast<double>(N), -s - 1.0);
-    sum += (s / 12.0) * Ns1;
-    Ns1 /= (static_cast<double>(N) * N);
-    sum -= (s * (s+1.0) * (s+2.0) / 720.0) * Ns1;
-    Ns1 /= (static_cast<double>(N) * N);
-    sum += (s*(s+1.0)*(s+2.0)*(s+3.0)*(s+4.0) / 30240.0) * Ns1;
+    
+    double N_d = static_cast<double>(N);
+    double N_pow_ms = std::pow(N_d, -s);
+    
+    // Интегральная аппроксимация хвоста
+    sum += std::pow(N_d, 1.0 - s) / (s - 1.0);
+    sum += 0.5 * N_pow_ms;
+    
+    // Поправки Эйлера-Маклорена
+    double term = N_pow_ms / N_d;  // N^{-s-1}
+    sum += (s / 12.0) * term;
+    
+    term /= (N_d * N_d);  // N^{-s-3}
+    sum -= (s * (s+1.0) * (s+2.0) / 720.0) * term;
+    
+    term /= (N_d * N_d);  // N^{-s-5}
+    sum += (s * (s+1.0) * (s+2.0) * (s+3.0) * (s+4.0) / 30240.0) * term;
+    
     return sum;
 }
 
