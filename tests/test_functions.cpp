@@ -16,17 +16,18 @@ static constexpr double kMed = 1e-6;   // medium tolerance (polynomial approx)
 // ═════════════════════════════════════════════════════════════════════════════
 
 TEST(Gamma, KnownValues) {
-    EXPECT_NEAR(gamma(1.0), 1.0, kEps);
-    EXPECT_NEAR(gamma(2.0), 1.0, kEps);
-    EXPECT_NEAR(gamma(4.0), 6.0, kEps);
-    EXPECT_NEAR(gamma(0.5), std::sqrt(M_PI), kEps);
+    // std::tgamma is the portable Gamma function; our library adds digamma etc.
+    EXPECT_NEAR(std::tgamma(1.0), 1.0, kEps);
+    EXPECT_NEAR(std::tgamma(2.0), 1.0, kEps);
+    EXPECT_NEAR(std::tgamma(4.0), 6.0, kEps);
+    EXPECT_NEAR(std::tgamma(0.5), std::sqrt(M_PI), kEps);
 }
 
 TEST(Gamma, PositiveIntegersAreFactorials) {
     for (int n = 1; n <= 10; ++n) {
         double fact = 1.0;
         for (int k = 1; k < n; ++k) fact *= k;
-        EXPECT_NEAR(gamma(static_cast<double>(n)), fact, kEps * fact + kEps);
+        EXPECT_NEAR(std::tgamma(static_cast<double>(n)), fact, kEps * fact + kEps);
     }
 }
 
@@ -93,9 +94,9 @@ TEST(GammaInc, BoundaryAndMonotone) {
 // ═════════════════════════════════════════════════════════════════════════════
 
 TEST(ErfFuncs, KnownValues) {
-    EXPECT_NEAR(erf(0.0),  0.0, kEps);
-    EXPECT_NEAR(erfc(0.0), 1.0, kEps);
-    EXPECT_NEAR(erf(1.0) + erfc(1.0), 1.0, kEps);
+    EXPECT_NEAR(std::erf(0.0),  0.0, kEps);
+    EXPECT_NEAR(std::erfc(0.0), 1.0, kEps);
+    EXPECT_NEAR(std::erf(1.0) + std::erfc(1.0), 1.0, kEps);
 }
 
 TEST(ErfInv, RoundTrip) {
@@ -289,15 +290,17 @@ TEST(LogSoftmax, ExpSumsToOne) {
 // ═════════════════════════════════════════════════════════════════════════════
 
 TEST(MSE, ZeroAndKnown) {
-    std::vector<double> y = {1.0, 2.0, 3.0};
-    EXPECT_NEAR(mse(y, y), 0.0, kEps);
-    EXPECT_NEAR(mse({1.0,2.0,3.0}, {0.0,0.0,0.0}), 14.0/3.0, kEps);
+    std::vector<double> y    = {1.0, 2.0, 3.0};
+    std::vector<double> zero = {0.0, 0.0, 0.0};
+    EXPECT_NEAR(mse(y, y),    0.0,      kEps);
+    EXPECT_NEAR(mse(y, zero), 14.0/3.0, kEps);
 }
 
 TEST(MAE, ZeroAndKnown) {
-    std::vector<double> y = {1.0, 2.0, 3.0};
-    EXPECT_NEAR(mae(y, y), 0.0, kEps);
-    EXPECT_NEAR(mae({1.0,2.0,3.0}, {0.0,0.0,0.0}), 2.0, kEps);
+    std::vector<double> y    = {1.0, 2.0, 3.0};
+    std::vector<double> zero = {0.0, 0.0, 0.0};
+    EXPECT_NEAR(mae(y, y),    0.0, kEps);
+    EXPECT_NEAR(mae(y, zero), 2.0, kEps);
 }
 
 TEST(Huber, EquivalentToHalfMSEForSmallErrors) {
@@ -307,18 +310,24 @@ TEST(Huber, EquivalentToHalfMSEForSmallErrors) {
 }
 
 TEST(HingeLoss, CorrectAndWrong) {
-    EXPECT_NEAR(hingeLoss({2.0}, {1.0}),  0.0, kEps);
-    EXPECT_NEAR(hingeLoss({-2.0}, {1.0}), 3.0, kEps);
+    std::vector<double> p1 = {2.0},  l1 = {1.0};
+    std::vector<double> p2 = {-2.0}, l2 = {1.0};
+    EXPECT_NEAR(hingeLoss(p1, l1), 0.0, kEps);
+    EXPECT_NEAR(hingeLoss(p2, l2), 3.0, kEps);
 }
 
 TEST(R2Score, PerfectAndMean) {
-    std::vector<double> y = {1.0, 2.0, 3.0, 4.0};
-    EXPECT_NEAR(r2Score(y, y), 1.0, kEps);
-    EXPECT_NEAR(r2Score({2.0,2.0,2.0}, {1.0,2.0,3.0}), 0.0, kEps);
+    std::vector<double> y    = {1.0, 2.0, 3.0, 4.0};
+    std::vector<double> mean = {2.0, 2.0, 2.0};
+    std::vector<double> ref  = {1.0, 2.0, 3.0};
+    EXPECT_NEAR(r2Score(y, y),      1.0, kEps);
+    EXPECT_NEAR(r2Score(mean, ref), 0.0, kEps);
 }
 
 TEST(KLDivergence, ZeroForIdentical) {
     std::vector<double> p = {0.3, 0.4, 0.3};
+    std::vector<double> q = {0.2, 0.5, 0.3};
+    std::vector<double> r = {0.5, 0.3, 0.2};
     EXPECT_NEAR(klDivergence(p, p), 0.0, kEps);
-    EXPECT_GE(klDivergence({0.2,0.5,0.3}, {0.5,0.3,0.2}), 0.0);
+    EXPECT_GE(klDivergence(q, r), 0.0);
 }

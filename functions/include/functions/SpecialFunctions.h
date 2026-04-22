@@ -35,11 +35,9 @@ namespace detail {
 // GAMMA FAMILY
 // ═════════════════════════════════════════════════════════════════════════════
 
-// Gamma function Γ(x) — wraps std::tgamma
-inline double gamma(double x) { return std::tgamma(x); }
-
-// Natural log of |Γ(x)| — wraps std::lgamma
-inline double lgamma(double x) { return std::lgamma(x); }
+// Γ(x) and ln|Γ(x)| are available as std::tgamma / std::lgamma from <cmath>.
+// We do not re-declare them here to avoid clashes with POSIX identifiers
+// (gamma, lgamma) that some platforms expose at global scope.
 
 // ── Digamma (Psi) function: ψ(x) = d/dx ln Γ(x) ────────────────────────────
 //
@@ -196,9 +194,8 @@ inline double gammainc(double a, double x) {
 // ERROR FUNCTIONS
 // ═════════════════════════════════════════════════════════════════════════════
 
-// erf and erfc — delegate to <cmath>
-inline double erf(double x)  { return std::erf(x); }
-inline double erfc(double x) { return std::erfc(x); }
+// erf and erfc are available as std::erf / std::erfc from <cmath>.
+// Not re-declared here to avoid POSIX name collision at global scope.
 
 // ── Inverse error function: erfinv(y) such that erf(erfinv(y)) = y ───────────
 // Uses Winitzki's rational approximation, then two Newton refinements.
