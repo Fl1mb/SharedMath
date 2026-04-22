@@ -50,7 +50,7 @@ bool Rectangle::isRectangle(const std::array<Point2D, 4>& vertices) {
     Vector2D v1(vertices[0], vertices[1]);
     Vector2D v2(vertices[0], vertices[3]);
 
-    return std::abs(v1.dot(v2)) < Epsilon;
+    return abs(v1.dot(v2)) < Epsilon;
 }
 
 double Rectangle::getWidth() const {
@@ -168,7 +168,7 @@ void Rectangle::scale(double widthFactor, double heightFactor) {
 bool Rectangle::isSquare() const {
     double width = getWidth();
     double height = getHeight();
-    return std::abs(width - height) < Epsilon;
+    return abs(width - height) < Epsilon;
 }
 
 bool Rectangle::contains(const Point2D& point) const {

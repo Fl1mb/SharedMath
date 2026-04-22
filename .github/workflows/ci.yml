@@ -21,39 +21,43 @@ jobs:
           - { cc: gcc,   cxx: g++ }
           - { cc: clang, cxx: clang++ }
         include:
-          # MSVC on Windows
+          # MSVC on Windows - specify which VS version to use
           - os: windows-latest
             compiler: { cc: cl, cxx: cl }
             build_type: Debug
             shared: OFF
+            vs_version: "2022"
           - os: windows-latest
             compiler: { cc: cl, cxx: cl }
             build_type: Debug
             shared: ON
+            vs_version: "2022"
           - os: windows-latest
             compiler: { cc: cl, cxx: cl }
             build_type: Release
             shared: OFF
+            vs_version: "2022"
           - os: windows-latest
             compiler: { cc: cl, cxx: cl }
             build_type: Release
             shared: ON
+            vs_version: "2022"
         exclude:
-          # Clang is tested only on the latest Ubuntu runner to keep matrix manageable
           - { os: ubuntu-22.04, compiler: { cc: clang, cxx: clang++ } }
           - { os: ubuntu-24.04, compiler: { cc: clang, cxx: clang++ } }
-          # Don't run GCC/Clang on Windows (use MSVC instead)
           - { os: windows-latest, compiler: { cc: gcc, cxx: g++ } }
           - { os: windows-latest, compiler: { cc: clang, cxx: clang++ } }
-
-    env:
-      CC:        ${{ matrix.compiler.cc }}
-      CXX:       ${{ matrix.compiler.cxx }}
-      BUILD_DIR: build
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup Visual Studio (Windows)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+          vsversion: ${{ matrix.vs_version }}
 
       - name: Install build tools and GTest (Ubuntu)
         if: runner.os == 'Linux'
@@ -64,17 +68,17 @@ jobs:
             libgtest-dev \
             libgmock-dev
 
-      - name: Install build tools (Windows)
+      - name: Install Ninja (Windows)
         if: runner.os == 'Windows'
         run: |
           choco install ninja
-          # Add Ninja to PATH
           echo "C:\ProgramData\chocolatey\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: Configure (Ubuntu)
         if: runner.os == 'Linux'
+        shell: bash
         run: |
-          cmake -B $BUILD_DIR -G Ninja \
+          cmake -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
             -DSharedMath_SHARED_LIBS=${{ matrix.shared }} \
             -DSharedMath_BUILD_TESTS=ON \
@@ -82,25 +86,32 @@ jobs:
 
       - name: Configure (Windows MSVC)
         if: runner.os == 'Windows'
+        shell: cmd
         run: |
-          cmake -B $BUILD_DIR -G Ninja \
-            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-            -DSharedMath_SHARED_LIBS=${{ matrix.shared }} \
-            -DSharedMath_BUILD_TESTS=ON \
-            -DSharedMath_BUILD_EXAMPLES=OFF \
-            -DCMAKE_C_COMPILER=cl \
-            -DCMAKE_CXX_COMPILER=cl
+          cmake -B build -G Ninja ^
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} ^
+            -DSharedMath_SHARED_LIBS=${{ matrix.shared }} ^
+            -DSharedMath_BUILD_TESTS=ON ^
+            -DSharedMath_BUILD_EXAMPLES=OFF
 
       - name: Build
-        run: cmake --build $BUILD_DIR --parallel
+        shell: bash
+        run: cmake --build build --parallel
 
-      - name: Test
-        run: ctest --test-dir $BUILD_DIR --output-on-failure --parallel $(nproc)
+      - name: Test (Linux)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: ctest --test-dir build --output-on-failure --parallel $(nproc)
+
+      - name: Test (Windows)
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: ctest --test-dir build --output-on-failure --parallel
 
       - name: Upload test artifacts on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: "test-logs-${{ matrix.os }}-${{ matrix.compiler.cc }}-${{ matrix.build_type }}-shared${{ matrix.shared }}"
-          path: ${{ env.BUILD_DIR }}/Testing/
+          path: build/Testing/
           retention-days: 7

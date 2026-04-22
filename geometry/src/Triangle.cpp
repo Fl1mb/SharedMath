@@ -31,7 +31,7 @@ bool Triangle::isValidTriangle(const std::array<Point2D, 3>& vertices){
 }
 
 bool Triangle::arePointsCollinear(const Point2D& a, const Point2D& b, const Point2D& c){
-    double area = std::abs((b.x() - a.x()) * (c.y() - a.y()) - 
+    double area = abs((b.x() - a.x()) * (c.y() - a.y()) - 
                           (b.y() - a.y()) * (c.x() - a.x()));
     return area < Epsilon;
 }
@@ -42,7 +42,7 @@ double Triangle::area() const{
 }
 
 double Triangle::calculateTriangleArea(const Point2D& a, const Point2D& b, const Point2D& c){
-    return std::abs((b.x() - a.x()) * (c.y() - a.y()) - 
+    return abs((b.x() - a.x()) * (c.y() - a.y()) - 
                    (b.y() - a.y()) * (c.x() - a.x())) / 2.0;
 }
 
@@ -85,7 +85,7 @@ double Triangle::getAngle(size_t vertexIndex) const {
 
     double cosAngle = dotProduct / lengths;
     cosAngle = std::max(-1.0, std::min(1.0, cosAngle));
-    return std::acos(cosAngle);
+    return acos(cosAngle);
 }
 
 double Triangle::getAltitude(size_t sideIndex) const {
@@ -151,9 +151,9 @@ bool Triangle::isEquilateral() const {
     double side2 = getSideLength(1);
     double side3 = getSideLength(2);
 
-    return std::abs(side1 - side2) < Epsilon &&
-           std::abs(side2 - side3) < Epsilon &&
-           std::abs(side3 - side1) < Epsilon;
+    return abs(side1 - side2) < Epsilon &&
+           abs(side2 - side3) < Epsilon &&
+           abs(side3 - side1) < Epsilon;
 }
 
 bool Triangle::isIsosceles() const {
@@ -161,9 +161,9 @@ bool Triangle::isIsosceles() const {
     double side2 = getSideLength(1);
     double side3 = getSideLength(2);
 
-    return std::abs(side1 - side2) < Epsilon ||
-           std::abs(side2 - side3) < Epsilon ||
-           std::abs(side3 - side1) < Epsilon;
+    return abs(side1 - side2) < Epsilon ||
+           abs(side2 - side3) < Epsilon ||
+           abs(side3 - side1) < Epsilon;
 }
 
 bool Triangle::isRight() const {
@@ -175,7 +175,7 @@ bool Triangle::isRight() const {
     double sides[3] = {side1, side2, side3};
     std::sort(sides, sides + 3);
 
-    return std::abs(sides[2] * sides[2] - (sides[0] * sides[0] + sides[1] * sides[1])) < Epsilon;
+    return abs(sides[2] * sides[2] - (sides[0] * sides[0] + sides[1] * sides[1])) < Epsilon;
 }
 
 bool Triangle::isAcute() const {
@@ -214,7 +214,7 @@ bool Triangle::isPointInside(const Point2D& point) const {
     double areaPAB = calculateTriangleArea(point, vertices[0], vertices[1]);
 
     double totalArea = areaPBC + areaPCA + areaPAB;
-    return std::abs(totalArea - areaABC) < Epsilon;
+    return abs(totalArea - areaABC) < Epsilon;
 }
 
 void Triangle::move(const Vector2D& offset) {
@@ -239,8 +239,8 @@ void Triangle::scale(double factor) {
     setVertices(vertices);
 }
 void Triangle::rotate(double angle, const Point2D& center) {
-    double cosA = std::cos(angle);
-    double sinA = std::sin(angle);
+    double cosA = cos(angle);
+    double sinA = sin(angle);
     
     auto vertices = getVertices();
     
