@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <vector>
+#include <sharedmath_numericalmethods_export.h>
 
 namespace SharedMath::NumericalMethods {
 
@@ -21,27 +22,30 @@ struct SystemODESolution {
 
 // ── Scalar ODE: dy/dt = f(t,y),  y(t0) = y0 ──────────────────────────────
 
-// Explicit Euler, fixed step h
+SHAREDMATH_NUMERICALMETHODS_EXPORT
 ScalarODESolution euler(ScalarODE f, double y0,
                          double t0, double t1, double h);
 
-// Classic 4th-order Runge-Kutta, fixed step h
+SHAREDMATH_NUMERICALMETHODS_EXPORT
 ScalarODESolution rk4(ScalarODE f, double y0,
                        double t0, double t1, double h);
 
-// Dormand-Prince RK45, adaptive step, error tolerance tol, initial step h0
+SHAREDMATH_NUMERICALMETHODS_EXPORT
 ScalarODESolution rk45(ScalarODE f, double y0,
                         double t0, double t1,
                         double tol = 1e-6, double h0 = 1e-3);
 
 // ── ODE system: dy/dt = f(t,y),  y(t0) = y0 ──────────────────────────────
 
+SHAREDMATH_NUMERICALMETHODS_EXPORT
 SystemODESolution euler_system(SystemODE f, std::vector<double> y0,
                                 double t0, double t1, double h);
 
+SHAREDMATH_NUMERICALMETHODS_EXPORT
 SystemODESolution rk4_system(SystemODE f, std::vector<double> y0,
                                double t0, double t1, double h);
 
+SHAREDMATH_NUMERICALMETHODS_EXPORT
 SystemODESolution rk45_system(SystemODE f, std::vector<double> y0,
                                 double t0, double t1,
                                 double tol = 1e-6, double h0 = 1e-3);

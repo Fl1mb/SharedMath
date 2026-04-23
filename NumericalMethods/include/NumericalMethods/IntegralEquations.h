@@ -3,6 +3,7 @@
 #include <functional>
 #include <vector>
 #include <utility>
+#include <sharedmath_numericalmethods_export.h>
 
 namespace SharedMath::NumericalMethods {
 
@@ -13,6 +14,7 @@ namespace SharedMath::NumericalMethods {
 // Discretises onto n equidistant nodes via the trapezoidal rule,
 // reducing the problem to a linear system (I - λhWK)y = f.
 // Returns {nodes, solution_values}.
+SHAREDMATH_NUMERICALMETHODS_EXPORT
 std::pair<std::vector<double>, std::vector<double>>
 fredholm2(std::function<double(double)> f,
           std::function<double(double, double)> K,
@@ -24,6 +26,7 @@ fredholm2(std::function<double(double)> f,
 //
 // Solved step-by-step with the trapezoidal rule.
 // Returns {nodes, solution_values}.
+SHAREDMATH_NUMERICALMETHODS_EXPORT
 std::pair<std::vector<double>, std::vector<double>>
 volterra2(std::function<double(double)> f,
           std::function<double(double, double)> K,
