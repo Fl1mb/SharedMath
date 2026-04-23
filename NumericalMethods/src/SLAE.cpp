@@ -1,6 +1,7 @@
 #include "NumericalMethods/SLAE.h"
 #include <cmath>
 #include <stdexcept>
+#include <string>
 
 namespace SharedMath::NumericalMethods {
 
