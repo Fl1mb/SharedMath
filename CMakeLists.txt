@@ -15,6 +15,7 @@ string(TOLOWER ${PROJECT_NAME} PROJECT_NAME_LOWER)
 string(TOUPPER ${PROJECT_NAME} PROJECT_NAME_UPPER)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/utils.cmake)
+include(GNUInstallDirs)   # defines CMAKE_INSTALL_LIBDIR, INCLUDEDIR, etc. globally
 
 # --------------------------------------------------------------------------- #
 # Options
@@ -59,6 +60,8 @@ add_subdirectory(NumericalMethods)
 add_library(SharedMath INTERFACE)
 add_library(SharedMath::SharedMath ALIAS SharedMath)
 
+target_compile_features(SharedMath INTERFACE cxx_std_17)
+
 target_link_libraries(SharedMath INTERFACE
     SharedMath_Core
     SharedMath_LinearAlgebra
@@ -81,28 +84,33 @@ endif()
 # Install
 # --------------------------------------------------------------------------- #
 if(${PROJECT_NAME}_INSTALL AND NOT CMAKE_SKIP_INSTALL_RULES)
-    include(GNUInstallDirs)
     include(CMakePackageConfigHelpers)
 
     # INTERFACE targets (no artifacts — just headers + compile requirements)
     install(TARGETS
         SharedMath
         SharedMath_Core
+        SharedMath_Functions   # header-only INTERFACE
         SharedMath_Graphs
         SharedMath_DSP
         EXPORT ${PROJECT_NAME}_export
     )
 
     # Compiled module targets
+    # RUNTIME  → DLL on Windows, executable on Linux  (component: bin)
+    # LIBRARY  → .so/.dylib on Linux/Mac               (component: bin)
+    # ARCHIVE  → .lib / .a import/static library       (component: devel)
+    # NAMELINK → .so symlink without version suffix    (component: devel)
     install(TARGETS
         SharedMath_LinearAlgebra
         SharedMath_Geometry
-        SharedMath_Functions
         SharedMath_NumericalMethods
-        EXPORT  ${PROJECT_NAME}_export
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}   COMPONENT bin
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}   COMPONENT bin
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}   COMPONENT bin
+        EXPORT   ${PROJECT_NAME}_export
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+        RUNTIME  DESTINATION ${CMAKE_INSTALL_BINDIR}    COMPONENT bin
+        LIBRARY  DESTINATION ${CMAKE_INSTALL_LIBDIR}    COMPONENT bin
+                 NAMELINK_COMPONENT devel
+        ARCHIVE  DESTINATION ${CMAKE_INSTALL_LIBDIR}    COMPONENT devel
     )
 
     if(MSVC AND BUILD_SHARED_LIBS)
