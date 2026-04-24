@@ -17,3 +17,13 @@ cmake --install build
 
 # 5. Упаковать (ZIP / DEB)
 cmake --build build --target package
+
+
+# CMakeLists.txt потребителя
+find_package(SharedMath 1.0.0 REQUIRED)
+
+add_executable(myapp main.cpp)
+target_link_libraries(myapp PRIVATE SharedMath::SharedMath)
+
+cmake -B build -DCMAKE_PREFIX_PATH=/opt/SharedMath
+cmake --build build
