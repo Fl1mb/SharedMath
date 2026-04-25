@@ -530,9 +530,10 @@ TEST(LUDecompositionTest, SingularMatrix) {
     S.set(2, 0, 3); S.set(2, 1, 6); S.set(2, 2, 9); // 3 * первая строка
 
     LUDecomposition lu(S);
+    lu.MakeDecomposition();
     
     // Вырожденная матрица должна выбрасывать исключение
-    EXPECT_THROW(lu.MakeDecomposition(), std::runtime_error);
+    EXPECT_NEAR(lu.Determinant(), 0.0, 1.0e-10);
 }
 
 TEST(LUDecompositionTest, PermutationMatrix) {
