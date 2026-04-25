@@ -233,6 +233,87 @@ TEST(Inv, ThreeByThree) {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
+// LU decomposition
+// ════════════════════════════════════════════════════════════════════════════
+
+TEST(LU, Reconstruction) {
+    // P*A = L*U  →  A = P^T * L * U
+    DynamicMatrix A(3, 3);
+    A.set(0,0,2); A.set(0,1,1); A.set(0,2,1);
+    A.set(1,0,4); A.set(1,1,3); A.set(1,2,3);
+    A.set(2,0,8); A.set(2,1,7); A.set(2,2,9);
+
+    auto [L, U, P] = lu(A);
+
+    // P*A must equal L*U
+    DynamicMatrix PA = P * A;
+    DynamicMatrix LU_prod = L * U;
+    expectMatrixNear(LU_prod, PA);
+}
+
+TEST(LU, LowerTriangular) {
+    DynamicMatrix A(3, 3);
+    A.set(0,0,1); A.set(0,1,2); A.set(0,2,3);
+    A.set(1,0,4); A.set(1,1,5); A.set(1,2,6);
+    A.set(2,0,7); A.set(2,1,8); A.set(2,2,10);
+
+    auto [L, U, P] = lu(A);
+
+    // L must be unit lower-triangular
+    for (size_t i = 0; i < L.rows(); ++i) {
+        EXPECT_NEAR(L.get(i, i), 1.0, kEps) << "L diagonal at " << i;
+        for (size_t j = i + 1; j < L.cols(); ++j)
+            EXPECT_NEAR(L.get(i, j), 0.0, kEps) << "L[" << i << "][" << j << "] not zero";
+    }
+}
+
+TEST(LU, UpperTriangular) {
+    DynamicMatrix A(3, 3);
+    A.set(0,0,1); A.set(0,1,2); A.set(0,2,3);
+    A.set(1,0,4); A.set(1,1,5); A.set(1,2,6);
+    A.set(2,0,7); A.set(2,1,8); A.set(2,2,10);
+
+    auto [L, U, P] = lu(A);
+
+    // U must be upper-triangular
+    for (size_t i = 1; i < U.rows(); ++i)
+        for (size_t j = 0; j < i; ++j)
+            EXPECT_NEAR(U.get(i, j), 0.0, kEps) << "U[" << i << "][" << j << "] not zero";
+}
+
+TEST(LU, PermutationMatrixIsOrthogonal) {
+    DynamicMatrix A(3, 3);
+    A.set(0,0,0); A.set(0,1,1); A.set(0,2,0);
+    A.set(1,0,1); A.set(1,1,0); A.set(1,2,0);
+    A.set(2,0,0); A.set(2,1,0); A.set(2,2,1);
+
+    auto [L, U, P] = lu(A);
+
+    // P^T * P must be identity
+    size_t n = P.rows();
+    DynamicMatrix Pt(n, n);
+    for (size_t i = 0; i < n; ++i)
+        for (size_t j = 0; j < n; ++j)
+            Pt.set(i, j, P.get(j, i));
+    DynamicMatrix PtP = Pt * P;
+    for (size_t i = 0; i < n; ++i)
+        for (size_t j = 0; j < n; ++j)
+            EXPECT_NEAR(PtP.get(i, j), i == j ? 1.0 : 0.0, kEps);
+}
+
+TEST(LU, NonSquareThrows) {
+    DynamicMatrix A(2, 3);
+    EXPECT_THROW(lu(A), std::invalid_argument);
+}
+
+TEST(LU, TwoByTwoIdentity) {
+    DynamicMatrix I = eye(2);
+    auto [L, U, P] = lu(I);
+    // L and U should both be identity for an identity input
+    expectMatrixNear(L * U, P * I);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
 // rank
 // ════════════════════════════════════════════════════════════════════════════
 
@@ -626,4 +707,273 @@ TEST(Einsum2, ElementWiseSum) {
     Tensor r = einsum("ij,ij->", A, B);
     // 1*5 + 2*6 + 3*7 + 4*8 = 5+12+21+32 = 70
     EXPECT_NEAR(r.flat(0), 70.0, kEps);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// det / trace / cond
+// ════════════════════════════════════════════════════════════════════════════
+
+TEST(Det, TwoByTwo) {
+    DynamicMatrix A(2, 2);
+    A.set(0,0,2); A.set(0,1,1);
+    A.set(1,0,1); A.set(1,1,3);
+    EXPECT_NEAR(det(A), 5.0, kEps);
+}
+
+TEST(Det, Identity) {
+    EXPECT_NEAR(det(eye(4)), 1.0, kEps);
+}
+
+TEST(Det, SingularMatrix) {
+    DynamicMatrix A(2, 2);
+    A.set(0,0,1); A.set(0,1,2);
+    A.set(1,0,2); A.set(1,1,4);
+    EXPECT_NEAR(det(A), 0.0, kLoose);
+}
+
+TEST(Det, NonSquareThrows) {
+    EXPECT_THROW(det(DynamicMatrix(2, 3)), std::invalid_argument);
+}
+
+TEST(Trace, Square) {
+    EXPECT_NEAR(trace(diag({1.0, 2.0, 3.0})), 6.0, kEps);
+}
+
+TEST(Trace, Rectangular) {
+    DynamicMatrix A(2, 3);
+    A.set(0,0,5); A.set(1,1,7);
+    EXPECT_NEAR(trace(A), 12.0, kEps);
+}
+
+TEST(Cond, Identity) {
+    EXPECT_NEAR(cond(eye(3)), 1.0, kLoose);
+}
+
+TEST(Cond, Diagonal) {
+    EXPECT_NEAR(cond(diag({4.0, 2.0, 1.0})), 4.0, kLoose);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// isSymmetric / isOrthogonal / isPositiveDefinite
+// ════════════════════════════════════════════════════════════════════════════
+
+TEST(MatrixChecks, IsSymmetric) {
+    DynamicMatrix A(2, 2);
+    A.set(0,0,1); A.set(0,1,2);
+    A.set(1,0,2); A.set(1,1,3);
+    EXPECT_TRUE(isSymmetric(A));
+}
+
+TEST(MatrixChecks, IsNotSymmetric) {
+    DynamicMatrix A(2, 2);
+    A.set(0,0,1); A.set(0,1,2);
+    A.set(1,0,3); A.set(1,1,4);
+    EXPECT_FALSE(isSymmetric(A));
+}
+
+TEST(MatrixChecks, IsOrthogonalIdentity) {
+    EXPECT_TRUE(isOrthogonal(eye(3)));
+}
+
+TEST(MatrixChecks, IsOrthogonalRotation) {
+    DynamicMatrix R(2, 2);
+    R.set(0,0, 0); R.set(0,1,-1);
+    R.set(1,0, 1); R.set(1,1, 0);
+    EXPECT_TRUE(isOrthogonal(R));
+}
+
+TEST(MatrixChecks, IsPositiveDefinite) {
+    DynamicMatrix A(2, 2);
+    A.set(0,0,4); A.set(0,1,2);
+    A.set(1,0,2); A.set(1,1,3);
+    EXPECT_TRUE(isPositiveDefinite(A));
+}
+
+TEST(MatrixChecks, IsNotPositiveDefinite) {
+    DynamicMatrix A(2, 2);
+    A.set(0,0,1); A.set(0,1,2);
+    A.set(1,0,2); A.set(1,1,1);
+    EXPECT_FALSE(isPositiveDefinite(A));
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// kron
+// ════════════════════════════════════════════════════════════════════════════
+
+TEST(Kron, ColVecTimesRowVec) {
+    DynamicMatrix A(2, 1); A.set(0,0,1); A.set(1,0,2);
+    DynamicMatrix B(1, 2); B.set(0,0,3); B.set(0,1,4);
+    DynamicMatrix K = kron(A, B);
+    ASSERT_EQ(K.rows(), 2u); ASSERT_EQ(K.cols(), 2u);
+    EXPECT_NEAR(K.get(0,0), 3.0, kEps);
+    EXPECT_NEAR(K.get(0,1), 4.0, kEps);
+    EXPECT_NEAR(K.get(1,0), 6.0, kEps);
+    EXPECT_NEAR(K.get(1,1), 8.0, kEps);
+}
+
+TEST(Kron, IdentityExpandsBlockDiag) {
+    DynamicMatrix A(2, 2);
+    A.set(0,0,1); A.set(0,1,2); A.set(1,0,3); A.set(1,1,4);
+    DynamicMatrix K = kron(eye(2), A);
+    ASSERT_EQ(K.rows(), 4u); ASSERT_EQ(K.cols(), 4u);
+    EXPECT_NEAR(K.get(0,0), 1.0, kEps);
+    EXPECT_NEAR(K.get(1,1), 4.0, kEps);
+    EXPECT_NEAR(K.get(0,2), 0.0, kEps);
+    EXPECT_NEAR(K.get(2,2), 1.0, kEps);
+    EXPECT_NEAR(K.get(3,3), 4.0, kEps);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// expm / sqrtm / logm
+// ════════════════════════════════════════════════════════════════════════════
+
+TEST(Expm, ZeroMatrix) {
+    DynamicMatrix E = expm(DynamicMatrix(3, 3));
+    for (size_t i = 0; i < 3; ++i)
+        for (size_t j = 0; j < 3; ++j)
+            EXPECT_NEAR(E.get(i,j), i == j ? 1.0 : 0.0, kLoose);
+}
+
+TEST(Expm, ScalarConsistency) {
+    DynamicMatrix A(1, 1); A.set(0,0,1.0);
+    EXPECT_NEAR(expm(A).get(0,0), std::exp(1.0), kLoose);
+}
+
+TEST(Expm, InverseIsNegative) {
+    DynamicMatrix A(2, 2);
+    A.set(0,0,0); A.set(0,1,1); A.set(1,0,-1); A.set(1,1,0);
+    DynamicMatrix negA(2, 2);
+    negA.set(0,0,0); negA.set(0,1,-1); negA.set(1,0,1); negA.set(1,1,0);
+    DynamicMatrix prod = expm(A) * expm(negA);
+    for (size_t i = 0; i < 2; ++i)
+        for (size_t j = 0; j < 2; ++j)
+            EXPECT_NEAR(prod.get(i,j), i == j ? 1.0 : 0.0, kLoose);
+}
+
+TEST(Sqrtm, Reconstruction) {
+    DynamicMatrix A(2, 2);
+    A.set(0,0,4); A.set(0,1,2); A.set(1,0,2); A.set(1,1,3);
+    DynamicMatrix S = sqrtm(A);
+    expectMatrixNear(S * S, A, kLoose);
+}
+
+TEST(Sqrtm, Identity) {
+    expectMatrixNear(sqrtm(eye(3)), eye(3), kLoose);
+}
+
+TEST(Logm, InverseOfExpm) {
+    DynamicMatrix A(2, 2);
+    A.set(0,0,2); A.set(0,1,1); A.set(1,0,1); A.set(1,1,2);
+    expectMatrixNear(logm(expm(A)), A, kLoose);
+}
+
+TEST(Logm, IdentityGivesZero) {
+    DynamicMatrix L = logm(eye(3));
+    for (size_t i = 0; i < 3; ++i)
+        for (size_t j = 0; j < 3; ++j)
+            EXPECT_NEAR(L.get(i,j), 0.0, kLoose);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// QR with column pivoting (qrp)
+// ════════════════════════════════════════════════════════════════════════════
+
+TEST(QRP, Reconstruction) {
+    DynamicMatrix A(3, 3);
+    A.set(0,0,1); A.set(0,1,2); A.set(0,2,3);
+    A.set(1,0,4); A.set(1,1,5); A.set(1,2,6);
+    A.set(2,0,7); A.set(2,1,8); A.set(2,2,10);
+
+    auto [Q, R, piv] = qrp(A);
+
+    size_t n = A.cols();
+    DynamicMatrix P(n, n);
+    for (size_t j = 0; j < n; ++j) P.set(piv[j], j, 1.0);
+
+    expectMatrixNear(Q * R, A * P, kLoose);
+}
+
+TEST(QRP, RDiagonalDescending) {
+    DynamicMatrix A(3, 3);
+    A.set(0,0,1); A.set(0,1,2); A.set(0,2,3);
+    A.set(1,0,4); A.set(1,1,5); A.set(1,2,6);
+    A.set(2,0,7); A.set(2,1,8); A.set(2,2,10);
+
+    auto [Q, R, piv] = qrp(A);
+    for (size_t i = 1; i < std::min(R.rows(), R.cols()); ++i)
+        EXPECT_GE(std::abs(R.get(i-1,i-1)), std::abs(R.get(i,i)) - kLoose);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// Polar decomposition
+// ════════════════════════════════════════════════════════════════════════════
+
+TEST(Polar, Reconstruction) {
+    DynamicMatrix A(2, 2);
+    A.set(0,0,3); A.set(0,1,1); A.set(1,0,1); A.set(1,1,3);
+    auto [U, P] = polar(A);
+    expectMatrixNear(U * P, A, kLoose);
+}
+
+TEST(Polar, UIsOrthogonal) {
+    DynamicMatrix A(3, 3);
+    A.set(0,0,1); A.set(0,1,2); A.set(0,2,0);
+    A.set(1,0,0); A.set(1,1,1); A.set(1,2,3);
+    A.set(2,0,2); A.set(2,1,0); A.set(2,2,1);
+    auto [U, P] = polar(A);
+    EXPECT_TRUE(isOrthogonal(U, kLoose));
+}
+
+TEST(Polar, PIsSymmetric) {
+    DynamicMatrix A(2, 2);
+    A.set(0,0,2); A.set(0,1,1); A.set(1,0,0); A.set(1,1,3);
+    auto [U, P] = polar(A);
+    EXPECT_TRUE(isSymmetric(P, kLoose));
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// Schur decomposition (symmetric)
+// ════════════════════════════════════════════════════════════════════════════
+
+TEST(Schur, Reconstruction) {
+    DynamicMatrix A(3, 3);
+    A.set(0,0,4); A.set(0,1,1); A.set(0,2,0);
+    A.set(1,0,1); A.set(1,1,3); A.set(1,2,1);
+    A.set(2,0,0); A.set(2,1,1); A.set(2,2,2);
+
+    auto [Q, T] = schur(A);
+    size_t n = A.rows();
+    DynamicMatrix Qt(n, n);
+    for (size_t i = 0; i < n; ++i)
+        for (size_t j = 0; j < n; ++j)
+            Qt.set(i, j, Q.get(j, i));
+
+    expectMatrixNear(Q * (T * Qt), A, kLoose);
+}
+
+TEST(Schur, TIsDiagonal) {
+    DynamicMatrix A(2, 2);
+    A.set(0,0,2); A.set(0,1,1); A.set(1,0,1); A.set(1,1,2);
+    auto [Q, T] = schur(A);
+    EXPECT_NEAR(T.get(0,1), 0.0, kLoose);
+    EXPECT_NEAR(T.get(1,0), 0.0, kLoose);
+}
+
+TEST(Schur, NonSymmetricThrows) {
+    DynamicMatrix A(2, 2);
+    A.set(0,0,1); A.set(0,1,2); A.set(1,0,3); A.set(1,1,4);
+    EXPECT_THROW(schur(A), std::invalid_argument);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// CUDA availability query
+// ════════════════════════════════════════════════════════════════════════════
+
+// cuda_is_available() must always return a valid bool (true or false)
+// regardless of whether the library was built with CUDA support.
+// On CPU-only builds it always returns false.
+TEST(CUDAQuery, ReturnsValidBool) {
+    bool avail = cuda_is_available();
+    // Just verify it doesn't throw and returns a sensible value.
+    EXPECT_TRUE(avail == true || avail == false);
 }

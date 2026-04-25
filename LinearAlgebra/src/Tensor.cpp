@@ -1,5 +1,9 @@
 #include "Tensor.h"
 
+#ifdef SHAREDMATH_CUDA
+#  include "TensorCUDA.h"   // CUDA dispatch declarations (internal header)
+#endif
+
 #include <sstream>
 #include <iomanip>
 #include <cassert>
@@ -10,6 +14,47 @@
 #include <stdexcept>
 
 namespace SharedMath::LinearAlgebra {
+
+// ─── size / flat (must work for both CPU and GPU tensors) ────────────────────
+
+size_t Tensor::size() const noexcept {
+    if (m_shape.empty()) return 0;
+    size_t s = 1;
+    for (size_t d : m_shape) s *= d;
+    return s;
+}
+
+double& Tensor::flat(size_t i) {
+    if (m_device != Device::CPU)
+        throw std::runtime_error(
+            "Tensor::flat: cannot access elements of a GPU tensor directly; "
+            "call .cpu() first");
+    return m_data[i];
+}
+
+double Tensor::flat(size_t i) const {
+    if (m_device != Device::CPU)
+        throw std::runtime_error(
+            "Tensor::flat: cannot access elements of a GPU tensor directly; "
+            "call .cpu() first");
+    return m_data[i];
+}
+
+// ─── CPU stubs for cuda() / cpu() ────────────────────────────────────────────
+// When CUDA is disabled these are no-ops.  The real implementations live in
+// TensorCUDA.cu and are compiled only with -DSHAREDMATH_ENABLE_CUDA=ON.
+
+#ifndef SHAREDMATH_CUDA
+Tensor Tensor::cuda() const { return *this; }
+Tensor Tensor::cpu()  const { return *this; }
+
+// Private factory — only needed in TensorCUDA.cu; stub here to satisfy the
+// linker on CPU-only builds (it should never actually be called).
+Tensor Tensor::from_cuda(Shape /*shape*/,
+                          std::shared_ptr<CUDABuffer> /*buf*/) {
+    throw std::runtime_error("Tensor::from_cuda: CUDA support not compiled in");
+}
+#endif
 
 // ─── construction ─────────────────────────────────────────────────────────────
 
@@ -245,18 +290,42 @@ Tensor Tensor::broadcastOp(const Tensor& other,
 
 // ─── arithmetic operators ─────────────────────────────────────────────────────
 
+// ── CUDA binary dispatch macro ────────────────────────────────────────────────
+// Same-shape → CUDA kernel.  Different shapes (broadcast) → CPU fallback.
+// Mixed device → error.
+#ifdef SHAREDMATH_CUDA
+#define CUDA_BINARY_DISPATCH(OP_ENUM, CPU_EXPR)                             \
+    if (m_device != o.m_device)                                             \
+        throw std::runtime_error(                                           \
+            "Tensor: binary op between tensors on different devices");      \
+    if (m_device == Device::CUDA) {                                         \
+        if (m_shape == o.m_shape)                                           \
+            return detail::cuda_binary(*this, o, detail::BinaryOp::OP_ENUM);\
+        return cpu().CPU_EXPR(o.cpu()); /* broadcast → CPU fallback */      \
+    }
+    /* If cuda() returned CPU (no GPU present) — fall through to CPU path */
+#else
+#define CUDA_BINARY_DISPATCH(OP_ENUM, CPU_EXPR)
+#endif
+
 Tensor Tensor::operator+(const Tensor& o) const {
+    CUDA_BINARY_DISPATCH(Add, operator+)
     return broadcastOp(o, [](double a, double b) { return a + b; });
 }
 Tensor Tensor::operator-(const Tensor& o) const {
+    CUDA_BINARY_DISPATCH(Sub, operator-)
     return broadcastOp(o, [](double a, double b) { return a - b; });
 }
 Tensor Tensor::operator*(const Tensor& o) const {
+    CUDA_BINARY_DISPATCH(Mul, operator*)
     return broadcastOp(o, [](double a, double b) { return a * b; });
 }
 Tensor Tensor::operator/(const Tensor& o) const {
+    CUDA_BINARY_DISPATCH(Div, operator/)
     return broadcastOp(o, [](double a, double b) { return a / b; });
 }
+
+#undef CUDA_BINARY_DISPATCH
 
 Tensor Tensor::operator+(double s) const { return apply([s](double x){ return x + s; }); }
 Tensor Tensor::operator-(double s) const { return apply([s](double x){ return x - s; }); }
@@ -357,29 +426,55 @@ Tensor Tensor::mean(size_t axis) const {
 
 // ─── element-wise math ────────────────────────────────────────────────────────
 
+// apply(f) is CPU-only (std::function can't be passed to a CUDA kernel).
+// If the tensor is on GPU, it is first brought to CPU.
 Tensor Tensor::apply(std::function<double(double)> f) const {
+#ifdef SHAREDMATH_CUDA
+    if (m_device == Device::CUDA) return cpu().apply(f);
+#endif
     Tensor result(m_shape);
     for (size_t i = 0; i < m_data.size(); ++i) result.m_data[i] = f(m_data[i]);
     return result;
 }
 
-Tensor Tensor::abs()   const { return apply([](double x){ return std::abs(x);   }); }
-Tensor Tensor::sqrt()  const { return apply([](double x){ return std::sqrt(x);  }); }
-Tensor Tensor::exp()   const { return apply([](double x){ return std::exp(x);   }); }
-Tensor Tensor::log()   const { return apply([](double x){ return std::log(x);   }); }
-Tensor Tensor::log2()  const { return apply([](double x){ return std::log2(x);  }); }
-Tensor Tensor::log10() const { return apply([](double x){ return std::log10(x); }); }
-Tensor Tensor::sin()   const { return apply([](double x){ return std::sin(x);   }); }
-Tensor Tensor::cos()   const { return apply([](double x){ return std::cos(x);   }); }
-Tensor Tensor::tanh()  const { return apply([](double x){ return std::tanh(x);  }); }
-Tensor Tensor::floor() const { return apply([](double x){ return std::floor(x); }); }
-Tensor Tensor::ceil()  const { return apply([](double x){ return std::ceil(x);  }); }
-Tensor Tensor::round() const { return apply([](double x){ return std::round(x); }); }
+// Named unary ops: GPU-accelerated via dedicated CUDA kernels when on device.
+#ifdef SHAREDMATH_CUDA
+#define CUDA_UNARY(OP_ENUM, CPU_EXPR)                                       \
+    if (m_device == Device::CUDA)                                           \
+        return detail::cuda_unary(*this, detail::UnaryOp::OP_ENUM);        \
+    return CPU_EXPR;
+#else
+#define CUDA_UNARY(OP_ENUM, CPU_EXPR) return CPU_EXPR;
+#endif
+
+Tensor Tensor::abs()   const { CUDA_UNARY(Abs,   apply([](double x){ return std::abs(x);   })) }
+Tensor Tensor::sqrt()  const { CUDA_UNARY(Sqrt,  apply([](double x){ return std::sqrt(x);  })) }
+Tensor Tensor::exp()   const { CUDA_UNARY(Exp,   apply([](double x){ return std::exp(x);   })) }
+Tensor Tensor::log()   const { CUDA_UNARY(Log,   apply([](double x){ return std::log(x);   })) }
+Tensor Tensor::log2()  const { CUDA_UNARY(Log2,  apply([](double x){ return std::log2(x);  })) }
+Tensor Tensor::log10() const { CUDA_UNARY(Log10, apply([](double x){ return std::log10(x); })) }
+Tensor Tensor::sin()   const { CUDA_UNARY(Sin,   apply([](double x){ return std::sin(x);   })) }
+Tensor Tensor::cos()   const { CUDA_UNARY(Cos,   apply([](double x){ return std::cos(x);   })) }
+Tensor Tensor::tanh()  const { CUDA_UNARY(Tanh,  apply([](double x){ return std::tanh(x);  })) }
+Tensor Tensor::floor() const { CUDA_UNARY(Floor, apply([](double x){ return std::floor(x); })) }
+Tensor Tensor::ceil()  const { CUDA_UNARY(Ceil,  apply([](double x){ return std::ceil(x);  })) }
+Tensor Tensor::round() const { CUDA_UNARY(Round, apply([](double x){ return std::round(x); })) }
 Tensor Tensor::sign()  const {
-    return apply([](double x){ return x > 0.0 ? 1.0 : (x < 0.0 ? -1.0 : 0.0); });
+    CUDA_UNARY(Sign, apply([](double x){ return x > 0.0 ? 1.0 : (x < 0.0 ? -1.0 : 0.0); }))
 }
-Tensor Tensor::pow(double e)        const { return apply([e](double x){ return std::pow(x, e); }); }
+
+#undef CUDA_UNARY
+
+Tensor Tensor::pow(double e) const {
+#ifdef SHAREDMATH_CUDA
+    if (m_device == Device::CUDA) return detail::cuda_pow(*this, e);
+#endif
+    return apply([e](double x){ return std::pow(x, e); });
+}
 Tensor Tensor::clip(double lo, double hi) const {
+#ifdef SHAREDMATH_CUDA
+    if (m_device == Device::CUDA) return detail::cuda_clip(*this, lo, hi);
+#endif
     return apply([lo, hi](double x){ return std::clamp(x, lo, hi); });
 }
 
@@ -393,8 +488,16 @@ Tensor Tensor::matmul(const Tensor& other) const {
         throw std::invalid_argument(
             "Tensor::matmul: inner dimensions mismatch (" +
             std::to_string(k) + " vs " + std::to_string(other.m_shape[0]) + ")");
+
+#ifdef SHAREDMATH_CUDA
+    if (m_device != other.m_device)
+        throw std::runtime_error("Tensor::matmul: tensors must be on the same device");
+    if (m_device == Device::CUDA)
+        return detail::cuda_matmul(*this, other);
+#endif
+
+    // CPU path — cache-friendly i-l-j loop
     Tensor result({m, n}, 0.0);
-    // Cache-friendly loop order (i, l, j)
     for (size_t i = 0; i < m; ++i)
         for (size_t l = 0; l < k; ++l) {
             double a = (*this)(i, l);

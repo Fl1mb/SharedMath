@@ -50,6 +50,7 @@ add_executable(${PROJECT_NAME}Tests
     test_numerical_ode.cpp
     test_numerical_integral_equations.cpp
     test_numerical_slae.cpp
+    test_iterative_solvers.cpp
 )
 
 target_link_libraries(${PROJECT_NAME}Tests

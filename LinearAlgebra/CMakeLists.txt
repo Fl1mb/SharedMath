@@ -1,15 +1,48 @@
 include(GenerateExportHeader)
 
-add_library(SharedMath_LinearAlgebra
+# ── Optional CUDA support ──────────────────────────────────────────────────────
+option(SHAREDMATH_ENABLE_CUDA "Enable CUDA acceleration for Tensor and LinearAlgebra" OFF)
+
+if(SHAREDMATH_ENABLE_CUDA)
+    find_package(CUDAToolkit REQUIRED)   # CMake >= 3.17
+    enable_language(CUDA)
+    message(STATUS "SharedMath: CUDA support enabled (toolkit: ${CUDAToolkit_VERSION})")
+endif()
+
+# ── Library sources ────────────────────────────────────────────────────────────
+set(SHAREDMATH_LINALG_SOURCES
     src/MatrixView.cpp
     src/MatrixOperationFactory.cpp
     src/MatrixOperations.cpp
     src/LUDecomposition.cpp
     src/Tensor.cpp
     src/MatrixFunctions.cpp
+    src/IterativeSolvers.cpp
 )
+
+if(SHAREDMATH_ENABLE_CUDA)
+    list(APPEND SHAREDMATH_LINALG_SOURCES src/TensorCUDA.cu)
+endif()
+
+add_library(SharedMath_LinearAlgebra ${SHAREDMATH_LINALG_SOURCES})
 add_library(SharedMath::LinearAlgebra ALIAS SharedMath_LinearAlgebra)
 
+# ── CUDA-specific settings ─────────────────────────────────────────────────────
+if(SHAREDMATH_ENABLE_CUDA)
+    target_compile_definitions(SharedMath_LinearAlgebra PUBLIC SHAREDMATH_CUDA)
+
+    set_target_properties(SharedMath_LinearAlgebra PROPERTIES
+        CUDA_SEPARABLE_COMPILATION ON          # needed for device code in .cu
+        CUDA_ARCHITECTURES          "75;86;89" # Turing / Ampere / Ada — adjust to your GPU
+    )
+
+    target_link_libraries(SharedMath_LinearAlgebra PUBLIC
+        CUDA::cublas
+        CUDA::cudart
+    )
+endif()
+
+# ── Export header ──────────────────────────────────────────────────────────────
 generate_export_header(SharedMath_LinearAlgebra
     EXPORT_MACRO_NAME SHAREDMATH_LINEARALGEBRA_EXPORT
     EXPORT_FILE_NAME  ${PROJECT_BINARY_DIR}/include/sharedmath_linearalgebra_export.h

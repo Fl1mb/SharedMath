@@ -39,7 +39,7 @@ void LUDecomposition::MakeDecomposition() {
 
         if (maxVal < 1e-12) {
             singular = true;
-            throw std::runtime_error("Matrix is singular or nearly singular");
+            return;
         }
 
         if (maxIndex != k) {

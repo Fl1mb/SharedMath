@@ -208,6 +208,20 @@ DynamicMatrix inv(const AbstractMatrix& A) {
     return result;
 }
 
+// ─── LU decomposition (wraps LUDecomposition, returns P·A = L·U) ─────────────
+
+std::tuple<DynamicMatrix, DynamicMatrix, DynamicMatrix>
+lu(const AbstractMatrix& A)
+{
+    if (A.rows() != A.cols())
+        throw std::invalid_argument("lu: requires square matrix");
+
+    DynamicMatrix Ad = toDynamic(A);
+    LUDecomposition dec(Ad);
+    dec.MakeDecomposition();
+    return {dec.GetL(), dec.GetU(), dec.GetPermutationMatrix()};
+}
+
 // ─── QR decomposition (Householder reflections) ───────────────────────────────
 
 std::pair<DynamicMatrix, DynamicMatrix> qr(const AbstractMatrix& A) {
@@ -715,5 +729,311 @@ Tensor einsum(const std::string& subscripts, const Tensor& a, const Tensor& b) {
     }
     return result;
 }
+
+// ─── det ─────────────────────────────────────────────────────────────────────
+
+double det(const AbstractMatrix& A) {
+    if (A.rows() != A.cols())
+        throw std::invalid_argument("det: requires square matrix");
+    DynamicMatrix Ad = toDynamic(A);
+    LUDecomposition dec(Ad);
+    dec.MakeDecomposition();
+    return dec.Determinant();
+}
+
+// ─── trace ────────────────────────────────────────────────────────────────────
+
+double trace(const AbstractMatrix& A) {
+    size_t n = std::min(A.rows(), A.cols());
+    double s = 0.0;
+    for (size_t i = 0; i < n; ++i) s += A.get(i, i);
+    return s;
+}
+
+// ─── cond ─────────────────────────────────────────────────────────────────────
+
+double cond(const AbstractMatrix& A, double tol) {
+    auto [U, S, Vt] = svd(A);
+    if (S.empty() || S[0] < 1e-14)
+        return std::numeric_limits<double>::infinity();
+    double s_min = S.back();
+    double s_tol = (tol < 0.0)
+                   ? std::numeric_limits<double>::epsilon() *
+                     static_cast<double>(std::max(A.rows(), A.cols())) * S[0]
+                   : tol;
+    if (s_min < s_tol)
+        return std::numeric_limits<double>::infinity();
+    return S[0] / s_min;
+}
+
+// ─── isSymmetric / isOrthogonal / isPositiveDefinite ─────────────────────────
+
+bool isSymmetric(const AbstractMatrix& A, double tol) {
+    if (A.rows() != A.cols()) return false;
+    size_t n = A.rows();
+    for (size_t i = 0; i < n; ++i)
+        for (size_t j = i + 1; j < n; ++j)
+            if (std::abs(A.get(i, j) - A.get(j, i)) > tol) return false;
+    return true;
+}
+
+bool isOrthogonal(const AbstractMatrix& A, double tol) {
+    if (A.rows() != A.cols()) return false;
+    size_t n = A.rows();
+    DynamicMatrix Ad  = toDynamic(A);
+    DynamicMatrix AtA = transposeMatrix(A) * Ad;
+    for (size_t i = 0; i < n; ++i)
+        for (size_t j = 0; j < n; ++j)
+            if (std::abs(AtA.get(i, j) - (i == j ? 1.0 : 0.0)) > tol) return false;
+    return true;
+}
+
+bool isPositiveDefinite(const AbstractMatrix& A) {
+    if (A.rows() != A.cols() || !isSymmetric(A)) return false;
+    try { cholesky(A); return true; } catch (...) { return false; }
+}
+
+// ─── kron ─────────────────────────────────────────────────────────────────────
+
+DynamicMatrix kron(const AbstractMatrix& A, const AbstractMatrix& B) {
+    size_t m = A.rows(), n = A.cols();
+    size_t p = B.rows(), q = B.cols();
+    DynamicMatrix result(m * p, n * q);
+    for (size_t i = 0; i < m; ++i)
+        for (size_t j = 0; j < n; ++j) {
+            double a = A.get(i, j);
+            for (size_t k = 0; k < p; ++k)
+                for (size_t l = 0; l < q; ++l)
+                    result.set(i * p + k, j * q + l, a * B.get(k, l));
+        }
+    return result;
+}
+
+// ─── expm ─────────────────────────────────────────────────────────────────────
+// Scaling-and-squaring with Taylor series: exp(A) = exp(A/2^s)^{2^s}
+
+DynamicMatrix expm(const AbstractMatrix& A) {
+    size_t n = A.rows();
+    if (A.cols() != n)
+        throw std::invalid_argument("expm: requires square matrix");
+
+    DynamicMatrix Ad = toDynamic(A);
+
+    // Choose s so that ||A / 2^s||_1 <= 1
+    double nrm = norm(Ad, NormType::One);
+    int s = (nrm > 0.5) ? static_cast<int>(std::ceil(std::log2(nrm))) : 0;
+    double scale = std::ldexp(1.0, -s);   // 2^{-s}
+
+    DynamicMatrix As(n, n);
+    for (size_t i = 0; i < n; ++i)
+        for (size_t j = 0; j < n; ++j)
+            As.set(i, j, Ad.get(i, j) * scale);
+
+    // Taylor series: term_k = term_{k-1} * As / k, result += term_k
+    DynamicMatrix result = eye(n);
+    DynamicMatrix term   = eye(n);
+    for (size_t k = 1; k <= 30; ++k) {
+        term = term * As;
+        double inv_k = 1.0 / static_cast<double>(k);
+        for (size_t i = 0; i < n; ++i)
+            for (size_t j = 0; j < n; ++j)
+                term.set(i, j, term.get(i, j) * inv_k);
+
+        for (size_t i = 0; i < n; ++i)
+            for (size_t j = 0; j < n; ++j)
+                result.set(i, j, result.get(i, j) + term.get(i, j));
+
+        double res_nrm = norm(result, NormType::One);
+        if (norm(term, NormType::One) < 1e-15 * res_nrm) break;
+    }
+
+    // Square back 2^s times
+    for (int i = 0; i < s; ++i)
+        result = result * result;
+
+    return result;
+}
+
+// ─── sqrtm ────────────────────────────────────────────────────────────────────
+// Via eigendecomposition: sqrtm(A) = V * sqrt(D) * V^T  (symmetric PSD only)
+
+DynamicMatrix sqrtm(const AbstractMatrix& A) {
+    size_t n = A.rows();
+    if (A.cols() != n)
+        throw std::invalid_argument("sqrtm: requires square matrix");
+    if (!isSymmetric(A))
+        throw std::invalid_argument("sqrtm: only symmetric positive semidefinite matrices are supported");
+
+    auto [evals, V] = eig(A);
+
+    for (double ev : evals)
+        if (ev < -1e-10)
+            throw std::runtime_error("sqrtm: matrix has negative eigenvalues");
+
+    DynamicMatrix result(n, n);
+    for (size_t k = 0; k < n; ++k) {
+        double sq = (evals[k] > 0.0) ? std::sqrt(evals[k]) : 0.0;
+        for (size_t i = 0; i < n; ++i)
+            for (size_t j = 0; j < n; ++j)
+                result.set(i, j, result.get(i, j) + sq * V.get(i, k) * V.get(j, k));
+    }
+    return result;
+}
+
+// ─── logm ─────────────────────────────────────────────────────────────────────
+// Via eigendecomposition: logm(A) = V * log(D) * V^T  (symmetric PD only)
+
+DynamicMatrix logm(const AbstractMatrix& A) {
+    size_t n = A.rows();
+    if (A.cols() != n)
+        throw std::invalid_argument("logm: requires square matrix");
+    if (!isSymmetric(A))
+        throw std::invalid_argument("logm: only symmetric positive definite matrices are supported");
+
+    auto [evals, V] = eig(A);
+
+    for (double ev : evals)
+        if (ev <= 1e-14)
+            throw std::runtime_error("logm: matrix must be positive definite (all eigenvalues > 0)");
+
+    DynamicMatrix result(n, n);
+    for (size_t k = 0; k < n; ++k) {
+        double lg = std::log(evals[k]);
+        for (size_t i = 0; i < n; ++i)
+            for (size_t j = 0; j < n; ++j)
+                result.set(i, j, result.get(i, j) + lg * V.get(i, k) * V.get(j, k));
+    }
+    return result;
+}
+
+// ─── QR with column pivoting ─────────────────────────────────────────────────
+
+std::tuple<DynamicMatrix, DynamicMatrix, std::vector<size_t>>
+qrp(const AbstractMatrix& A)
+{
+    size_t m = A.rows(), n = A.cols();
+    DynamicMatrix R = toDynamic(A);
+    DynamicMatrix Q = eye(m);
+    std::vector<size_t> piv(n);
+    std::iota(piv.begin(), piv.end(), 0);
+
+    size_t k_max = std::min(m, n);
+    for (size_t k = 0; k < k_max; ++k) {
+        // Find pivot: column k..n-1 with largest sub-column 2-norm
+        double best_nrm = -1.0;
+        size_t best_col = k;
+        for (size_t j = k; j < n; ++j) {
+            double nrm = 0.0;
+            for (size_t i = k; i < m; ++i) nrm += R(i, j) * R(i, j);
+            if (nrm > best_nrm) { best_nrm = nrm; best_col = j; }
+        }
+
+        // Swap columns k ↔ best_col in R and pivot vector
+        if (best_col != k) {
+            for (size_t i = 0; i < m; ++i) std::swap(R(i, k), R(i, best_col));
+            std::swap(piv[k], piv[best_col]);
+        }
+
+        // Householder reflection for column k
+        size_t len = m - k;
+        std::vector<double> x(len);
+        for (size_t i = 0; i < len; ++i) x[i] = R(k + i, k);
+
+        double norm_x = 0.0;
+        for (double v : x) norm_x += v * v;
+        norm_x = std::sqrt(norm_x);
+        if (norm_x < 1e-14) continue;
+
+        std::vector<double> u = x;
+        u[0] += (x[0] >= 0.0 ? 1.0 : -1.0) * norm_x;
+        double norm_u = 0.0;
+        for (double v : u) norm_u += v * v;
+        if (norm_u < 1e-14) continue;
+        norm_u = std::sqrt(norm_u);
+        for (double& v : u) v /= norm_u;
+
+        // Apply H to R[k:m, k:n]
+        for (size_t j = k; j < n; ++j) {
+            double dot = 0.0;
+            for (size_t i = 0; i < len; ++i) dot += u[i] * R(k + i, j);
+            for (size_t i = 0; i < len; ++i) R(k + i, j) -= 2.0 * u[i] * dot;
+        }
+
+        // Accumulate Q
+        for (size_t i = 0; i < m; ++i) {
+            double dot = 0.0;
+            for (size_t j = 0; j < len; ++j) dot += Q(i, k + j) * u[j];
+            for (size_t j = 0; j < len; ++j) Q(i, k + j) -= 2.0 * dot * u[j];
+        }
+    }
+
+    // Zero sub-diagonal noise in R
+    for (size_t i = 1; i < m; ++i)
+        for (size_t j = 0; j < std::min(i, n); ++j)
+            R(i, j) = 0.0;
+
+    return {Q, R, piv};
+}
+
+// ─── Polar decomposition ──────────────────────────────────────────────────────
+// A = U_p * P  where U_p orthogonal, P symmetric PSD  (A must be square)
+
+std::pair<DynamicMatrix, DynamicMatrix> polar(const AbstractMatrix& A) {
+    if (A.rows() != A.cols())
+        throw std::invalid_argument("polar: requires square matrix");
+
+    // Thin SVD = full SVD for square A
+    auto [U_s, S, Vt] = svd(A);
+    size_t n = A.rows();
+    size_t k = S.size();
+
+    // U_polar = U_s * Vt
+    DynamicMatrix U_polar = U_s * Vt;  // m×k * k×n = n×n for square
+
+    // P_polar = V * diag(S) * Vt  (n×n symmetric PSD)
+    DynamicMatrix V = transposeMatrix(Vt);          // n×k
+    DynamicMatrix S_mat(k, k);
+    for (size_t i = 0; i < k; ++i) S_mat.set(i, i, S[i]);
+    DynamicMatrix P_polar = V * (S_mat * Vt);       // n×k * k×k * k×n
+
+    // Force symmetry (remove floating-point asymmetry)
+    for (size_t i = 0; i < n; ++i)
+        for (size_t j = i + 1; j < n; ++j) {
+            double sym = 0.5 * (P_polar.get(i, j) + P_polar.get(j, i));
+            P_polar.set(i, j, sym);
+            P_polar.set(j, i, sym);
+        }
+
+    return {U_polar, P_polar};
+}
+
+// ─── Schur decomposition (real symmetric) ────────────────────────────────────
+// A = Q * T * Q^T, T diagonal (eigenvalues), Q orthogonal (eigenvectors)
+
+std::pair<DynamicMatrix, DynamicMatrix>
+schur(const AbstractMatrix& A, size_t max_iter)
+{
+    if (A.rows() != A.cols())
+        throw std::invalid_argument("schur: requires square matrix");
+    if (!isSymmetric(A))
+        throw std::invalid_argument("schur: only real symmetric matrices are supported");
+
+    auto [evals, Q] = eig(A, max_iter);
+
+    size_t n = evals.size();
+    DynamicMatrix T(n, n);
+    for (size_t i = 0; i < n; ++i) T.set(i, i, evals[i]);
+
+    return {Q, T};   // A = Q * T * Q^T
+}
+
+// ─── cuda_is_available ────────────────────────────────────────────────────────
+// CPU-only build: always false.
+// CUDA build: the real implementation is in TensorCUDA.cu and overrides this
+// via weak linking on Linux/macOS or a separate definition on Windows.
+// We define the CPU stub here so the linker always has at least one definition.
+#ifndef SHAREDMATH_CUDA
+bool cuda_is_available() noexcept { return false; }
+#endif
 
 } // namespace SharedMath::LinearAlgebra

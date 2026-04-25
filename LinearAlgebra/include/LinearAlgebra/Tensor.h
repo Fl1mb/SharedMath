@@ -11,12 +11,22 @@
 #include <algorithm>
 #include <limits>
 #include <cmath>
+#include <memory>
 #include <ostream>
 
 namespace SharedMath::LinearAlgebra {
 
+// Compute device. CUDA is only functional when the library is built with
+// -DSHAREDMATH_ENABLE_CUDA=ON. On CPU-only builds, .cuda() is a no-op.
+enum class SHAREDMATH_LINEARALGEBRA_EXPORT Device { CPU, CUDA };
+
+namespace detail { struct TensorCUDAImpl; }   // forward-declared CUDA accessor
+
 // N-dimensional dense tensor with row-major (C-contiguous) storage.
 // Supports NumPy-style broadcasting, axis reductions, and element-wise math.
+// When built with CUDA support, tensors can be moved to GPU with .cuda() and
+// back with .cpu(). Operations between two GPU tensors are dispatched to cuBLAS
+// / custom CUDA kernels automatically.
 class SHAREDMATH_LINEARALGEBRA_EXPORT Tensor {
 public:
     using Shape = std::vector<size_t>;
@@ -43,11 +53,23 @@ public:
     // Shape & metadata
     // ------------------------------------------------------------------ //
 
-    const Shape& shape()          const noexcept { return m_shape; }
-    size_t        ndim()          const noexcept { return m_shape.size(); }
-    size_t        size()          const noexcept { return m_data.size(); }
+    const Shape& shape()           const noexcept { return m_shape; }
+    size_t        ndim()           const noexcept { return m_shape.size(); }
+    // Total element count — valid for both CPU and GPU tensors.
+    size_t        size()           const noexcept;
     size_t        dim(size_t axis) const;
-    bool          empty()         const noexcept { return m_data.empty(); }
+    bool          empty()          const noexcept { return size() == 0; }
+
+    // ── Device management ─────────────────────────────────────────────── //
+
+    Device device() const noexcept { return m_device; }
+
+    // Transfer to GPU (copy host→device). No-op if already on GPU.
+    // When built without CUDA support, returns *this unchanged.
+    Tensor cuda() const;
+
+    // Transfer to CPU (copy device→host). No-op if already on CPU.
+    Tensor cpu()  const;
 
     // Convert flat index to multi-index (row-major)
     std::vector<size_t> unravel(size_t flat_idx) const;
@@ -69,10 +91,11 @@ public:
     double& at(const std::vector<size_t>& idx);
     double  at(const std::vector<size_t>& idx) const;
 
-    // Raw flat access (row-major order)
-    double& flat(size_t i)       { return m_data[i]; }
-    double  flat(size_t i) const { return m_data[i]; }
+    // Raw flat access — only valid for CPU tensors; throws for GPU tensors.
+    double& flat(size_t i);
+    double  flat(size_t i) const;
 
+    // Host data vector (empty for GPU tensors — use .cpu().data() to fetch).
     const std::vector<double>& data()  const noexcept { return m_data; }
     std::vector<double>&       data()        noexcept { return m_data; }
 
@@ -172,10 +195,17 @@ public:
     std::string str() const;
 
 private:
+    // ── CPU storage ───────────────────────────────────────────────────── //
     Shape               m_shape;
-    std::vector<double> m_data;
-    std::vector<size_t> m_strides;   // row-major strides (in elements)
+    std::vector<double> m_data;      // empty when tensor is on GPU
+    std::vector<size_t> m_strides;
 
+    // ── GPU storage (PIMPL — no CUDA headers leak into this header) ───── //
+    struct CUDABuffer;                          // defined in TensorCUDA.cu
+    std::shared_ptr<CUDABuffer> m_cuda_buf;     // null → CPU tensor
+    Device m_device = Device::CPU;
+
+    // ── Helpers ───────────────────────────────────────────────────────── //
     void   computeStrides();
     size_t flatIndex(const std::vector<size_t>& idx) const;
 
@@ -185,6 +215,11 @@ private:
     Tensor axisReduce(size_t axis,
                       std::function<double(double, double)> reducer,
                       double init) const;
+
+    // Private factory used by TensorCUDA.cu to wrap a GPU buffer
+    static Tensor from_cuda(Shape shape, std::shared_ptr<CUDABuffer> buf);
+
+    friend struct detail::TensorCUDAImpl;   // CUDA implementation accessor
 };
 
 // Scalar-on-left arithmetic

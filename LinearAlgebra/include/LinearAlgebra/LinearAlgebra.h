@@ -7,3 +7,4 @@
 #include "MatrixOperations.h"
 #include "Tensor.h"
 #include "MatrixFunctions.h"
+#include "IterativeSolvers.h"
