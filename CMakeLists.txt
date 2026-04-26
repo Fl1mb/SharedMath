@@ -123,7 +123,7 @@ if(${PROJECT_NAME}_BUILD_EXAMPLES)
 endif()
 
 # --------------------------------------------------------------------------- #
-# Install (без изменений, работает корректно)
+# Install
 # --------------------------------------------------------------------------- #
 if(${PROJECT_NAME}_INSTALL AND NOT CMAKE_SKIP_INSTALL_RULES)
     include(CMakePackageConfigHelpers)
