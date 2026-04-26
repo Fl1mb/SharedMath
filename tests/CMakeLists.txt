@@ -51,6 +51,8 @@ add_executable(${PROJECT_NAME}Tests
     test_numerical_integral_equations.cpp
     test_numerical_slae.cpp
     test_iterative_solvers.cpp
+    test_tensor_cuda.cpp
+    test_dynamicmatrix_cuda.cpp
 )
 
 target_link_libraries(${PROJECT_NAME}Tests
