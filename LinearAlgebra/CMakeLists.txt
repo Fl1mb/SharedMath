@@ -17,6 +17,10 @@ set(SHAREDMATH_LINALG_SOURCES
     src/LUDecomposition.cpp
     src/Tensor.cpp
     src/DynamicMatrix.cpp
+    src/DynamicVector.cpp
+    src/SparseMatrix.cpp
+    src/LinearSolver.cpp
+    src/PCA.cpp
     src/MatrixFunctions.cpp
     src/IterativeSolvers.cpp
 )
