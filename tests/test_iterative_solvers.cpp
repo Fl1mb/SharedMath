@@ -163,3 +163,84 @@ TEST(CUDAFallback, DeviceRoundTrip) {
     for (size_t i = 0; i < orig.size(); ++i)
         EXPECT_DOUBLE_EQ(B.flat(i), orig[i]);
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+// DynamicMatrix CUDA / CPU fallback
+// ════════════════════════════════════════════════════════════════════════════
+
+// .cuda() must never crash regardless of whether a GPU is present.
+// If no GPU is available the matrix stays on CPU and device() == CPU.
+TEST(DynamicMatrixCUDA, CudaCallNeverCrashes) {
+    DynamicMatrix A(2, 2, {1.0, 2.0, 3.0, 4.0});
+    DynamicMatrix A_dev = A.cuda();
+    EXPECT_TRUE(A_dev.device() == Device::CPU ||
+                A_dev.device() == Device::CUDA);
+}
+
+// .cuda().cpu() must reproduce the original data exactly.
+TEST(DynamicMatrixCUDA, DeviceRoundTrip) {
+    DynamicMatrix A(2, 3, {1.0, 2.0, 3.0, 4.0, 5.0, 6.0});
+    DynamicMatrix B = A.cuda().cpu();
+    ASSERT_EQ(B.rows(), 2u);
+    ASSERT_EQ(B.cols(), 3u);
+    for (size_t i = 0; i < 2; ++i)
+        for (size_t j = 0; j < 3; ++j)
+            EXPECT_DOUBLE_EQ(B(i, j), A(i, j));
+}
+
+// Matrix multiply must give the same result on any device.
+TEST(DynamicMatrixCUDA, MatmulMatchesCPU) {
+    DynamicMatrix A(2, 3, {1.0, 0.0, 0.0,
+                            0.0, 1.0, 0.0});
+    DynamicMatrix B(3, 2, {1.0, 2.0,
+                            3.0, 4.0,
+                            5.0, 6.0});
+
+    // CPU result
+    DynamicMatrix C_cpu = A * B;
+
+    // GPU result (stays CPU if no GPU present — result must match either way)
+    DynamicMatrix C_gpu = (A.cuda() * B.cuda()).cpu();
+
+    ASSERT_EQ(C_gpu.rows(), 2u);
+    ASSERT_EQ(C_gpu.cols(), 2u);
+    for (size_t i = 0; i < 2; ++i)
+        for (size_t j = 0; j < 2; ++j)
+            EXPECT_NEAR(C_gpu(i, j), C_cpu(i, j), 1e-9);
+}
+
+// Element-wise add on any device must equal the CPU result.
+TEST(DynamicMatrixCUDA, AddMatchesCPU) {
+    DynamicMatrix A(2, 2, {1.0, 2.0, 3.0, 4.0});
+    DynamicMatrix B(2, 2, {5.0, 6.0, 7.0, 8.0});
+
+    DynamicMatrix C_cpu = A + B;
+    DynamicMatrix C_dev = (A.cuda() + B.cuda()).cpu();
+
+    for (size_t i = 0; i < 2; ++i)
+        for (size_t j = 0; j < 2; ++j)
+            EXPECT_NEAR(C_dev(i, j), C_cpu(i, j), 1e-9);
+}
+
+// Scalar multiply on any device must equal the CPU result.
+TEST(DynamicMatrixCUDA, ScaleMatchesCPU) {
+    DynamicMatrix A(2, 2, {1.0, -2.0, 3.0, -4.0});
+    DynamicMatrix B_cpu = A * 3.0;
+    DynamicMatrix B_dev = (A.cuda() * 3.0).cpu();
+
+    for (size_t i = 0; i < 2; ++i)
+        for (size_t j = 0; j < 2; ++j)
+            EXPECT_NEAR(B_dev(i, j), B_cpu(i, j), 1e-9);
+}
+
+// Device mismatch must throw, not silently give a wrong answer.
+TEST(DynamicMatrixCUDA, MixedDeviceThrows) {
+    DynamicMatrix A(2, 2, {1.0, 0.0, 0.0, 1.0});
+    DynamicMatrix B_gpu = A.cuda();
+
+    // Only meaningful when a GPU is actually available.
+    if (B_gpu.device() == Device::CUDA) {
+        EXPECT_THROW(A + B_gpu, std::invalid_argument);
+        EXPECT_THROW(A * B_gpu, std::invalid_argument);
+    }
+}

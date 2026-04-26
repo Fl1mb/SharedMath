@@ -12,15 +12,19 @@
 
 namespace SharedMath::LinearAlgebra {
 
+// Forward-declare the CUDA accessor so DynamicMatrix can grant it friendship.
+// The struct is fully defined in DynamicMatrixCUDA.h (internal, never installed).
+namespace detail { struct DynamicMatrixCUDAImpl; }
+
 // Row-major dense matrix backed by a single contiguous heap allocation.
 //
 // Layout: element (r, c) lives at data_[r * cols_ + c].
 //
-// Benefits over the old vector<vector<double>> design:
-//  - Single allocation → cache-friendly row traversal
-//  - toPtr() is correct and non-UB
-//  - Cache-friendly matmul (i-k-j loop keeps B rows hot)
-//  - Zero-cost conversion to/from Tensor
+// GPU acceleration (Variant A — transparent dispatch):
+//   Call .cuda() to move a matrix to the GPU, .cpu() to bring it back.
+//   When CUDA is not compiled in, both calls are no-ops.
+//   Operations between two GPU matrices are dispatched to cuBLAS / custom
+//   CUDA kernels automatically; no user-visible API changes required.
 //
 class SHAREDMATH_LINEARALGEBRA_EXPORT DynamicMatrix : public AbstractMatrix {
 public:
@@ -53,7 +57,7 @@ public:
     explicit DynamicMatrix(std::shared_ptr<AbstractMatrix> src)
         : DynamicMatrix(*src) {}
 
-    // Construct from 2-D Tensor (zero-copy move)
+    // Construct from 2-D CPU Tensor (zero-copy move)
     explicit DynamicMatrix(Tensor t) {
         if (t.ndim() != 2)
             throw std::invalid_argument(
@@ -68,41 +72,57 @@ public:
     DynamicMatrix(DynamicMatrix&&) noexcept        = default;
     DynamicMatrix& operator=(const DynamicMatrix&) = default;
     DynamicMatrix& operator=(DynamicMatrix&&) noexcept = default;
+
+    // Destructor is non-trivial when CUDA buffer is active.
+    // shared_ptr<CUDABuffer> handles cleanup via its own deleter — no manual
+    // CUDA calls needed here, and CUDABuffer can remain an incomplete type.
     ~DynamicMatrix() override = default;
 
     // ── AbstractMatrix interface ──────────────────────────────────────────
     size_t rows() const noexcept override { return rows_; }
     size_t cols() const noexcept override { return cols_; }
 
-    double  get(size_t r, size_t c) const override { return at_unsafe(r, c); }
-    double& get(size_t r, size_t c)       override { return at_unsafe(r, c); }
-    void    set(size_t r, size_t c, double v) override { at_unsafe(r, c) = v; }
+    // Element access is only valid for CPU matrices.
+    double get(size_t r, size_t c) const override {
+        requireCPU("get");
+        return at_unsafe(r, c);
+    }
+    double& get(size_t r, size_t c) override {
+        requireCPU("get");
+        return at_unsafe(r, c);
+    }
+    void set(size_t r, size_t c, double v) override {
+        requireCPU("set");
+        at_unsafe(r, c) = v;
+    }
 
-    // Single allocation → toPtr() is always correct and contiguous
+    // toPtr() returns the host data pointer; null / dangling for GPU matrices.
     double*       toPtr()       noexcept override { return data_.data(); }
     const double* toPtr() const noexcept override { return data_.data(); }
 
     // ── Element access ────────────────────────────────────────────────────
 
-    // Natural (r, c) syntax — no bounds check (use at() for checked access)
+    // Unchecked (r, c) syntax — only safe on CPU matrices
     double& operator()(size_t r, size_t c)       noexcept { return at_unsafe(r, c); }
     double  operator()(size_t r, size_t c) const noexcept { return at_unsafe(r, c); }
 
-    // Bounds-checked access
+    // Bounds-checked access — CPU only
     double& at(size_t r, size_t c) {
+        requireCPU("at");
         checkBounds(r, c);
         return at_unsafe(r, c);
     }
     double at(size_t r, size_t c) const {
+        requireCPU("at");
         checkBounds(r, c);
         return at_unsafe(r, c);
     }
 
-    // Pointer to the first element of row r (useful for vectorised code / BLAS)
+    // Pointer to the first element of row r — CPU only
     double*       row_ptr(size_t r)       noexcept { return data_.data() + r * cols_; }
     const double* row_ptr(size_t r) const noexcept { return data_.data() + r * cols_; }
 
-    // Flat (linearised row-major) access
+    // Flat (linearised row-major) access — CPU only, no bounds check
     double& flat(size_t i)       noexcept { return data_[i]; }
     double  flat(size_t i) const noexcept { return data_[i]; }
 
@@ -110,9 +130,23 @@ public:
     std::vector<double>&       data()        noexcept { return data_; }
 
     // ── Metadata ──────────────────────────────────────────────────────────
-    bool   empty() const noexcept { return data_.empty(); }
-    size_t size()  const noexcept { return data_.size();  }
+
+    // size() is computed from shape so it is correct for both CPU and GPU matrices.
+    size_t size()     const noexcept { return rows_ * cols_; }
+    bool   empty()    const noexcept { return rows_ * cols_ == 0; }
     bool   isSquare() const noexcept { return rows_ == cols_; }
+
+    // ── Device management ─────────────────────────────────────────────────
+
+    Device device() const noexcept { return m_device; }
+
+    // Move data to GPU (host → device copy).  Returns *this if already on GPU
+    // or if no CUDA-capable device is present (graceful CPU fallback).
+    // On CPU-only builds this is always a no-op.
+    DynamicMatrix cuda() const;
+
+    // Move data back to CPU (device → host copy).  No-op if already on CPU.
+    DynamicMatrix cpu() const;
 
     // ── Comparison ────────────────────────────────────────────────────────
     bool operator==(const DynamicMatrix& o) const noexcept {
@@ -120,66 +154,26 @@ public:
     }
     bool operator!=(const DynamicMatrix& o) const noexcept { return !(*this == o); }
 
-    // ── Scalar arithmetic ─────────────────────────────────────────────────
-    DynamicMatrix operator*(double s) const { auto r = *this; r *= s; return r; }
-    DynamicMatrix operator/(double s) const { auto r = *this; r /= s; return r; }
-
-    DynamicMatrix& operator*=(double s) noexcept {
-        for (double& v : data_) v *= s;
-        return *this;
-    }
-    DynamicMatrix& operator/=(double s) {
-        double inv = 1.0 / s;
-        for (double& v : data_) v *= inv;
-        return *this;
-    }
+    // ── Scalar arithmetic — CUDA-aware ────────────────────────────────────
+    DynamicMatrix  operator* (double s) const;
+    DynamicMatrix  operator/ (double s) const;
+    DynamicMatrix& operator*=(double s);
+    DynamicMatrix& operator/=(double s);
 
     friend DynamicMatrix operator*(double s, const DynamicMatrix& m) { return m * s; }
 
-    // ── Matrix arithmetic ─────────────────────────────────────────────────
-    DynamicMatrix operator+(const DynamicMatrix& o) const { auto r = *this; r += o; return r; }
-    DynamicMatrix operator-(const DynamicMatrix& o) const { auto r = *this; r -= o; return r; }
+    // ── Matrix arithmetic — CUDA-aware ────────────────────────────────────
+    DynamicMatrix  operator+ (const DynamicMatrix& o) const;
+    DynamicMatrix  operator- (const DynamicMatrix& o) const;
+    DynamicMatrix& operator+=(const DynamicMatrix& o);
+    DynamicMatrix& operator-=(const DynamicMatrix& o);
 
-    DynamicMatrix& operator+=(const DynamicMatrix& o) {
-        checkSameShape(o);
-        for (size_t i = 0; i < data_.size(); ++i) data_[i] += o.data_[i];
-        return *this;
-    }
-    DynamicMatrix& operator-=(const DynamicMatrix& o) {
-        checkSameShape(o);
-        for (size_t i = 0; i < data_.size(); ++i) data_[i] -= o.data_[i];
-        return *this;
-    }
-
-    // Cache-friendly matrix multiply.
-    //
-    // Loop order i-k-j:
-    //   - A rows accessed sequentially (row i stays hot in cache)
-    //   - B rows accessed sequentially (row k stays hot in cache)
-    //   - C rows written sequentially
-    // This is ~3-10× faster than naïve i-j-k on large matrices.
-    DynamicMatrix operator*(const DynamicMatrix& B) const {
-        if (cols_ != B.rows_)
-            throw std::invalid_argument(
-                "DynamicMatrix: inner dimensions mismatch (" +
-                std::to_string(cols_) + " vs " + std::to_string(B.rows_) + ")");
-
-        DynamicMatrix C(rows_, B.cols_, 0.0);
-        for (size_t i = 0; i < rows_; ++i) {
-            const double* Ai = row_ptr(i);
-            double*       Ci = C.row_ptr(i);
-            for (size_t k = 0; k < cols_; ++k) {
-                const double  a  = Ai[k];
-                const double* Bk = B.row_ptr(k);
-                for (size_t j = 0; j < B.cols_; ++j)
-                    Ci[j] += a * Bk[j];
-            }
-        }
-        return C;
-    }
+    // Matrix multiply — dispatches to cuBLAS when both operands are on GPU
+    DynamicMatrix  operator* (const DynamicMatrix& B) const;
 
     // ── Transpose ─────────────────────────────────────────────────────────
     DynamicMatrix transposed() const {
+        requireCPU("transposed");
         DynamicMatrix T(cols_, rows_);
         for (size_t i = 0; i < rows_; ++i) {
             const double* Ai = row_ptr(i);
@@ -190,7 +184,7 @@ public:
     }
 
     // ── Utilities ─────────────────────────────────────────────────────────
-    void clear()       noexcept { std::fill(data_.begin(), data_.end(), 0.0); }
+    void clear()        noexcept { std::fill(data_.begin(), data_.end(), 0.0); }
     void fill(double v) noexcept { std::fill(data_.begin(), data_.end(), v); }
 
     // ── Named constructors ────────────────────────────────────────────────
@@ -202,14 +196,15 @@ public:
         return M;
     }
 
-    // ── Tensor interop ────────────────────────────────────────────────────
+    // ── Tensor interop — CPU matrices only ───────────────────────────────
 
-    // Copy data into a 2-D Tensor
+    // Copy data into a 2-D CPU Tensor.
+    // For GPU matrices call .cpu().toTensor().
     Tensor toTensor() const {
+        requireCPU("toTensor");
         return Tensor({rows_, cols_}, data_);
     }
 
-    // Build a DynamicMatrix from a 2-D Tensor (copies data)
     static DynamicMatrix fromTensor(const Tensor& t) {
         if (t.ndim() != 2)
             throw std::invalid_argument(
@@ -221,8 +216,24 @@ private:
     size_t rows_ = 0;
     size_t cols_ = 0;
     std::vector<double> data_; // flat row-major: index = r * cols_ + c
+                               // empty when matrix is on GPU
 
-    // Unchecked access — callers guarantee valid indices
+    // ── GPU storage (PIMPL — no CUDA headers leak into this public header) //
+    struct CUDABuffer;                           // defined in DynamicMatrixCUDA.cu
+    std::shared_ptr<CUDABuffer> m_cuda_buf;      // null → CPU matrix
+    Device m_device = Device::CPU;
+
+    // Private factory: wraps a freshly-allocated GPU buffer into a DynamicMatrix.
+    // Only called from DynamicMatrixCUDA.cu.
+    static DynamicMatrix from_cuda(size_t rows, size_t cols,
+                                   std::shared_ptr<CUDABuffer> buf);
+
+    // Grants the CUDA translation unit access to private members without
+    // exposing raw pointers in the public header.
+    friend struct detail::DynamicMatrixCUDAImpl;
+
+    // ── Private helpers ───────────────────────────────────────────────────
+
     double& at_unsafe(size_t r, size_t c) noexcept {
         return data_[r * cols_ + c];
     }
@@ -230,12 +241,19 @@ private:
         return data_[r * cols_ + c];
     }
 
+    void requireCPU(const char* op) const {
+        if (m_device != Device::CPU)
+            throw std::runtime_error(
+                std::string("DynamicMatrix::") + op +
+                ": matrix is on GPU — call .cpu() first to access elements");
+    }
+
     void checkBounds(size_t r, size_t c) const {
         if (r >= rows_ || c >= cols_)
             throw std::out_of_range(
                 "DynamicMatrix::at: index (" + std::to_string(r) + ", " +
                 std::to_string(c) + ") out of range for matrix (" +
-                std::to_string(rows_) + " x " + std::to_string(cols_) + ")");
+                std::to_string(rows_) + "x" + std::to_string(cols_) + ")");
     }
 
     void checkSameShape(const DynamicMatrix& o) const {
@@ -244,6 +262,13 @@ private:
                 "DynamicMatrix: shape mismatch (" +
                 std::to_string(rows_) + "x" + std::to_string(cols_) +
                 " vs " + std::to_string(o.rows_) + "x" + std::to_string(o.cols_) + ")");
+    }
+
+    void checkSameDevice(const DynamicMatrix& o) const {
+        if (m_device != o.m_device)
+            throw std::invalid_argument(
+                "DynamicMatrix: operands are on different devices — "
+                "align them with .cuda() or .cpu() before this operation");
     }
 };
 

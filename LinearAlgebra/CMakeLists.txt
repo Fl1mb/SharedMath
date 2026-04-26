@@ -16,12 +16,20 @@ set(SHAREDMATH_LINALG_SOURCES
     src/MatrixOperations.cpp
     src/LUDecomposition.cpp
     src/Tensor.cpp
+    src/DynamicMatrix.cpp
+    src/DynamicVector.cpp
+    src/SparseMatrix.cpp
+    src/LinearSolver.cpp
+    src/PCA.cpp
     src/MatrixFunctions.cpp
     src/IterativeSolvers.cpp
 )
 
 if(SHAREDMATH_ENABLE_CUDA)
-    list(APPEND SHAREDMATH_LINALG_SOURCES src/TensorCUDA.cu)
+    list(APPEND SHAREDMATH_LINALG_SOURCES
+        src/TensorCUDA.cu
+        src/DynamicMatrixCUDA.cu
+    )
 endif()
 
 add_library(SharedMath_LinearAlgebra ${SHAREDMATH_LINALG_SOURCES})

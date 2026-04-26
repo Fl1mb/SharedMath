@@ -19,7 +19,8 @@ enum class NormType {
     Frobenius,  // sqrt(sum of squared elements)  — default
     One,        // max column absolute sum
     Inf,        // max row absolute sum
-    Two         // spectral norm (largest singular value)
+    Two,        // spectral norm (largest singular value)
+    Nuclear     // sum of singular values
 };
 
 SHAREDMATH_LINEARALGEBRA_EXPORT
@@ -184,6 +185,18 @@ SHAREDMATH_LINEARALGEBRA_EXPORT
 std::tuple<DynamicMatrix, std::vector<double>, DynamicMatrix>
 svd(const AbstractMatrix& A, size_t max_iter = 1000);
 
+// Randomized SVD (Halko–Martinsson–Tropp 2011)
+// Computes a rank-k approximation: A ≈ U * diag(S) * Vt
+//   k          — number of singular values/vectors to compute
+//   n_oversampling — extra random columns (default 10); total sketch = k + n_oversampling
+//   n_power_iter   — power-iteration steps for improved accuracy on slowly-decaying spectra
+SHAREDMATH_LINEARALGEBRA_EXPORT
+std::tuple<DynamicMatrix, std::vector<double>, DynamicMatrix>
+rsvd(const AbstractMatrix& A,
+     size_t k,
+     size_t n_oversampling  = 10,
+     size_t n_power_iter    = 2);
+
 // ── Tensor operations ─────────────────────────────────────────────────────────
 
 // Generalised tensor contraction over paired axes
@@ -202,6 +215,120 @@ Tensor einsum(const std::string& subscripts, const Tensor& a);
 // Supported patterns: "ij,jk->ik", "i,i->", "i,j->ij", "ij,ij->", etc.
 SHAREDMATH_LINEARALGEBRA_EXPORT
 Tensor einsum(const std::string& subscripts, const Tensor& a, const Tensor& b);
+
+// ── Structured matrix generators ─────────────────────────────────────────────
+
+// Symmetric Toeplitz matrix from first row c (and first column = c)
+// If c has length n the result is n×n; c[0] is the diagonal.
+SHAREDMATH_LINEARALGEBRA_EXPORT
+DynamicMatrix toeplitz(const std::vector<double>& c,
+                       const std::vector<double>& r = {});
+
+// Circulant matrix: each row is a cyclic shift of the previous one
+// c[0] is the diagonal; result is n×n where n = c.size()
+SHAREDMATH_LINEARALGEBRA_EXPORT
+DynamicMatrix circulant(const std::vector<double>& c);
+
+// Hankel matrix: constant anti-diagonals
+// c — first column, r — last row (r[0] must equal c.back() or is unused)
+SHAREDMATH_LINEARALGEBRA_EXPORT
+DynamicMatrix hankel(const std::vector<double>& c,
+                     const std::vector<double>& r = {});
+
+// Vandermonde matrix:  V[i][j] = x[i]^j  (or reversed: V[i][0] = x[i]^{n-1})
+// increasing = true  → columns 1, x, x², …, x^{n-1}  (sklearn / numpy convention)
+SHAREDMATH_LINEARALGEBRA_EXPORT
+DynamicMatrix vandermonde(const std::vector<double>& x, bool increasing = false);
+
+// n×n Hilbert matrix: H[i][j] = 1 / (i + j + 1)
+SHAREDMATH_LINEARALGEBRA_EXPORT
+DynamicMatrix hilbert(size_t n);
+
+// Companion matrix of monic polynomial  x^n + c[0]*x^{n-1} + … + c[n-1]
+// Eigenvalues of the companion matrix are the roots of the polynomial.
+// c has length n (coefficients of x^{n-1} down to x^0, leading 1 implicit)
+SHAREDMATH_LINEARALGEBRA_EXPORT
+DynamicMatrix companion(const std::vector<double>& c);
+
+// ── Random matrix generators ──────────────────────────────────────────────────
+
+namespace random {
+
+// m×n matrix with i.i.d. N(0,1) entries (Box–Muller)
+SHAREDMATH_LINEARALGEBRA_EXPORT
+DynamicMatrix gaussian(size_t m, size_t n, unsigned seed = 42);
+
+// m×n matrix with i.i.d. Uniform(lo, hi) entries
+SHAREDMATH_LINEARALGEBRA_EXPORT
+DynamicMatrix uniform(size_t m, size_t n,
+                      double lo = 0.0, double hi = 1.0,
+                      unsigned seed = 42);
+
+// n×n random orthogonal matrix via QR of a Gaussian matrix
+SHAREDMATH_LINEARALGEBRA_EXPORT
+DynamicMatrix orthogonal(size_t n, unsigned seed = 42);
+
+// n×n random symmetric positive definite matrix
+//   eigenvalues drawn Uniform(lo_ev, hi_ev)
+SHAREDMATH_LINEARALGEBRA_EXPORT
+DynamicMatrix spd(size_t n,
+                  double lo_ev = 0.1, double hi_ev = 10.0,
+                  unsigned seed = 42);
+
+// m×n sparse random matrix, density ∈ (0,1], non-zeros ~ N(0,1)
+SHAREDMATH_LINEARALGEBRA_EXPORT
+DynamicMatrix sparse(size_t m, size_t n,
+                     double density = 0.1,
+                     unsigned seed  = 42);
+
+} // namespace random
+
+// ── Generalized eigenvalue problem ────────────────────────────────────────────
+
+// Solve  A * V = B * V * diag(lambda)  (both A and B symmetric, B positive definite)
+// Returns {eigenvalues (ascending), V} where columns of V are B-orthonormal eigenvectors.
+// Uses Cholesky of B and reduces to standard symmetric eigenproblem.
+SHAREDMATH_LINEARALGEBRA_EXPORT
+std::pair<std::vector<double>, DynamicMatrix>
+geig(const AbstractMatrix& A, const AbstractMatrix& B,
+     size_t max_iter = 1000);
+
+// ── Matrix equations ──────────────────────────────────────────────────────────
+
+// Lyapunov equation: A * X + X * A^T = -C
+// A must be stable (all eigenvalues with negative real part) and square.
+// Solved via the Bartels–Stewart / Hammarling approach using Schur decomposition.
+// For simplicity this implementation uses the direct method: A*X + X*A^T + C = 0
+// solved iteratively via a Kronecker-product reformulation (O(n^3) per step).
+SHAREDMATH_LINEARALGEBRA_EXPORT
+DynamicMatrix lyapunov(const AbstractMatrix& A, const AbstractMatrix& C,
+                       double tol = 1e-12, size_t max_iter = 500);
+
+// Sylvester equation: A * X + X * B = C
+// A is m×m, B is n×n, C is m×n, X is m×n.
+// Solves via vec-and-Kronecker: (I⊗A + B^T⊗I) vec(X) = vec(C).
+SHAREDMATH_LINEARALGEBRA_EXPORT
+DynamicMatrix sylvester(const AbstractMatrix& A,
+                        const AbstractMatrix& B,
+                        const AbstractMatrix& C);
+
+// ── Generalized SVD ───────────────────────────────────────────────────────────
+
+// Generalized SVD of the matrix pair (A, B)
+//   A (m×n), B (p×n) →  A = U * diag(alpha) * X^{-1}
+//                        B = V * diag(beta)  * X^{-1}
+// alpha[i]^2 + beta[i]^2 = 1  (cosine–sine decomposition)
+// Implements the CS decomposition via thin SVD of [A; B].
+struct GSVDResult {
+    DynamicMatrix      U;      // m × k, orthonormal columns
+    DynamicMatrix      V;      // p × k, orthonormal columns
+    DynamicMatrix      X;      // n × k, non-singular
+    std::vector<double> alpha; // k generalised singular values (cosines)
+    std::vector<double> beta;  // k generalised singular values (sines)
+};
+
+SHAREDMATH_LINEARALGEBRA_EXPORT
+GSVDResult gsvd(const AbstractMatrix& A, const AbstractMatrix& B);
 
 // ── CUDA runtime query ────────────────────────────────────────────────────────
 
