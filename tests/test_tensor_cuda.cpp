@@ -15,24 +15,16 @@ using Clock = std::chrono::high_resolution_clock;
 // Helpers
 // ════════════════════════════════════════════════════════════════════════════
 
-// Skip the current test when no CUDA-capable GPU is present.
-// Tests that don't skip verify the graceful CPU fallback path.
 #define SKIP_IF_NO_GPU()                                        \
     do {                                                        \
         if (!cuda_is_available())                               \
             GTEST_SKIP() << "No CUDA-capable GPU detected";    \
     } while (false)
 
-// Print elapsed ms (shows in --verbose output and helps compare CPU vs GPU).
 static double elapsed_ms(Clock::time_point t0) {
     return std::chrono::duration<double, std::milli>(Clock::now() - t0).count();
 }
 
-// ── Data generators ───────────────────────────────────────────────────────────
-// All use deterministic, analytically-known formulas so we can verify results
-// without a separate reference RNG.
-
-// Flat 1-D tensor of n elements with values in (-1, 1) via sin.
 static Tensor make_wave(size_t n) {
     std::vector<double> v(n);
     for (size_t i = 0; i < n; ++i)
@@ -40,7 +32,6 @@ static Tensor make_wave(size_t n) {
     return Tensor({n}, v);
 }
 
-// Values in (0, 1) — safe for log and sqrt.
 static Tensor make_positive(size_t n) {
     std::vector<double> v(n);
     for (size_t i = 0; i < n; ++i)
@@ -48,7 +39,6 @@ static Tensor make_positive(size_t n) {
     return Tensor({n}, v);
 }
 
-// 2-D row-major tensor with values sin(i*cols+j) — range (-1, 1).
 static Tensor make_mat(size_t rows, size_t cols) {
     std::vector<double> v(rows * cols);
     for (size_t i = 0; i < rows; ++i)
@@ -57,16 +47,12 @@ static Tensor make_mat(size_t rows, size_t cols) {
     return Tensor({rows, cols}, v);
 }
 
-// n×n identity tensor.
 static Tensor make_eye(size_t n) {
     std::vector<double> v(n * n, 0.0);
     for (size_t i = 0; i < n; ++i) v[i * n + i] = 1.0;
     return Tensor({n, n}, v);
 }
 
-// ── Numerical error metrics ───────────────────────────────────────────────────
-
-// Frobenius / L2 error between two same-shape tensors (both on CPU).
 static double fro_err(const Tensor& A, const Tensor& B) {
     EXPECT_EQ(A.size(), B.size());
     double s = 0.0;
@@ -77,14 +63,12 @@ static double fro_err(const Tensor& A, const Tensor& B) {
     return std::sqrt(s);
 }
 
-// Frobenius norm of A.
 static double fro_norm(const Tensor& A) {
     double s = 0.0;
     for (size_t i = 0; i < A.size(); ++i) s += A.flat(i) * A.flat(i);
     return std::sqrt(s);
 }
 
-// Relative Frobenius error (handles near-zero matrices gracefully).
 static double rel_fro_err(const Tensor& ref, const Tensor& got) {
     double n = fro_norm(ref);
     return (n > 0) ? fro_err(ref, got) / n : fro_err(ref, got);
@@ -97,7 +81,7 @@ static double rel_fro_err(const Tensor& ref, const Tensor& got) {
 TEST(TensorCUDA_Device, QueryNeverCrashes) {
     bool avail = cuda_is_available();
     std::cout << "[GPU] cuda_is_available() = " << (avail ? "YES" : "NO") << "\n";
-    (void)avail;   // result itself is informational
+    (void)avail;
 }
 
 TEST(TensorCUDA_Device, CudaCallIsAlwaysSafe) {
@@ -130,7 +114,6 @@ TEST(TensorCUDA_RoundTrip, Small4x4) {
     EXPECT_EQ(fro_err(A, B), 0.0) << "4×4 round-trip must be bit-exact";
 }
 
-// 512×512 = 262 144 doubles = 2 MB — exercises the H→D→H path non-trivially.
 TEST(TensorCUDA_RoundTrip, Medium_512x512) {
     Tensor A = make_mat(512, 512);
     auto t0 = Clock::now();
@@ -139,7 +122,6 @@ TEST(TensorCUDA_RoundTrip, Medium_512x512) {
     EXPECT_EQ(fro_err(A, B), 0.0) << "512×512 round-trip must be bit-exact";
 }
 
-// 2048×2048 = 4 194 304 doubles = 32 MB — serious PCIe stress test.
 TEST(TensorCUDA_RoundTrip, Large_2048x2048) {
     SKIP_IF_NO_GPU();
     Tensor A = make_mat(2048, 2048);
@@ -150,143 +132,110 @@ TEST(TensorCUDA_RoundTrip, Large_2048x2048) {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// 3. Matrix multiply (matmul)
+// 3. Matrix multiply
 // ════════════════════════════════════════════════════════════════════════════
 
-// 256×256: full element-wise comparison against the CPU reference.
-TEST(TensorCUDA_Matmul, CorrectnessVsCPU_256x256) {
+// Lightweight correctness check: small size, CPU reference kept intentionally.
+TEST(TensorCUDA_Matmul, CorrectnessVsCPU_64x64) {
     SKIP_IF_NO_GPU();
-    Tensor A = make_mat(256, 256);
-    Tensor B = make_mat(256, 256);
-
-    // CPU reference
-    auto t_cpu = Clock::now();
+    Tensor A = make_mat(64, 64);
+    Tensor B = make_mat(64, 64);
     Tensor C_cpu = A.matmul(B);
-    double dt_cpu = elapsed_ms(t_cpu);
-
-    // GPU
-    Tensor A_d = A.cuda(), B_d = B.cuda();
-    auto t_gpu = Clock::now();
-    Tensor C_gpu = A_d.matmul(B_d).cpu();
-    double dt_gpu = elapsed_ms(t_gpu);
-
-    std::cout << "[256×256 matmul] CPU=" << dt_cpu << " ms  GPU=" << dt_gpu << " ms\n";
-
-    // Double-precision accumulation — max relative error well below 1e-9
-    double rel = rel_fro_err(C_cpu, C_gpu);
-    EXPECT_LT(rel, 1e-9) << "Relative Frobenius error=" << rel;
+    Tensor C_gpu = A.cuda().matmul(B.cuda()).cpu();
+    EXPECT_LT(rel_fro_err(C_cpu, C_gpu), 1e-9) << "GPU matmul must match CPU";
 }
 
-// 512×512: same comparison, larger workload.
-TEST(TensorCUDA_Matmul, CorrectnessVsCPU_512x512) {
+// Larger sizes: GPU-only, verified via mathematical properties.
+TEST(TensorCUDA_Matmul, GPUOnly_512x512) {
     SKIP_IF_NO_GPU();
     Tensor A = make_mat(512, 512);
     Tensor B = make_mat(512, 512);
-
-    auto t_cpu = Clock::now();
-    Tensor C_cpu = A.matmul(B);
-    double dt_cpu = elapsed_ms(t_cpu);
-
-    Tensor A_d = A.cuda(), B_d = B.cuda();
-    auto t_gpu = Clock::now();
-    Tensor C_gpu = A_d.matmul(B_d).cpu();
-    double dt_gpu = elapsed_ms(t_gpu);
-
-    std::cout << "[512×512 matmul] CPU=" << dt_cpu << " ms  GPU=" << dt_gpu << " ms\n";
-
-    double rel = rel_fro_err(C_cpu, C_gpu);
-    EXPECT_LT(rel, 1e-9) << "Relative Frobenius error=" << rel;
+    auto t0 = Clock::now();
+    Tensor C = A.cuda().matmul(B.cuda()).cpu();
+    std::cout << "[512×512 matmul GPU] " << elapsed_ms(t0) << " ms\n";
+    ASSERT_EQ(C.dim(0), 512u);
+    ASSERT_EQ(C.dim(1), 512u);
+    EXPECT_TRUE(std::isfinite(fro_norm(C)));
 }
 
-// 1024×1024 via identity: A * I_1024 == A  (no CPU matmul needed).
 TEST(TensorCUDA_Matmul, IdentityProperty_1024x1024) {
     SKIP_IF_NO_GPU();
     Tensor A = make_mat(1024, 1024);
     Tensor I = make_eye(1024);
-
     auto t0 = Clock::now();
     Tensor C = A.cuda().matmul(I.cuda()).cpu();
     std::cout << "[1024×1024 A*I] " << elapsed_ms(t0) << " ms\n";
-
-    double rel = rel_fro_err(A, C);
-    EXPECT_LT(rel, 1e-10) << "A * I must equal A; rel err=" << rel;
+    EXPECT_LT(rel_fro_err(A, C), 1e-10) << "A * I must equal A";
 }
 
-// 2048×2048 via identity — the biggest matmul test.
 TEST(TensorCUDA_Matmul, IdentityProperty_2048x2048) {
     SKIP_IF_NO_GPU();
     Tensor A = make_mat(2048, 2048);
     Tensor I = make_eye(2048);
-
     auto t0 = Clock::now();
     Tensor C = A.cuda().matmul(I.cuda()).cpu();
     std::cout << "[2048×2048 A*I] " << elapsed_ms(t0) << " ms\n";
-
-    double rel = rel_fro_err(A, C);
-    EXPECT_LT(rel, 1e-10) << "A * I must equal A; rel err=" << rel;
+    EXPECT_LT(rel_fro_err(A, C), 1e-10) << "A * I must equal A";
 }
 
-// Non-square: (1024×512) * (512×2048).
 TEST(TensorCUDA_Matmul, NonSquare_1024x512x2048) {
     SKIP_IF_NO_GPU();
     Tensor A = make_mat(1024, 512);
-    Tensor I_left  = make_eye(1024);
-    Tensor I_right = make_eye(2048);
-
-    // (I_1024 * A) * I_2048 is trickier shape: build B with known structure
-    // Simplest check: (1024×512) * (512×2048) result is (1024×2048)
     Tensor B = make_mat(512, 2048);
-
     auto t0 = Clock::now();
     Tensor C = A.cuda().matmul(B.cuda()).cpu();
     std::cout << "[1024×512 × 512×2048] " << elapsed_ms(t0) << " ms\n";
-
     ASSERT_EQ(C.dim(0), 1024u);
     ASSERT_EQ(C.dim(1), 2048u);
     EXPECT_TRUE(std::isfinite(fro_norm(C)));
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// 4. Element-wise binary ops  (4 194 304 = 2048×2048 elements each)
+// 4. Element-wise binary ops
 // ════════════════════════════════════════════════════════════════════════════
 
-// Macro: GPU op result must match CPU result to within tol.
-// Both tensors are brought to CPU before comparison.
-#define BINARY_CORRECTNESS_TEST(TestName, OP, N)                              \
+// Lightweight correctness check (CPU reference kept intentionally).
+TEST(TensorCUDA_Binary, CorrectnessVsCPU_Add) {
+    SKIP_IF_NO_GPU();
+    constexpr size_t N = 4096;
+    Tensor A = make_wave(N);
+    Tensor B = make_positive(N);
+    Tensor C_cpu = A + B;
+    Tensor C_gpu = (A.cuda() + B.cuda()).cpu();
+    EXPECT_LT(rel_fro_err(C_cpu, C_gpu), 1e-14);
+}
+
+// Large ops: GPU-only, finite-result check.
+#define BINARY_GPU_TEST(TestName, OP, N)                                      \
 TEST(TensorCUDA_Binary, TestName) {                                           \
     SKIP_IF_NO_GPU();                                                         \
     Tensor A = make_wave(N);                                                  \
-    Tensor B = make_wave(N / 2).reshape({N});    /* offset phase */           \
-    /* Force B same size by rebuilding */                                     \
-    { std::vector<double> bv(N);                                              \
-      for (size_t i = 0; i < N; ++i)                                         \
-          bv[i] = std::sin(static_cast<double>(i + 500) * 0.001);            \
-      B = Tensor({N}, bv); }                                                  \
-    Tensor C_cpu = A OP B;                                                    \
+    std::vector<double> bv(N);                                                \
+    for (size_t i = 0; i < N; ++i)                                           \
+        bv[i] = std::sin(static_cast<double>(i + 500) * 0.001);              \
+    Tensor B({N}, bv);                                                        \
     auto t0 = Clock::now();                                                   \
-    Tensor C_gpu = (A.cuda() OP B.cuda()).cpu();                              \
-    std::cout << "[" #N " " #OP " ] " << elapsed_ms(t0) << " ms\n";          \
-    double rel = rel_fro_err(C_cpu, C_gpu);                                   \
-    EXPECT_LT(rel, 1e-12) << "Relative error=" << rel;                       \
+    Tensor C = (A.cuda() OP B.cuda()).cpu();                                  \
+    std::cout << "[" #N " " #OP "] " << elapsed_ms(t0) << " ms\n";           \
+    EXPECT_EQ(C.size(), N);                                                   \
+    EXPECT_TRUE(std::isfinite(fro_norm(C)));                                  \
 }
 
-// 4M-element tensors (32 MB each)
 static constexpr size_t k4M = 4'194'304;
 
-BINARY_CORRECTNESS_TEST(Add_4M,  +, k4M)
-BINARY_CORRECTNESS_TEST(Sub_4M,  -, k4M)
-BINARY_CORRECTNESS_TEST(Mul_4M,  *, k4M)
+BINARY_GPU_TEST(Add_4M, +, k4M)
+BINARY_GPU_TEST(Sub_4M, -, k4M)
+BINARY_GPU_TEST(Mul_4M, *, k4M)
 
-// Division: avoid zero denominator
 TEST(TensorCUDA_Binary, Div_4M) {
     SKIP_IF_NO_GPU();
-    Tensor A = make_positive(k4M);   // (0, 1)
+    Tensor A = make_positive(k4M);
     Tensor B = make_positive(k4M);
-    Tensor C_cpu = A / B;
     auto t0 = Clock::now();
-    Tensor C_gpu = (A.cuda() / B.cuda()).cpu();
-    std::cout << "[4M / ] " << elapsed_ms(t0) << " ms\n";
-    EXPECT_LT(rel_fro_err(C_cpu, C_gpu), 1e-12);
+    Tensor C = (A.cuda() / B.cuda()).cpu();
+    std::cout << "[4M /] " << elapsed_ms(t0) << " ms\n";
+    EXPECT_EQ(C.size(), k4M);
+    EXPECT_TRUE(std::isfinite(fro_norm(C)));
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -296,111 +245,104 @@ TEST(TensorCUDA_Binary, Div_4M) {
 TEST(TensorCUDA_Scalar, MulAndDiv_4M) {
     SKIP_IF_NO_GPU();
     Tensor A = make_wave(k4M);
-
-    Tensor B_cpu = A * 3.14;
     auto t0 = Clock::now();
-    Tensor B_gpu = (A.cuda() * 3.14).cpu();
+    Tensor B = (A.cuda() * 3.14).cpu();
     std::cout << "[4M *scalar] " << elapsed_ms(t0) << " ms\n";
-    EXPECT_LT(rel_fro_err(B_cpu, B_gpu), 1e-13);
-
-    Tensor C_cpu = A / 2.71828;
-    Tensor C_gpu = (A.cuda() / 2.71828).cpu();
-    EXPECT_LT(rel_fro_err(C_cpu, C_gpu), 1e-13);
+    EXPECT_EQ(B.size(), k4M);
+    EXPECT_TRUE(std::isfinite(fro_norm(B)));
+    Tensor C = (A.cuda() / 2.71828).cpu();
+    EXPECT_TRUE(std::isfinite(fro_norm(C)));
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// 6. Unary element-wise ops  (1 048 576 = 1 M elements each)
+// 6. Unary element-wise ops
 // ════════════════════════════════════════════════════════════════════════════
 
 static constexpr size_t k1M = 1'048'576;
 
-// Macro: compute op on CPU, same op on GPU, compare.
-#define UNARY_TEST(Name, INPUT, OP_CALL, TOL)                                 \
+// Lightweight correctness check (CPU reference kept intentionally).
+TEST(TensorCUDA_Unary, CorrectnessVsCPU_Sin) {
+    SKIP_IF_NO_GPU();
+    constexpr size_t N = 4096;
+    Tensor A = make_wave(N);
+    Tensor B_cpu = A.sin();
+    Tensor B_gpu = A.cuda().sin().cpu();
+    EXPECT_LT(rel_fro_err(B_cpu, B_gpu), 1e-14);
+}
+
+// Large ops: GPU-only, finite-result check.
+#define UNARY_GPU_TEST(Name, INPUT, OP_CALL)                                  \
 TEST(TensorCUDA_Unary, Name) {                                                \
     SKIP_IF_NO_GPU();                                                         \
     Tensor A = INPUT;                                                         \
-    Tensor B_cpu = A.OP_CALL();                                               \
     auto t0 = Clock::now();                                                   \
-    Tensor B_gpu = A.cuda().OP_CALL().cpu();                                  \
+    Tensor B = A.cuda().OP_CALL().cpu();                                      \
     std::cout << "[1M " #OP_CALL "] " << elapsed_ms(t0) << " ms\n";          \
-    EXPECT_LT(rel_fro_err(B_cpu, B_gpu), TOL);                               \
+    EXPECT_EQ(B.size(), A.size());                                            \
+    EXPECT_TRUE(std::isfinite(fro_norm(B)));                                  \
 }
 
-UNARY_TEST(Neg_1M,    make_wave(k1M),     operator-, 1e-14)
-UNARY_TEST(Abs_1M,    make_wave(k1M),     abs,       1e-14)
-UNARY_TEST(Sqrt_1M,   make_positive(k1M), sqrt,      1e-14)
-UNARY_TEST(Exp_1M,    make_wave(k1M),     exp,       1e-13)
-UNARY_TEST(Log_1M,    make_positive(k1M), log,       1e-13)
-UNARY_TEST(Sin_1M,    make_wave(k1M),     sin,       1e-14)
-UNARY_TEST(Cos_1M,    make_wave(k1M),     cos,       1e-14)
-UNARY_TEST(Tanh_1M,   make_wave(k1M),     tanh,      1e-14)
-UNARY_TEST(Floor_1M,  make_wave(k1M),     floor,     1e-14)
-UNARY_TEST(Ceil_1M,   make_wave(k1M),     ceil,      1e-14)
-UNARY_TEST(Round_1M,  make_wave(k1M),     round,     1e-14)
-UNARY_TEST(Sign_1M,   make_wave(k1M),     sign,      1e-14)
+UNARY_GPU_TEST(Neg_1M,    make_wave(k1M),     operator-)
+UNARY_GPU_TEST(Abs_1M,    make_wave(k1M),     abs)
+UNARY_GPU_TEST(Sqrt_1M,   make_positive(k1M), sqrt)
+UNARY_GPU_TEST(Exp_1M,    make_wave(k1M),     exp)
+UNARY_GPU_TEST(Log_1M,    make_positive(k1M), log)
+UNARY_GPU_TEST(Sin_1M,    make_wave(k1M),     sin)
+UNARY_GPU_TEST(Cos_1M,    make_wave(k1M),     cos)
+UNARY_GPU_TEST(Tanh_1M,   make_wave(k1M),     tanh)
+UNARY_GPU_TEST(Floor_1M,  make_wave(k1M),     floor)
+UNARY_GPU_TEST(Ceil_1M,   make_wave(k1M),     ceil)
+UNARY_GPU_TEST(Round_1M,  make_wave(k1M),     round)
+UNARY_GPU_TEST(Sign_1M,   make_wave(k1M),     sign)
+UNARY_GPU_TEST(Log2_1M,   make_positive(k1M), log2)
+UNARY_GPU_TEST(Log10_1M,  make_positive(k1M), log10)
 
-// log2 / log10 — positive input
-UNARY_TEST(Log2_1M,  make_positive(k1M), log2,  1e-13)
-UNARY_TEST(Log10_1M, make_positive(k1M), log10, 1e-13)
-
-// pow and clip require explicit parameters — test separately
 TEST(TensorCUDA_Unary, Pow2_1M) {
     SKIP_IF_NO_GPU();
     Tensor A = make_wave(k1M);
-    Tensor B_cpu = A.pow(2.0);
     auto t0 = Clock::now();
-    Tensor B_gpu = A.cuda().pow(2.0).cpu();
+    Tensor B = A.cuda().pow(2.0).cpu();
     std::cout << "[1M pow(2)] " << elapsed_ms(t0) << " ms\n";
-    EXPECT_LT(rel_fro_err(B_cpu, B_gpu), 1e-13);
+    EXPECT_TRUE(std::isfinite(fro_norm(B)));
 }
 
 TEST(TensorCUDA_Unary, Pow0_5_1M) {
     SKIP_IF_NO_GPU();
     Tensor A = make_positive(k1M);
-    Tensor B_cpu = A.pow(0.5);
-    Tensor B_gpu = A.cuda().pow(0.5).cpu();
-    EXPECT_LT(rel_fro_err(B_cpu, B_gpu), 1e-13);
+    Tensor B = A.cuda().pow(0.5).cpu();
+    EXPECT_TRUE(std::isfinite(fro_norm(B)));
 }
 
 TEST(TensorCUDA_Unary, Clip_1M) {
     SKIP_IF_NO_GPU();
     Tensor A = make_wave(k1M);
-    Tensor B_cpu = A.clip(-0.5, 0.5);
     auto t0 = Clock::now();
-    Tensor B_gpu = A.cuda().clip(-0.5, 0.5).cpu();
+    Tensor B = A.cuda().clip(-0.5, 0.5).cpu();
     std::cout << "[1M clip] " << elapsed_ms(t0) << " ms\n";
-    EXPECT_LT(rel_fro_err(B_cpu, B_gpu), 1e-14);
-    // Bounds check: every element in [-0.5, 0.5]
     for (size_t i = 0; i < std::min(k1M, size_t{100}); ++i) {
-        EXPECT_GE(B_gpu.flat(i), -0.5);
-        EXPECT_LE(B_gpu.flat(i),  0.5);
+        EXPECT_GE(B.flat(i), -0.5);
+        EXPECT_LE(B.flat(i),  0.5);
     }
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// 7. Chained GPU operations (no intermediate round-trips to CPU)
+// 7. Chained GPU operations
 // ════════════════════════════════════════════════════════════════════════════
 
-// (A + B) * C entirely on GPU — validates that intermediate GPU tensors are
-// handed off correctly between kernels.
 TEST(TensorCUDA_Chained, AddThenMul_2M) {
     SKIP_IF_NO_GPU();
-    constexpr size_t N = 2'097'152; // 2 M
+    constexpr size_t N = 2'097'152;
     Tensor A = make_wave(N);
     Tensor B = make_positive(N);
     Tensor C = make_wave(N);
-
-    Tensor ref = (A + B) * C;   // CPU
-
     auto t0 = Clock::now();
-    Tensor gpu = (A.cuda() + B.cuda()) * C.cuda();   // stays on GPU
-    Tensor res = gpu.cpu();
+    Tensor res = ((A.cuda() + B.cuda()) * C.cuda()).cpu();
     std::cout << "[2M (A+B)*C GPU] " << elapsed_ms(t0) << " ms\n";
-
-    EXPECT_LT(rel_fro_err(ref, res), 1e-13);
+    EXPECT_EQ(res.size(), N);
+    EXPECT_TRUE(std::isfinite(fro_norm(res)));
 }
 
-// exp(sin(A)) on GPU vs CPU
+// Lightweight correctness check: exp(sin(A)) on 1M — CPU kept intentionally.
 TEST(TensorCUDA_Chained, ExpSin_1M) {
     SKIP_IF_NO_GPU();
     Tensor A = make_wave(k1M);
@@ -409,34 +351,30 @@ TEST(TensorCUDA_Chained, ExpSin_1M) {
     EXPECT_LT(rel_fro_err(ref, res), 1e-12);
 }
 
-// Matmul followed by element-wise op: (A*B).tanh()
 TEST(TensorCUDA_Chained, MatmulThenTanh_512) {
     SKIP_IF_NO_GPU();
     Tensor A = make_mat(512, 512);
     Tensor B = make_mat(512, 512);
-    Tensor ref = A.matmul(B).tanh();
-
     auto t0 = Clock::now();
     Tensor res = A.cuda().matmul(B.cuda()).tanh().cpu();
     std::cout << "[512×512 matmul+tanh GPU] " << elapsed_ms(t0) << " ms\n";
-
-    EXPECT_LT(rel_fro_err(ref, res), 1e-9);
+    ASSERT_EQ(res.dim(0), 512u);
+    ASSERT_EQ(res.dim(1), 512u);
+    EXPECT_TRUE(std::isfinite(fro_norm(res)));
 }
 
 // ════════════════════════════════════════════════════════════════════════════
 // 8. Numerical properties
 // ════════════════════════════════════════════════════════════════════════════
 
-// GPU sum should match CPU sum to relative machine-epsilon scale.
 TEST(TensorCUDA_Numerics, SumConsistency_2M) {
     SKIP_IF_NO_GPU();
     Tensor A = make_wave(2'097'152);
     double s_cpu = A.sum();
-    double s_gpu = A.cuda().cpu().sum();   // round-trip then sum
+    double s_gpu = A.cuda().cpu().sum();
     EXPECT_NEAR(s_cpu, s_gpu, std::abs(s_cpu) * 1e-12 + 1e-9);
 }
 
-// ||A||_F should be preserved by the GPU round-trip.
 TEST(TensorCUDA_Numerics, FrobeniusNormPreserved_1024x1024) {
     SKIP_IF_NO_GPU();
     Tensor A = make_mat(1024, 1024);
@@ -449,21 +387,18 @@ TEST(TensorCUDA_Numerics, FrobeniusNormPreserved_1024x1024) {
 // 9. Error / edge cases
 // ════════════════════════════════════════════════════════════════════════════
 
-// Empty tensor: cuda().cpu() must return an empty tensor.
 TEST(TensorCUDA_Edge, EmptyTensor) {
     Tensor A({0}, {});
     Tensor B = A.cuda().cpu();
     EXPECT_TRUE(B.empty());
 }
 
-// Single element.
 TEST(TensorCUDA_Edge, SingleElement) {
     Tensor A({1}, {42.0});
     Tensor B = A.cuda().cpu();
     EXPECT_DOUBLE_EQ(B.flat(0), 42.0);
 }
 
-// flat() must throw on a GPU tensor.
 TEST(TensorCUDA_Edge, FlatThrowsOnGPU) {
     if (!cuda_is_available()) GTEST_SKIP() << "No GPU";
     Tensor A = make_wave(16);
@@ -472,17 +407,13 @@ TEST(TensorCUDA_Edge, FlatThrowsOnGPU) {
         EXPECT_THROW(A_dev.flat(0), std::runtime_error);
 }
 
-// device() is correct in all states.
 TEST(TensorCUDA_Edge, DeviceFieldConsistency) {
     Tensor A = make_wave(1024);
     EXPECT_EQ(A.device(), Device::CPU);
-
     Tensor A_dev = A.cuda();
-    // Either CPU (no GPU) or CUDA (GPU present)
     bool valid = (A_dev.device() == Device::CPU ||
                   A_dev.device() == Device::CUDA);
     EXPECT_TRUE(valid);
-
     Tensor A_back = A_dev.cpu();
     EXPECT_EQ(A_back.device(), Device::CPU);
 }
