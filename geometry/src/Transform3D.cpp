@@ -39,8 +39,8 @@ Transform3D Transform3D::translation(double dx, double dy, double dz)
 Transform3D Transform3D::rotationX(double angle)
 {
     Transform3D t;
-    double c = std::cos(angle);
-    double s = std::sin(angle);
+    double c = cos(angle);
+    double s = sin(angle);
     t.matrix_(1, 1) =  c;
     t.matrix_(1, 2) = -s;
     t.matrix_(2, 1) =  s;
@@ -51,8 +51,8 @@ Transform3D Transform3D::rotationX(double angle)
 Transform3D Transform3D::rotationY(double angle)
 {
     Transform3D t;
-    double c = std::cos(angle);
-    double s = std::sin(angle);
+    double c = cos(angle);
+    double s = sin(angle);
     t.matrix_(0, 0) =  c;
     t.matrix_(0, 2) =  s;
     t.matrix_(2, 0) = -s;
@@ -63,8 +63,8 @@ Transform3D Transform3D::rotationY(double angle)
 Transform3D Transform3D::rotationZ(double angle)
 {
     Transform3D t;
-    double c = std::cos(angle);
-    double s = std::sin(angle);
+    double c = cos(angle);
+    double s = sin(angle);
     t.matrix_(0, 0) =  c;
     t.matrix_(0, 1) = -s;
     t.matrix_(1, 0) =  s;
