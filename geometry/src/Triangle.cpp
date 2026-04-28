@@ -110,7 +110,7 @@ Point2D Triangle::getCircumcenter() const {
 
     double d = 2 * (a.x() * (b.y() - c.y()) + b.x() * (c.y() - a.y()) + c.x() * (a.y() - b.y()));
     
-    if (std::abs(d) < Epsilon) {
+    if (abs(d) < Epsilon) {
         throw std::runtime_error("Points are collinear, no circumcenter");
     }
 

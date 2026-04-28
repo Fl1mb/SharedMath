@@ -10,7 +10,7 @@ double Tetrahedron::edgeLength(const Point3D& a, const Point3D& b)
     double dx = b.x() - a.x();
     double dy = b.y() - a.y();
     double dz = b.z() - a.z();
-    return std::sqrt(dx * dx + dy * dy + dz * dz);
+    return sqrt(dx * dx + dy * dy + dz * dz);
 }
 
 double Tetrahedron::triangleArea(const Point3D& a, const Point3D& b, const Point3D& c)

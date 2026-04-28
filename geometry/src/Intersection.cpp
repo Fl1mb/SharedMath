@@ -20,7 +20,7 @@ Result2D Intersection::lineLine(const Line2D& a, const Line2D& b)
     double d2x = p4.x() - p3.x(), d2y = p4.y() - p3.y();
 
     double denom = d1x * d2y - d1y * d2x;
-    if (std::abs(denom) < Epsilon) {
+    if (abs(denom) < Epsilon) {
         // Parallel (or coincident): no single intersection point
         result.hit = false;
         return result;
@@ -51,10 +51,10 @@ Result2D Intersection::lineCircle(const Line2D& line, const Circle& circle)
 
     double disc = B * B - 4.0 * A * C;
     if (disc < -Epsilon) return result;
-    if (std::abs(A) < Epsilon) return result;
+    if (abs(A) < Epsilon) return result;
 
     disc = std::max(0.0, disc);
-    double sqrtDisc = std::sqrt(disc);
+    double sqrtDisc = sqrt(disc);
     double t1 = (-B - sqrtDisc) / (2.0 * A);
     double t2 = (-B + sqrtDisc) / (2.0 * A);
 
@@ -84,10 +84,10 @@ Result2D Intersection::lineEllipse(const Line2D& line, const Ellipse& ellipse)
     double C = (x1 * x1) / (a * a) + (y1 * y1) / (b * b) - 1.0;
 
     double disc = B * B - 4.0 * A * C;
-    if (disc < -Epsilon || std::abs(A) < Epsilon) return result;
+    if (disc < -Epsilon || abs(A) < Epsilon) return result;
 
     disc = std::max(0.0, disc);
-    double sqrtDisc = std::sqrt(disc);
+    double sqrtDisc = sqrt(disc);
     double t1 = (-B - sqrtDisc) / (2.0 * A);
     double t2 = (-B + sqrtDisc) / (2.0 * A);
 
@@ -103,16 +103,16 @@ Result2D Intersection::circleCircle(const Circle& c1, const Circle& c2)
     Result2D result;
     double dx = c2.getCenter().x() - c1.getCenter().x();
     double dy = c2.getCenter().y() - c1.getCenter().y();
-    double d  = std::sqrt(dx * dx + dy * dy);
+    double d  = sqrt(dx * dx + dy * dy);
     double r1 = c1.getRadius(), r2 = c2.getRadius();
 
-    if (d > r1 + r2 + Epsilon || d < std::abs(r1 - r2) - Epsilon || d < Epsilon)
+    if (d > r1 + r2 + Epsilon || d < abs(r1 - r2) - Epsilon || d < Epsilon)
         return result;
 
     double a = (r1 * r1 - r2 * r2 + d * d) / (2.0 * d);
     double h2 = r1 * r1 - a * a;
     if (h2 < 0.0) h2 = 0.0;
-    double h = std::sqrt(h2);
+    double h = sqrt(h2);
 
     double mx = c1.getCenter().x() + a * dx / d;
     double my = c1.getCenter().y() + a * dy / d;
@@ -138,7 +138,7 @@ Result3D Intersection::linePlane(const Line3D& line, const Plane3D& plane)
     double a = plane.getA(), b = plane.getB(), c = plane.getC(), d = plane.getD();
     double denom = a * dx + b * dy + c * dz;
 
-    if (std::abs(denom) < Epsilon) return result; // parallel
+    if (abs(denom) < Epsilon) return result; // parallel
 
     double t = -(a * p0.x() + b * p0.y() + c * p0.z() + d) / denom;
     result.hit = true;
@@ -159,29 +159,29 @@ Result3D Intersection::planePlane(const Plane3D& p1, const Plane3D& p2)
     double dy = c1 * a2 - a1 * c2;
     double dz = a1 * b2 - b1 * a2;
 
-    double len = std::sqrt(dx * dx + dy * dy + dz * dz);
+    double len = sqrt(dx * dx + dy * dy + dz * dz);
     if (len < Epsilon) return result; // parallel planes
 
     result.hit = true;
 
     // Find a point on the line (set z=0 and solve, or pick largest component)
     Point3D pt;
-    if (std::abs(dz) >= std::abs(dx) && std::abs(dz) >= std::abs(dy)) {
+    if (abs(dz) >= abs(dx) && abs(dz) >= abs(dy)) {
         // Solve a1*x + b1*y = -d1, a2*x + b2*y = -d2
         double det = a1 * b2 - a2 * b1;
-        if (std::abs(det) < Epsilon) { result.hit = false; return result; }
+        if (abs(det) < Epsilon) { result.hit = false; return result; }
         double px = (-d1 * b2 + d2 * b1) / det;
         double py = (a1 * (-d2) - a2 * (-d1)) / det;
         pt = Point3D(px, py, 0.0);
-    } else if (std::abs(dy) >= std::abs(dx)) {
+    } else if (abs(dy) >= abs(dx)) {
         double det = a1 * c2 - a2 * c1;
-        if (std::abs(det) < Epsilon) { result.hit = false; return result; }
+        if (abs(det) < Epsilon) { result.hit = false; return result; }
         double px = (-d1 * c2 + d2 * c1) / det;
         double pz = (a1 * (-d2) - a2 * (-d1)) / det;
         pt = Point3D(px, 0.0, pz);
     } else {
         double det = b1 * c2 - b2 * c1;
-        if (std::abs(det) < Epsilon) { result.hit = false; return result; }
+        if (abs(det) < Epsilon) { result.hit = false; return result; }
         double py = (-d1 * c2 + d2 * c1) / det;
         double pz = (b1 * (-d2) - b2 * (-d1)) / det;
         pt = Point3D(0.0, py, pz);
@@ -199,10 +199,10 @@ Result3D Intersection::sphereSphere(const Sphere& s1, const Sphere& s2)
     double dx = s2.getCenter().x() - s1.getCenter().x();
     double dy = s2.getCenter().y() - s1.getCenter().y();
     double dz = s2.getCenter().z() - s1.getCenter().z();
-    double d = std::sqrt(dx * dx + dy * dy + dz * dz);
+    double d = sqrt(dx * dx + dy * dy + dz * dz);
     double r1 = s1.getRadius(), r2 = s2.getRadius();
 
-    if (d > r1 + r2 + Epsilon || d < std::abs(r1 - r2) - Epsilon || d < Epsilon)
+    if (d > r1 + r2 + Epsilon || d < abs(r1 - r2) - Epsilon || d < Epsilon)
         return result;
 
     // Intersection is a circle in a plane
@@ -237,10 +237,10 @@ Result3D Intersection::lineSphere(const Line3D& line, const Sphere& sphere)
     double C = fx*fx + fy*fy + fz*fz - r*r;
 
     double disc = B*B - 4.0*A*C;
-    if (disc < -Epsilon || std::abs(A) < Epsilon) return result;
+    if (disc < -Epsilon || abs(A) < Epsilon) return result;
 
     disc = std::max(0.0, disc);
-    double sqrtDisc = std::sqrt(disc);
+    double sqrtDisc = sqrt(disc);
     double t1 = (-B - sqrtDisc) / (2.0 * A);
     double t2 = (-B + sqrtDisc) / (2.0 * A);
 

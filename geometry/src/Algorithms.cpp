@@ -21,7 +21,7 @@ std::vector<Point2D> Algorithms::convexHull(std::vector<Point2D> points)
 
     // Sort by x then y
     std::sort(points.begin(), points.end(), [](const Point2D& a, const Point2D& b) {
-        return a.x() < b.x() || (std::abs(a.x() - b.x()) < Epsilon && a.y() < b.y());
+        return a.x() < b.x() || (abs(a.x() - b.x()) < Epsilon && a.y() < b.y());
     });
 
     std::vector<Point2D> hull;
@@ -74,13 +74,13 @@ double Algorithms::distancePointSegment(const Point2D& p, const Point2D& a, cons
     double lenSq = dx * dx + dy * dy;
     if (lenSq < Epsilon) {
         double ex = p.x() - a.x(), ey = p.y() - a.y();
-        return std::sqrt(ex * ex + ey * ey);
+        return sqrt(ex * ex + ey * ey);
     }
     double t = ((p.x() - a.x()) * dx + (p.y() - a.y()) * dy) / lenSq;
     t = std::max(0.0, std::min(1.0, t));
     double px = a.x() + t * dx - p.x();
     double py = a.y() + t * dy - p.y();
-    return std::sqrt(px * px + py * py);
+    return sqrt(px * px + py * py);
 }
 
 // ---- Distance segment to segment ----
@@ -94,7 +94,7 @@ double Algorithms::distanceSegmentSegment(const Point2D& a1, const Point2D& b1,
     double d2x = b2.x() - a2.x(), d2y = b2.y() - a2.y();
     double denom = cross(d1x, d1y, d2x, d2y);
 
-    if (std::abs(denom) > Epsilon) {
+    if (abs(denom) > Epsilon) {
         double dx = a2.x() - a1.x(), dy = a2.y() - a1.y();
         double t1 = cross(dx, dy, d2x, d2y) / denom;
         double t2 = cross(dx, dy, d1x, d1y) / denom;

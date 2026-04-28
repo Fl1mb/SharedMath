@@ -22,7 +22,7 @@ double DynamicPolygon::area() const
         sum += vertices_[i].x() * vertices_[j].y();
         sum -= vertices_[j].x() * vertices_[i].y();
     }
-    return std::abs(sum) / 2.0;
+    return abs(sum) / 2.0;
 }
 
 double DynamicPolygon::perimeter() const
@@ -33,7 +33,7 @@ double DynamicPolygon::perimeter() const
         size_t j = (i + 1) % n;
         double dx = vertices_[j].x() - vertices_[i].x();
         double dy = vertices_[j].y() - vertices_[i].y();
-        sum += std::sqrt(dx * dx + dy * dy);
+        sum += sqrt(dx * dx + dy * dy);
     }
     return sum;
 }
@@ -75,7 +75,7 @@ bool DynamicPolygon::isConvex() const
         const Point2D& c = vertices_[(i + 2) % n];
         double cross = (b.x() - a.x()) * (c.y() - a.y()) -
                        (b.y() - a.y()) * (c.x() - a.x());
-        if (std::abs(cross) > Epsilon) {
+        if (abs(cross) > Epsilon) {
             int s = (cross > 0) ? 1 : -1;
             if (sign == 0) sign = s;
             else if (sign != s) return false;

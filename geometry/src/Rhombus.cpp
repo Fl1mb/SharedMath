@@ -12,7 +12,7 @@ bool Rhombus::isRhombus(const std::array<Point2D, 4>& points)
     auto dist = [](const Point2D& a, const Point2D& b) {
         double dx = b.x() - a.x();
         double dy = b.y() - a.y();
-        return std::sqrt(dx * dx + dy * dy);
+        return sqrt(dx * dx + dy * dy);
     };
 
     double d01 = dist(points[0], points[1]);
@@ -20,9 +20,9 @@ bool Rhombus::isRhombus(const std::array<Point2D, 4>& points)
     double d23 = dist(points[2], points[3]);
     double d30 = dist(points[3], points[0]);
 
-    return std::abs(d01 - d12) < Epsilon &&
-           std::abs(d12 - d23) < Epsilon &&
-           std::abs(d23 - d30) < Epsilon;
+    return abs(d01 - d12) < Epsilon &&
+           abs(d12 - d23) < Epsilon &&
+           abs(d23 - d30) < Epsilon;
 }
 
 Rhombus::Rhombus(const std::array<Point2D, 4>& points)

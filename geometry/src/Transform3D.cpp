@@ -122,7 +122,7 @@ Point3D Transform3D::operator*(const Point3D& p) const
     double y = matrix_(1,0)*p.x() + matrix_(1,1)*p.y() + matrix_(1,2)*p.z() + matrix_(1,3);
     double z = matrix_(2,0)*p.x() + matrix_(2,1)*p.y() + matrix_(2,2)*p.z() + matrix_(2,3);
     double w = matrix_(3,0)*p.x() + matrix_(3,1)*p.y() + matrix_(3,2)*p.z() + matrix_(3,3);
-    if (std::abs(w) > Epsilon) { x /= w; y /= w; z /= w; }
+    if (abs(w) > Epsilon) { x /= w; y /= w; z /= w; }
     return Point3D(x, y, z);
 }
 
@@ -169,7 +169,7 @@ Transform3D Transform3D::inverse() const
     for (size_t j = 0; j < 4; ++j)
         det += matrix_(0, j) * adj(j, 0);
 
-    if (std::abs(det) < Epsilon)
+    if (abs(det) < Epsilon)
         throw std::runtime_error("Transform3D::inverse: matrix is singular");
 
     DynamicMatrix inv(4, 4, 0.0);

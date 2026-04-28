@@ -14,7 +14,7 @@ bool Trapezoid::areParallel(const Point2D& a, const Point2D& b,
     double dx2 = d.x() - c.x();
     double dy2 = d.y() - c.y();
     // Cross product == 0 means parallel
-    return std::abs(dx1 * dy2 - dy1 * dx2) < Epsilon;
+    return abs(dx1 * dy2 - dy1 * dx2) < Epsilon;
 }
 
 bool Trapezoid::isTrapezoid(const std::array<Point2D, 4>& pts)
@@ -78,9 +78,9 @@ double Trapezoid::getHeight() const
     double a = dy;
     double b = -dx;
     double c = -(a * b1.getFirstPoint2D().x() + b * b1.getFirstPoint2D().y());
-    double len = std::sqrt(a * a + b * b);
+    double len = sqrt(a * a + b * b);
     if (len < Epsilon) return 0.0;
-    return std::abs(a * p.x() + b * p.y() + c) / len;
+    return abs(a * p.x() + b * p.y() + c) / len;
 }
 
 double Trapezoid::area() const
@@ -99,7 +99,7 @@ double Trapezoid::perimeter() const
         size_t j = (i + 1) % 4;
         double dx = v[j].x() - v[i].x();
         double dy = v[j].y() - v[i].y();
-        sum += std::sqrt(dx * dx + dy * dy);
+        sum += sqrt(dx * dx + dy * dy);
     }
     return sum;
 }
@@ -115,7 +115,7 @@ bool Trapezoid::isIsosceles() const
                              v[base2Start_].y() - v[base1End_].y());
     double leg2 = std::hypot(v[base1Start_].x() - v[base2End_].x(),
                              v[base1Start_].y() - v[base2End_].y());
-    return std::abs(leg1 - leg2) < Epsilon;
+    return abs(leg1 - leg2) < Epsilon;
 }
 
 Line2D Trapezoid::getMidline() const

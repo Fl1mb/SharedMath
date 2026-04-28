@@ -74,7 +74,7 @@ Point2D Transform2D::operator*(const Point2D& p) const
     double x = matrix_(0, 0) * p.x() + matrix_(0, 1) * p.y() + matrix_(0, 2);
     double y = matrix_(1, 0) * p.x() + matrix_(1, 1) * p.y() + matrix_(1, 2);
     double w = matrix_(2, 0) * p.x() + matrix_(2, 1) * p.y() + matrix_(2, 2);
-    if (std::abs(w) > Epsilon) { x /= w; y /= w; }
+    if (abs(w) > Epsilon) { x /= w; y /= w; }
     return Point2D(x, y);
 }
 
@@ -95,7 +95,7 @@ Transform2D Transform2D::inverse() const
     double g = m(2,0), h = m(2,1), i = m(2,2);
 
     double det = a*(e*i - f*h) - b*(d*i - f*g) + c*(d*h - e*g);
-    if (std::abs(det) < Epsilon)
+    if (abs(det) < Epsilon)
         throw std::runtime_error("Transform2D::inverse: matrix is singular");
 
     DynamicMatrix inv(3, 3, 0.0);
