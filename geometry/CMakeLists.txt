@@ -4,6 +4,15 @@ add_library(SharedMath_Geometry
     src/Parallelogram.cpp
     src/Rectangle.cpp
     src/Triangle.cpp
+    src/Trapezoid.cpp
+    src/Rhombus.cpp
+    src/DynamicPolygon.cpp
+    src/Plane3D.cpp
+    src/Tetrahedron.cpp
+    src/Transform2D.cpp
+    src/Transform3D.cpp
+    src/Intersection.cpp
+    src/Algorithms.cpp
 )
 add_library(SharedMath::Geometry ALIAS SharedMath_Geometry)
 
@@ -21,7 +30,7 @@ target_include_directories(SharedMath_Geometry
         ${CMAKE_CURRENT_SOURCE_DIR}/include/geometry
 )
 
-target_link_libraries(SharedMath_Geometry PUBLIC SharedMath_Core)
+target_link_libraries(SharedMath_Geometry PUBLIC SharedMath_Core SharedMath_LinearAlgebra)
 
 target_compile_definitions(SharedMath_Geometry PUBLIC
     $<$<NOT:$<BOOL:${BUILD_SHARED_LIBS}>>:SHAREDMATH_GEOMETRY_STATIC_DEFINE>

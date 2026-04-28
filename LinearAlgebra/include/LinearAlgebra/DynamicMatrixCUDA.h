@@ -29,25 +29,9 @@ DynamicMatrix dm_cuda_sub(const DynamicMatrix& A, const DynamicMatrix& B);
 // Element-wise multiply by scalar
 DynamicMatrix dm_cuda_scale(const DynamicMatrix& A, double scalar);
 
-// ── Private-member accessor ───────────────────────────────────────────────────
-// DynamicMatrix declares `friend struct detail::DynamicMatrixCUDAImpl;`
-// so this struct can reach into private storage without breaking encapsulation.
-
-struct DynamicMatrixCUDAImpl {
-    // Raw device pointer to the GPU buffer
-    static double* cuda_ptr(const DynamicMatrix& m) {
-        return m.m_cuda_buf->ptr;
-    }
-
-    static size_t nrows(const DynamicMatrix& m) { return m.rows_; }
-    static size_t ncols(const DynamicMatrix& m) { return m.cols_; }
-
-    // Wrap a freshly-allocated CUDABuffer into a DynamicMatrix
-    static DynamicMatrix make(size_t rows, size_t cols,
-                              std::shared_ptr<DynamicMatrix::CUDABuffer> buf) {
-        return DynamicMatrix::from_cuda(rows, cols, std::move(buf));
-    }
-};
+// DynamicMatrixCUDAImpl is defined in DynamicMatrixCUDA.cu
+// (where CUDABuffer is complete).  Forward-declared here for the friend decl.
+struct DynamicMatrixCUDAImpl;
 
 } // namespace detail
 } // namespace SharedMath::LinearAlgebra

@@ -63,6 +63,27 @@ struct DynamicMatrix::CUDABuffer {
     }
 };
 
+// ─── DynamicMatrixCUDAImpl ────────────────────────────────────────────────────
+// Defined here (CUDABuffer is complete at this point).
+// Declared friend of DynamicMatrix in DynamicMatrix.h.
+
+namespace detail {
+
+struct DynamicMatrixCUDAImpl {
+    static double* cuda_ptr(const DynamicMatrix& m) {
+        return m.m_cuda_buf->ptr;
+    }
+    static size_t nrows(const DynamicMatrix& m) { return m.rows_; }
+    static size_t ncols(const DynamicMatrix& m) { return m.cols_; }
+
+    static DynamicMatrix make(size_t rows, size_t cols,
+                              std::shared_ptr<DynamicMatrix::CUDABuffer> buf) {
+        return DynamicMatrix::from_cuda(rows, cols, std::move(buf));
+    }
+};
+
+} // namespace detail
+
 // ─── Private factory ──────────────────────────────────────────────────────────
 // Wraps a GPU buffer into a DynamicMatrix without any host allocation.
 

@@ -34,29 +34,8 @@ Tensor cuda_pow(const Tensor& a, double exponent);
 // clip(a, lo, hi) element-wise.
 Tensor cuda_clip(const Tensor& a, double lo, double hi);
 
-// ── CUDA accessor (friend of Tensor) ─────────────────────────────────────────
-// Provides controlled access to Tensor private members for TensorCUDA.cu.
-struct TensorCUDAImpl {
-    // Raw pointer to GPU buffer (nullptr if on CPU or CUDA disabled).
-    static double* cuda_ptr(const Tensor& t) {
-        return t.m_cuda_buf ? t.m_cuda_buf->ptr : nullptr;
-    }
-
-    // Wrap an existing GPU buffer into a new GPU Tensor.
-    static Tensor make(Tensor::Shape shape,
-                       std::shared_ptr<Tensor::CUDABuffer> buf) {
-        return Tensor::from_cuda(std::move(shape), std::move(buf));
-    }
-
-    // Host data vector (empty for GPU tensors).
-    static const std::vector<double>& host_data(const Tensor& t) {
-        return t.m_data;
-    }
-
-    // Shape accessor (same as t.shape(), just here for symmetry).
-    static const Tensor::Shape& shape(const Tensor& t) {
-        return t.m_shape;
-    }
-};
+// TensorCUDAImpl is defined in TensorCUDA.cu (where CUDABuffer is complete).
+// Forward-declare it here so Tensor.h's friend declaration resolves correctly.
+struct TensorCUDAImpl;
 
 } // namespace SharedMath::LinearAlgebra::detail

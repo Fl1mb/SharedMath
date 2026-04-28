@@ -194,14 +194,19 @@ public:
 
     std::string str() const;
 
+    // ── GPU buffer type ───────────────────────────────────────────────── //
+    // Forward-declared public so that TensorCUDA.cu free functions can use
+    // std::make_shared<CUDABuffer>.  The struct itself is completed only in
+    // TensorCUDA.cu — no CUDA headers are needed here.
+    struct CUDABuffer;
+
 private:
     // ── CPU storage ───────────────────────────────────────────────────── //
     Shape               m_shape;
     std::vector<double> m_data;      // empty when tensor is on GPU
     std::vector<size_t> m_strides;
 
-    // ── GPU storage (PIMPL — no CUDA headers leak into this header) ───── //
-    struct CUDABuffer;                          // defined in TensorCUDA.cu
+    // ── GPU storage ──────────────────────────────────────────────────────//
     std::shared_ptr<CUDABuffer> m_cuda_buf;     // null → CPU tensor
     Device m_device = Device::CPU;
 

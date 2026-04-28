@@ -43,7 +43,7 @@ namespace SharedMath
             double area() const {return Pi * radius * radius;}
             double length() const {return 2.0 * Pi * radius;}
 
-            double contains(const Point2D& point){
+            double contains(const Point2D& point) const {
                 double dx = point.x() - center.x();
                 double dy = point.y() - center.y();
 
@@ -61,11 +61,11 @@ namespace SharedMath
             bool isTangent(const Circle& other) const {
                 double dx = center.x() - other.center.x();
                 double dy = center.y() - other.center.y();
-                double distance = std::sqrt(dx * dx + dy * dy);
+                double distance = sqrt(dx * dx + dy * dy);
                 double sumRadii = radius + other.radius;
-                double diffRadii = std::abs(radius - other.radius);
-                return std::abs(distance - sumRadii) < Epsilon || 
-                       std::abs(distance - diffRadii) < Epsilon;
+                double diffRadii = abs(radius - other.radius);
+                return abs(distance - sumRadii) < Epsilon || 
+                       abs(distance - diffRadii) < Epsilon;
             }
 
             void move(const Vector2D& offset) {
@@ -78,7 +78,7 @@ namespace SharedMath
             }
 
             bool operator==(const Circle& other) const {
-                return center == other.center && std::abs(radius - other.radius) < Epsilon;
+                return center == other.center && abs(radius - other.radius) < Epsilon;
             }
 
             bool operator!=(const Circle& other) const {
@@ -110,7 +110,7 @@ namespace SharedMath
             double distanceTo(const Point2D& point) const {
                 double dx = point.x() - center.x();
                 double dy = point.y() - center.y();
-                return std::max(0.0, std::sqrt(dx * dx + dy * dy) - radius);
+                return std::max(0.0, sqrt(dx * dx + dy * dy) - radius);
             }
 
         private:

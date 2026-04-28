@@ -16,6 +16,11 @@
 #include <string>
 #include <memory>
 
+// ── have_gpu forward declaration ─────────────────────────────────────────────
+// Defined in the anonymous namespace below; declared here so it can be called
+// by Tensor::cuda() before the anonymous namespace is parsed.
+namespace { bool have_gpu() noexcept; }
+
 namespace SharedMath::LinearAlgebra {
 
 // ─── CUDABuffer ───────────────────────────────────────────────────────────────
@@ -60,6 +65,37 @@ struct Tensor::CUDABuffer {
                 cudaGetErrorString(err));
     }
 };
+
+// ─── TensorCUDAImpl ───────────────────────────────────────────────────────────
+// Defined here (CUDABuffer is complete at this point).
+// Declared friend of Tensor in Tensor.h so it can access private members.
+
+namespace detail {
+
+struct TensorCUDAImpl {
+    // Raw pointer to the GPU buffer (nullptr if CPU or disabled).
+    static double* cuda_ptr(const Tensor& t) {
+        return t.m_cuda_buf ? t.m_cuda_buf->ptr : nullptr;
+    }
+
+    // Wrap an existing GPU buffer into a new GPU Tensor.
+    static Tensor make(Tensor::Shape shape,
+                       std::shared_ptr<Tensor::CUDABuffer> buf) {
+        return Tensor::from_cuda(std::move(shape), std::move(buf));
+    }
+
+    // Host data vector (empty for GPU tensors).
+    static const std::vector<double>& host_data(const Tensor& t) {
+        return t.m_data;
+    }
+
+    // Shape accessor.
+    static const Tensor::Shape& shape(const Tensor& t) {
+        return t.m_shape;
+    }
+};
+
+} // namespace detail
 
 // ─── Private factory ──────────────────────────────────────────────────────────
 
