@@ -39,7 +39,7 @@ namespace SharedMath
 
             double chordLength() const {
                 double half = subtendedAngle() / 2.0;
-                return 2.0 * circle_.getRadius() * std::sin(half);
+                return 2.0 * circle_.getRadius() * sin(half);
             }
 
             double sectorArea() const {
@@ -50,21 +50,21 @@ namespace SharedMath
             double segmentArea() const {
                 double r = circle_.getRadius();
                 double theta = subtendedAngle();
-                return 0.5 * r * r * (theta - std::sin(theta));
+                return 0.5 * r * r * (theta - sin(theta));
             }
 
             Point2D getStartPoint() const {
                 double r = circle_.getRadius();
                 Point2D c = circle_.getCenter();
-                return Point2D(c.x() + r * std::cos(startAngle_),
-                               c.y() + r * std::sin(startAngle_));
+                return Point2D(c.x() + r * cos(startAngle_),
+                               c.y() + r * sin(startAngle_));
             }
 
             Point2D getEndPoint() const {
                 double r = circle_.getRadius();
                 Point2D c = circle_.getCenter();
-                return Point2D(c.x() + r * std::cos(endAngle_),
-                               c.y() + r * std::sin(endAngle_));
+                return Point2D(c.x() + r * cos(endAngle_),
+                               c.y() + r * sin(endAngle_));
             }
 
             bool contains(double angle) const {
@@ -95,8 +95,8 @@ namespace SharedMath
 
             bool operator==(const Arc& other) const {
                 return circle_ == other.circle_ &&
-                       std::abs(startAngle_ - other.startAngle_) < Epsilon &&
-                       std::abs(endAngle_ - other.endAngle_) < Epsilon;
+                       abs(startAngle_ - other.startAngle_) < Epsilon &&
+                       abs(endAngle_ - other.endAngle_) < Epsilon;
             }
 
             bool operator!=(const Arc& other) const {

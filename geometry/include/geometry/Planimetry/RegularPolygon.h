@@ -31,13 +31,13 @@ namespace SharedMath
             ~RegularPolygon() override = default;
 
             double getSideLength() const {
-                return 2.0 * circumradius_ * std::sin(Pi / static_cast<double>(N));
+                return 2.0 * circumradius_ * sin(Pi / static_cast<double>(N));
             }
 
             double getCircumradius() const { return circumradius_; }
 
             double getInradius() const {
-                return circumradius_ * std::cos(Pi / static_cast<double>(N));
+                return circumradius_ * cos(Pi / static_cast<double>(N));
             }
 
             double getInteriorAngle() const {
@@ -70,8 +70,8 @@ namespace SharedMath
                     double angle = 2.0 * Pi * static_cast<double>(i) / static_cast<double>(N)
                                    - Pi / 2.0; // start at top
                     pts[i] = Point2D(
-                        center_.x() + circumradius_ * std::cos(angle),
-                        center_.y() + circumradius_ * std::sin(angle)
+                        center_.x() + circumradius_ * cos(angle),
+                        center_.y() + circumradius_ * sin(angle)
                     );
                 }
                 this->setVertices(pts);

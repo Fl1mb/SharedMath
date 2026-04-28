@@ -44,15 +44,15 @@ namespace SharedMath
             double perimeter() const {
                 double h = (semiMajor - semiMinor) * (semiMajor - semiMinor) /
                            ((semiMajor + semiMinor) * (semiMajor + semiMinor));
-                return Pi * (semiMajor + semiMinor) * (1.0 + 3.0 * h / (10.0 + std::sqrt(4.0 - 3.0 * h)));
+                return Pi * (semiMajor + semiMinor) * (1.0 + 3.0 * h / (10.0 + sqrt(4.0 - 3.0 * h)));
             }
 
             double eccentricity() const {
-                return std::sqrt(1.0 - (semiMinor * semiMinor) / (semiMajor * semiMajor));
+                return sqrt(1.0 - (semiMinor * semiMinor) / (semiMajor * semiMajor));
             }
 
             double focalDistance() const {
-                return std::sqrt(semiMajor * semiMajor - semiMinor * semiMinor);
+                return sqrt(semiMajor * semiMajor - semiMinor * semiMinor);
             }
 
             std::pair<Point2D, Point2D> getFoci() const {
