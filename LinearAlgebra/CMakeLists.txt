@@ -1,12 +1,19 @@
 include(GenerateExportHeader)
 
 # ── Optional CUDA support ──────────────────────────────────────────────────────
+# SHAREDMATH_ENABLE_CUDA is set by the root CMakeLists via check_language(CUDA).
+# We declare the option here only so it is visible in cmake-gui / ccmake;
+# the default OFF is overridden to ON by the root when nvcc is found.
 option(SHAREDMATH_ENABLE_CUDA "Enable CUDA acceleration for Tensor and LinearAlgebra" OFF)
 
 if(SHAREDMATH_ENABLE_CUDA)
-    find_package(CUDAToolkit REQUIRED)   # CMake >= 3.17
-    enable_language(CUDA)
-    message(STATUS "SharedMath: CUDA support enabled (toolkit: ${CUDAToolkit_VERSION})")
+    # CUDAToolkit and enable_language(CUDA) are already handled by the root
+    # CMakeLists before add_subdirectory(LinearAlgebra) is called.
+    # We just verify the toolkit target is available.
+    if(NOT TARGET CUDA::cublas)
+        find_package(CUDAToolkit REQUIRED)
+    endif()
+    message(STATUS "SharedMath LinearAlgebra: CUDA support ON (toolkit ${CUDAToolkit_VERSION})")
 endif()
 
 # ── Library sources ────────────────────────────────────────────────────────────

@@ -23,10 +23,12 @@ include(GNUInstallDirs)
 option(${PROJECT_NAME}_USE_CUDA "Enable CUDA support in LinearAlgebra" ON)
 
 if(${PROJECT_NAME}_USE_CUDA)
-    find_package(CUDA QUIET)
-    
-    if(CUDA_FOUND)
+    include(CheckLanguage)
+    check_language(CUDA)          # sets CMAKE_CUDA_COMPILER if nvcc is found
+
+    if(CMAKE_CUDA_COMPILER)
         enable_language(CUDA)
+        find_package(CUDAToolkit REQUIRED)   # provides CUDA::cublas, CUDA::cudart, etc.
 
         if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
             set(CMAKE_CUDA_ARCHITECTURES "75;80;86;89" CACHE STRING "CUDA architectures")
@@ -42,15 +44,20 @@ if(${PROJECT_NAME}_USE_CUDA)
             set(CMAKE_CUDA_FLAGS_RELEASE "${CMAKE_CUDA_FLAGS_RELEASE} -O3")
         endif()
 
+        # ── Propagate to LinearAlgebra (reads SHAREDMATH_ENABLE_CUDA) ─────────
+        set(SHAREDMATH_ENABLE_CUDA ON CACHE BOOL "Enable CUDA acceleration" FORCE)
+
         message(STATUS "[${PROJECT_NAME}] CUDA enabled: ON")
-        message(STATUS "[${PROJECT_NAME}] CUDA version:      ${CMAKE_CUDA_COMPILER_VERSION}")
+        message(STATUS "[${PROJECT_NAME}] CUDA version:       ${CMAKE_CUDA_COMPILER_VERSION}")
         message(STATUS "[${PROJECT_NAME}] CUDA architectures: ${CMAKE_CUDA_ARCHITECTURES}")
     else()
-        message(STATUS "[${PROJECT_NAME}] CUDA not found. Disabling CUDA support.")
-        set(${PROJECT_NAME}_USE_CUDA OFF CACHE BOOL "Enable CUDA support" FORCE)
+        message(STATUS "[${PROJECT_NAME}] CUDA compiler not found — disabling CUDA support.")
+        set(${PROJECT_NAME}_USE_CUDA   OFF CACHE BOOL "Enable CUDA support"        FORCE)
+        set(SHAREDMATH_ENABLE_CUDA     OFF CACHE BOOL "Enable CUDA acceleration"   FORCE)
     endif()
 else()
     message(STATUS "[${PROJECT_NAME}] CUDA enabled: OFF (disabled by user)")
+    set(SHAREDMATH_ENABLE_CUDA OFF CACHE BOOL "Enable CUDA acceleration" FORCE)
 endif()
 
 # --------------------------------------------------------------------------- #

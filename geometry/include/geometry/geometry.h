@@ -1,19 +1,31 @@
 #pragma once
 #include "constans.h"
 #include "Point.h"
-#include "Planimetry/Rectangle.h"
-#include "Planimetry/Triangle.h"
-#include "Planimetry/Circle.h"
 #include "Line.h"
 #include "Vectors.h"
+#include "Angle.h"
+#include "CoordinateSystem.h"
+#include "Transform2D.h"
+#include "Transform3D.h"
 #include "Planimetry/Polygon.h"
-
-namespace SharedMath{
-    namespace Geometry
-    {
-
-
-
-        
-    } 
-}
+#include "Planimetry/Triangle.h"
+#include "Planimetry/Rectangle.h"
+#include "Planimetry/Square.h"
+#include "Planimetry/Parallelogram.h"
+#include "Planimetry/Rhombus.h"
+#include "Planimetry/Trapezoid.h"
+#include "Planimetry/Circle.h"
+#include "Planimetry/Ellipse.h"
+#include "Planimetry/Arc.h"
+#include "Planimetry/RegularPolygon.h"
+#include "Planimetry/DynamicPolygon.h"
+#include "Stereometry/Sphere.h"
+#include "Stereometry/Plane3D.h"
+#include "Stereometry/Box.h"
+#include "Stereometry/Cylinder.h"
+#include "Stereometry/Cone.h"
+#include "Stereometry/Tetrahedron.h"
+#include "Intersection.h"
+#include "Curves/BezierCurve.h"
+#include "Curves/Spline.h"
+#include "Algorithms.h"

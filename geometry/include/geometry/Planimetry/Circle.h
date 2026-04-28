@@ -43,7 +43,7 @@ namespace SharedMath
             double area() const {return Pi * radius * radius;}
             double length() const {return 2.0 * Pi * radius;}
 
-            double contains(const Point2D& point){
+            double contains(const Point2D& point) const {
                 double dx = point.x() - center.x();
                 double dy = point.y() - center.y();
 
