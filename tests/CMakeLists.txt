@@ -51,9 +51,22 @@ add_executable(${PROJECT_NAME}Tests
     test_numerical_integral_equations.cpp
     test_numerical_slae.cpp
     test_iterative_solvers.cpp
-    test_tensor_cuda.cpp
-    test_dynamicmatrix_cuda.cpp
+    test_dsp_spectral.cpp
+    test_dsp_signal_generator.cpp
+    test_dsp_filter_response.cpp
+    test_dsp_filter_design_hz.cpp
+    test_dsp_signal_processing.cpp
+    test_dsp_streaming.cpp
+    test_dsp_resampling.cpp
+    test_dsp_rbj_filters.cpp
 )
+
+if(SHAREDMATH_ENABLE_CUDA)
+    target_sources(${PROJECT_NAME}Tests PRIVATE
+        test_tensor_cuda.cpp
+        test_dynamicmatrix_cuda.cpp
+    )
+endif()
 
 target_link_libraries(${PROJECT_NAME}Tests
     PRIVATE

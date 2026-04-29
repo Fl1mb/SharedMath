@@ -35,9 +35,12 @@ DynamicMatrix dm_cuda_scale(const DynamicMatrix& A, double scalar);
 
 struct DynamicMatrixCUDAImpl {
     // Raw device pointer to the GPU buffer
-    static double* cuda_ptr(const DynamicMatrix& m) {
-        return m.m_cuda_buf->ptr;
-    }
+    static double* cuda_ptr(const DynamicMatrix& m);
+    static double* buffer_ptr(
+        const std::shared_ptr<DynamicMatrix::CUDABuffer>& buf);
+    static std::shared_ptr<DynamicMatrix::CUDABuffer> make_buffer(size_t n);
+    static std::shared_ptr<DynamicMatrix::CUDABuffer> make_buffer(
+        const double* host_src, size_t n);
 
     static size_t nrows(const DynamicMatrix& m) { return m.rows_; }
     static size_t ncols(const DynamicMatrix& m) { return m.cols_; }

@@ -1,10 +1,13 @@
 include(GenerateExportHeader)
 
 # ── Optional CUDA support ──────────────────────────────────────────────────────
-option(SHAREDMATH_ENABLE_CUDA "Enable CUDA acceleration for Tensor and LinearAlgebra" OFF)
+find_package(CUDAToolkit QUIET)
+option(SHAREDMATH_ENABLE_CUDA "Enable CUDA acceleration for Tensor and LinearAlgebra" ${CUDAToolkit_FOUND})
 
 if(SHAREDMATH_ENABLE_CUDA)
-    find_package(CUDAToolkit REQUIRED)   # CMake >= 3.17
+    if(NOT CUDAToolkit_FOUND)
+        find_package(CUDAToolkit REQUIRED)
+    endif()
     enable_language(CUDA)
     message(STATUS "SharedMath: CUDA support enabled (toolkit: ${CUDAToolkit_VERSION})")
 endif()
@@ -40,7 +43,7 @@ if(SHAREDMATH_ENABLE_CUDA)
     target_compile_definitions(SharedMath_LinearAlgebra PUBLIC SHAREDMATH_CUDA)
 
     set_target_properties(SharedMath_LinearAlgebra PROPERTIES
-        CUDA_SEPARABLE_COMPILATION ON          # needed for device code in .cu
+        CUDA_SEPARABLE_COMPILATION OFF         # no cross-TU device calls; avoids extra device-link step
         CUDA_ARCHITECTURES          "75;86;89" # Turing / Ampere / Ada — adjust to your GPU
     )
 

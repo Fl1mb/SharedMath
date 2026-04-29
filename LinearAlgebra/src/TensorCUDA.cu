@@ -16,6 +16,16 @@
 #include <string>
 #include <memory>
 
+// ─── GPU availability check (used by Tensor::cuda() below) ───────────────────
+namespace {
+
+bool have_gpu() noexcept {
+    int count = 0;
+    return cudaGetDeviceCount(&count) == cudaSuccess && count > 0;
+}
+
+} // anonymous namespace
+
 namespace SharedMath::LinearAlgebra {
 
 // ─── CUDABuffer ───────────────────────────────────────────────────────────────
@@ -61,6 +71,30 @@ struct Tensor::CUDABuffer {
     }
 };
 
+namespace detail {
+
+double* TensorCUDAImpl::cuda_ptr(const Tensor& t) {
+    return t.m_cuda_buf ? t.m_cuda_buf->ptr : nullptr;
+}
+
+double* TensorCUDAImpl::buffer_ptr(
+    const std::shared_ptr<Tensor::CUDABuffer>& buf)
+{
+    return buf ? buf->ptr : nullptr;
+}
+
+std::shared_ptr<Tensor::CUDABuffer> TensorCUDAImpl::make_buffer(size_t n) {
+    return std::make_shared<Tensor::CUDABuffer>(n);
+}
+
+std::shared_ptr<Tensor::CUDABuffer> TensorCUDAImpl::make_buffer(
+    const double* host_src, size_t n)
+{
+    return std::make_shared<Tensor::CUDABuffer>(host_src, n);
+}
+
+} // namespace detail
+
 // ─── Private factory ──────────────────────────────────────────────────────────
 
 Tensor Tensor::from_cuda(Shape shape, std::shared_ptr<CUDABuffer> buf) {
@@ -81,7 +115,7 @@ Tensor Tensor::cuda() const {
     // Graceful fallback: no GPU available → stay on CPU silently.
     if (!have_gpu()) return *this;
 
-    auto buf = std::make_shared<CUDABuffer>(m_data.data(), m_data.size());
+    auto buf = detail::TensorCUDAImpl::make_buffer(m_data.data(), m_data.size());
     return from_cuda(m_shape, std::move(buf));
 }
 
@@ -110,12 +144,6 @@ bool cuda_is_available() noexcept {
 // ─── cuBLAS handle (thread-local singleton) ───────────────────────────────────
 
 namespace {
-
-// Returns false if no GPU is present — used to gate handle creation.
-bool have_gpu() noexcept {
-    int count = 0;
-    return cudaGetDeviceCount(&count) == cudaSuccess && count > 0;
-}
 
 cublasHandle_t& cublas_handle() {
     thread_local cublasHandle_t handle = []{
@@ -205,8 +233,8 @@ Tensor cuda_unary(const Tensor& a, UnaryOp op) {
     int    grid = static_cast<int>((n + kBlock - 1) / kBlock);
 
     const double* in  = Acc::cuda_ptr(a);
-    auto out_buf = std::make_shared<Tensor::CUDABuffer>(n);
-    double* out  = out_buf->ptr;
+    auto out_buf = Acc::make_buffer(n);
+    double* out  = Acc::buffer_ptr(out_buf);
 
     switch (op) {
     case UnaryOp::Neg:   k_neg  <<<grid,kBlock>>>(in, out, n); break;
@@ -231,8 +259,8 @@ Tensor cuda_unary(const Tensor& a, UnaryOp op) {
 Tensor cuda_pow(const Tensor& a, double exponent) {
     size_t n    = a.size();
     int    grid = static_cast<int>((n + kBlock - 1) / kBlock);
-    auto out_buf = std::make_shared<Tensor::CUDABuffer>(n);
-    k_pow<<<grid, kBlock>>>(Acc::cuda_ptr(a), out_buf->ptr, n, exponent);
+    auto out_buf = Acc::make_buffer(n);
+    k_pow<<<grid, kBlock>>>(Acc::cuda_ptr(a), Acc::buffer_ptr(out_buf), n, exponent);
     check_cuda(cudaDeviceSynchronize(), "cuda_pow");
     return Acc::make(Acc::shape(a), std::move(out_buf));
 }
@@ -240,8 +268,8 @@ Tensor cuda_pow(const Tensor& a, double exponent) {
 Tensor cuda_clip(const Tensor& a, double lo, double hi) {
     size_t n    = a.size();
     int    grid = static_cast<int>((n + kBlock - 1) / kBlock);
-    auto out_buf = std::make_shared<Tensor::CUDABuffer>(n);
-    k_clip<<<grid, kBlock>>>(Acc::cuda_ptr(a), out_buf->ptr, n, lo, hi);
+    auto out_buf = Acc::make_buffer(n);
+    k_clip<<<grid, kBlock>>>(Acc::cuda_ptr(a), Acc::buffer_ptr(out_buf), n, lo, hi);
     check_cuda(cudaDeviceSynchronize(), "cuda_clip");
     return Acc::make(Acc::shape(a), std::move(out_buf));
 }
@@ -254,8 +282,8 @@ Tensor cuda_binary(const Tensor& a, const Tensor& b, BinaryOp op) {
 
     const double* pa = Acc::cuda_ptr(a);
     const double* pb = Acc::cuda_ptr(b);
-    auto out_buf = std::make_shared<Tensor::CUDABuffer>(n);
-    double* pc   = out_buf->ptr;
+    auto out_buf = Acc::make_buffer(n);
+    double* pc   = Acc::buffer_ptr(out_buf);
 
     switch (op) {
     case BinaryOp::Add: k_add<<<grid,kBlock>>>(pa, pb, pc, n); break;
@@ -279,7 +307,7 @@ Tensor cuda_matmul(const Tensor& a, const Tensor& b) {
     size_t k = Acc::shape(a)[1];
     size_t n = Acc::shape(b)[1];
 
-    auto out_buf = std::make_shared<Tensor::CUDABuffer>(m * n);
+    auto out_buf = Acc::make_buffer(m * n);
 
     const double alpha = 1.0, beta = 0.0;
     cublasStatus_t st = cublasDgemm(
@@ -292,7 +320,7 @@ Tensor cuda_matmul(const Tensor& a, const Tensor& b) {
         Acc::cuda_ptr(b), static_cast<int>(n),   // B row-major → B^T col-major, ldb = n
         Acc::cuda_ptr(a), static_cast<int>(k),   // A row-major → A^T col-major, lda = k
         &beta,
-        out_buf->ptr,     static_cast<int>(n)    // C^T col-major, ldc = n
+        Acc::buffer_ptr(out_buf), static_cast<int>(n) // C^T col-major, ldc = n
     );
     if (st != CUBLAS_STATUS_SUCCESS)
         throw std::runtime_error("cuda_matmul: cublasDgemm failed");

@@ -210,10 +210,12 @@ TEST(TensorCUDA_Binary, CorrectnessVsCPU_Add) {
 TEST(TensorCUDA_Binary, TestName) {                                           \
     SKIP_IF_NO_GPU();                                                         \
     Tensor A = make_wave(N);                                                  \
-    std::vector<double> bv(N);                                                \
-    for (size_t i = 0; i < N; ++i)                                           \
-        bv[i] = std::sin(static_cast<double>(i + 500) * 0.001);              \
-    Tensor B({N}, bv);                                                        \
+    Tensor B;                                                                 \
+    { std::vector<double> bv(N);                                              \
+      for (size_t i = 0; i < N; ++i)                                         \
+          bv[i] = std::sin(static_cast<double>(i + 500) * 0.001);            \
+      B = Tensor({N}, bv); }                                                  \
+    Tensor C_cpu = A OP B;                                                    \
     auto t0 = Clock::now();                                                   \
     Tensor C = (A.cuda() OP B.cuda()).cpu();                                  \
     std::cout << "[" #N " " #OP "] " << elapsed_ms(t0) << " ms\n";           \
