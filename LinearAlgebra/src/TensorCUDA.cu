@@ -16,6 +16,16 @@
 #include <string>
 #include <memory>
 
+// ─── GPU availability check (used by Tensor::cuda() below) ───────────────────
+namespace {
+
+bool have_gpu() noexcept {
+    int count = 0;
+    return cudaGetDeviceCount(&count) == cudaSuccess && count > 0;
+}
+
+} // anonymous namespace
+
 namespace SharedMath::LinearAlgebra {
 
 // ─── CUDABuffer ───────────────────────────────────────────────────────────────
@@ -110,12 +120,6 @@ bool cuda_is_available() noexcept {
 // ─── cuBLAS handle (thread-local singleton) ───────────────────────────────────
 
 namespace {
-
-// Returns false if no GPU is present — used to gate handle creation.
-bool have_gpu() noexcept {
-    int count = 0;
-    return cudaGetDeviceCount(&count) == cudaSuccess && count > 0;
-}
 
 cublasHandle_t& cublas_handle() {
     thread_local cublasHandle_t handle = []{
