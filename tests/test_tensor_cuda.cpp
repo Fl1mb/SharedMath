@@ -256,8 +256,7 @@ TEST(TensorCUDA_Matmul, NonSquare_1024x512x2048) {
 TEST(TensorCUDA_Binary, TestName) {                                           \
     SKIP_IF_NO_GPU();                                                         \
     Tensor A = make_wave(N);                                                  \
-    Tensor B = make_wave(N / 2).reshape({N});    /* offset phase */           \
-    /* Force B same size by rebuilding */                                     \
+    Tensor B;                                                                 \
     { std::vector<double> bv(N);                                              \
       for (size_t i = 0; i < N; ++i)                                         \
           bv[i] = std::sin(static_cast<double>(i + 500) * 0.001);            \
