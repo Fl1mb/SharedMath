@@ -98,6 +98,7 @@ add_subdirectory(functions)
 add_subdirectory(Graphs)
 add_subdirectory(DSP)
 add_subdirectory(NumericalMethods)
+add_subdirectory(ML)
 
 # Umbrella target
 add_library(SharedMath INTERFACE)
@@ -118,6 +119,7 @@ target_link_libraries(SharedMath INTERFACE
     SharedMath_Graphs
     SharedMath_DSP
     SharedMath_NumericalMethods
+    SharedMath_ML
 )
 
 if(${PROJECT_NAME}_BUILD_TESTS)
@@ -148,6 +150,7 @@ if(${PROJECT_NAME}_INSTALL AND NOT CMAKE_SKIP_INSTALL_RULES)
         SharedMath_LinearAlgebra
         SharedMath_Geometry
         SharedMath_NumericalMethods
+        SharedMath_ML
         EXPORT   ${PROJECT_NAME}_export
         INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
         RUNTIME  DESTINATION ${CMAKE_INSTALL_BINDIR}    COMPONENT bin
@@ -165,7 +168,7 @@ if(${PROJECT_NAME}_INSTALL AND NOT CMAKE_SKIP_INSTALL_RULES)
         endforeach()
     endif()
 
-    foreach(_mod core functions LinearAlgebra geometry Graphs DSP NumericalMethods)
+    foreach(_mod core functions LinearAlgebra geometry Graphs DSP NumericalMethods ML)
         install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${_mod}/include/
             DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
             COMPONENT   devel

@@ -59,6 +59,7 @@ add_executable(${PROJECT_NAME}Tests
     test_dsp_streaming.cpp
     test_dsp_resampling.cpp
     test_dsp_rbj_filters.cpp
+    test_ml_module.cpp
 )
 
 if(SHAREDMATH_ENABLE_CUDA)
