@@ -212,14 +212,18 @@ public:
         return DynamicMatrix(t.dim(0), t.dim(1), t.data());
     }
 
+    // ── GPU buffer type ───────────────────────────────────────────────── //
+    // Forward-declared public so that DynamicMatrixCUDA.cu free functions
+    // can use std::make_shared<CUDABuffer>.  Completed only in the .cu file.
+    struct CUDABuffer;
+
 private:
     size_t rows_ = 0;
     size_t cols_ = 0;
     std::vector<double> data_; // flat row-major: index = r * cols_ + c
                                // empty when matrix is on GPU
 
-    // ── GPU storage (PIMPL — no CUDA headers leak into this public header) //
-    struct CUDABuffer;                           // defined in DynamicMatrixCUDA.cu
+    // ── GPU storage ──────────────────────────────────────────────────────//
     std::shared_ptr<CUDABuffer> m_cuda_buf;      // null → CPU matrix
     Device m_device = Device::CPU;
 

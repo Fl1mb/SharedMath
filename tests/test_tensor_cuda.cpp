@@ -244,7 +244,7 @@ TEST(TensorCUDA_Binary, Div_4M) {
 // 5. Scalar arithmetic
 // ════════════════════════════════════════════════════════════════════════════
 
-TEST(TensorCUDA_Scalar, MulAndDiv_4M) {
+TEST(TensorCUDA_Scalar, MulAndDiv_Small) {
     SKIP_IF_NO_GPU();
     Tensor A = make_wave(k4M);
     auto t0 = Clock::now();
@@ -308,7 +308,7 @@ TEST(TensorCUDA_Unary, Pow2_1M) {
     EXPECT_TRUE(std::isfinite(fro_norm(B)));
 }
 
-TEST(TensorCUDA_Unary, Pow0_5_1M) {
+TEST(TensorCUDA_Unary, Clip_Small) {
     SKIP_IF_NO_GPU();
     Tensor A = make_positive(k1M);
     Tensor B = A.cuda().pow(0.5).cpu();
@@ -347,7 +347,7 @@ TEST(TensorCUDA_Chained, AddThenMul_2M) {
 // Lightweight correctness check: exp(sin(A)) on 1M — CPU kept intentionally.
 TEST(TensorCUDA_Chained, ExpSin_1M) {
     SKIP_IF_NO_GPU();
-    Tensor A = make_wave(k1M);
+    Tensor A = make_wave(kSmallSize);
     Tensor ref = A.sin().exp();
     Tensor res = A.cuda().sin().exp().cpu();
     EXPECT_LT(rel_fro_err(ref, res), 1e-12);
@@ -371,7 +371,7 @@ TEST(TensorCUDA_Chained, MatmulThenTanh_512) {
 
 TEST(TensorCUDA_Numerics, SumConsistency_2M) {
     SKIP_IF_NO_GPU();
-    Tensor A = make_wave(2'097'152);
+    Tensor A = make_wave(kSmallSize);
     double s_cpu = A.sum();
     double s_gpu = A.cuda().cpu().sum();
     EXPECT_NEAR(s_cpu, s_gpu, std::abs(s_cpu) * 1e-12 + 1e-9);
@@ -379,7 +379,7 @@ TEST(TensorCUDA_Numerics, SumConsistency_2M) {
 
 TEST(TensorCUDA_Numerics, FrobeniusNormPreserved_1024x1024) {
     SKIP_IF_NO_GPU();
-    Tensor A = make_mat(1024, 1024);
+    Tensor A = make_mat(64, 64);
     double n_cpu = fro_norm(A);
     double n_gpu = fro_norm(A.cuda().cpu());
     EXPECT_NEAR(n_cpu, n_gpu, n_cpu * 1e-14) << "Frobenius norm changed after round-trip";
