@@ -1,5 +1,16 @@
-# DSP (Digital Signal Processing) module — placeholder.
-# Planned: FFT, convolution, FIR/IIR filters, windowing functions.
+# DSP (Digital Signal Processing) module — header-only INTERFACE library.
+#
+# Contents:
+#   FFT / RFFT / IFFT         (FFT.h, FFTPlan.h, FFTBackend.h, CPUBackend.h, FFTConfig.h)
+#   Windowing functions       (Window.h)
+#   Convolution / correlation (Convolution.h)
+#   FIR filter design         (FIR.h)
+#   IIR / biquad filter design(IIR.h)
+#   STFT / ISTFT              (STFT.h)
+#   Hilbert transform         (Hilbert.h)
+#   Power spectral density    (Spectral.h)
+#   FIR frequency response    (FilterResponse.h)
+#   Signal generators         (SignalGenerator.h)
 
 add_library(SharedMath_DSP INTERFACE)
 add_library(SharedMath::DSP ALIAS SharedMath_DSP)
