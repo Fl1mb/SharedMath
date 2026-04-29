@@ -63,24 +63,27 @@ struct DynamicMatrix::CUDABuffer {
     }
 };
 
-// ─── DynamicMatrixCUDAImpl ────────────────────────────────────────────────────
-// Defined here (CUDABuffer is complete at this point).
-// Declared friend of DynamicMatrix in DynamicMatrix.h.
-
 namespace detail {
 
-struct DynamicMatrixCUDAImpl {
-    static double* cuda_ptr(const DynamicMatrix& m) {
-        return m.m_cuda_buf->ptr;
-    }
-    static size_t nrows(const DynamicMatrix& m) { return m.rows_; }
-    static size_t ncols(const DynamicMatrix& m) { return m.cols_; }
+double* DynamicMatrixCUDAImpl::cuda_ptr(const DynamicMatrix& m) {
+    return m.m_cuda_buf ? m.m_cuda_buf->ptr : nullptr;
+}
 
-    static DynamicMatrix make(size_t rows, size_t cols,
-                              std::shared_ptr<DynamicMatrix::CUDABuffer> buf) {
-        return DynamicMatrix::from_cuda(rows, cols, std::move(buf));
-    }
-};
+double* DynamicMatrixCUDAImpl::buffer_ptr(
+    const std::shared_ptr<DynamicMatrix::CUDABuffer>& buf)
+{
+    return buf ? buf->ptr : nullptr;
+}
+
+std::shared_ptr<DynamicMatrix::CUDABuffer>
+DynamicMatrixCUDAImpl::make_buffer(size_t n) {
+    return std::make_shared<DynamicMatrix::CUDABuffer>(n);
+}
+
+std::shared_ptr<DynamicMatrix::CUDABuffer>
+DynamicMatrixCUDAImpl::make_buffer(const double* host_src, size_t n) {
+    return std::make_shared<DynamicMatrix::CUDABuffer>(host_src, n);
+}
 
 } // namespace detail
 
@@ -115,7 +118,7 @@ DynamicMatrix DynamicMatrix::cuda() const {
     // Graceful fallback: if no CUDA-capable device is present, stay on CPU.
     if (!have_gpu()) return *this;
 
-    auto buf = std::make_shared<CUDABuffer>(data_.data(), data_.size());
+    auto buf = detail::DynamicMatrixCUDAImpl::make_buffer(data_.data(), data_.size());
     return from_cuda(rows_, cols_, std::move(buf));
 }
 
@@ -197,10 +200,10 @@ using Acc = DynamicMatrixCUDAImpl;   // shorthand
 DynamicMatrix dm_cuda_add(const DynamicMatrix& A, const DynamicMatrix& B) {
     size_t n    = A.size();
     int    grid = static_cast<int>((n + kDMBlock - 1) / kDMBlock);
-    auto   out  = std::make_shared<DynamicMatrix::CUDABuffer>(n);
+    auto   out  = Acc::make_buffer(n);
 
     k_dm_add<<<grid, kDMBlock>>>(Acc::cuda_ptr(A), Acc::cuda_ptr(B),
-                                  out->ptr, n);
+                                  Acc::buffer_ptr(out), n);
     dm_check(cudaDeviceSynchronize(), "dm_cuda_add");
     return Acc::make(Acc::nrows(A), Acc::ncols(A), std::move(out));
 }
@@ -210,10 +213,10 @@ DynamicMatrix dm_cuda_add(const DynamicMatrix& A, const DynamicMatrix& B) {
 DynamicMatrix dm_cuda_sub(const DynamicMatrix& A, const DynamicMatrix& B) {
     size_t n    = A.size();
     int    grid = static_cast<int>((n + kDMBlock - 1) / kDMBlock);
-    auto   out  = std::make_shared<DynamicMatrix::CUDABuffer>(n);
+    auto   out  = Acc::make_buffer(n);
 
     k_dm_sub<<<grid, kDMBlock>>>(Acc::cuda_ptr(A), Acc::cuda_ptr(B),
-                                  out->ptr, n);
+                                  Acc::buffer_ptr(out), n);
     dm_check(cudaDeviceSynchronize(), "dm_cuda_sub");
     return Acc::make(Acc::nrows(A), Acc::ncols(A), std::move(out));
 }
@@ -223,9 +226,9 @@ DynamicMatrix dm_cuda_sub(const DynamicMatrix& A, const DynamicMatrix& B) {
 DynamicMatrix dm_cuda_scale(const DynamicMatrix& A, double scalar) {
     size_t n    = A.size();
     int    grid = static_cast<int>((n + kDMBlock - 1) / kDMBlock);
-    auto   out  = std::make_shared<DynamicMatrix::CUDABuffer>(n);
+    auto   out  = Acc::make_buffer(n);
 
-    k_dm_scale<<<grid, kDMBlock>>>(Acc::cuda_ptr(A), out->ptr, n, scalar);
+    k_dm_scale<<<grid, kDMBlock>>>(Acc::cuda_ptr(A), Acc::buffer_ptr(out), n, scalar);
     dm_check(cudaDeviceSynchronize(), "dm_cuda_scale");
     return Acc::make(Acc::nrows(A), Acc::ncols(A), std::move(out));
 }
@@ -246,7 +249,7 @@ DynamicMatrix dm_cuda_matmul(const DynamicMatrix& A, const DynamicMatrix& B) {
     const size_t k = Acc::ncols(A);
     const size_t n = Acc::ncols(B);
 
-    auto out = std::make_shared<DynamicMatrix::CUDABuffer>(m * n);
+    auto out = Acc::make_buffer(m * n);
 
     const double alpha = 1.0, beta = 0.0;
     cublasStatus_t st = cublasDgemm(
@@ -259,7 +262,7 @@ DynamicMatrix dm_cuda_matmul(const DynamicMatrix& A, const DynamicMatrix& B) {
         Acc::cuda_ptr(B), static_cast<int>(n),  // B row-major → Bᵀ col-major, ldb=n
         Acc::cuda_ptr(A), static_cast<int>(k),  // A row-major → Aᵀ col-major, lda=k
         &beta,
-        out->ptr,         static_cast<int>(n)   // Cᵀ col-major = C row-major, ldc=n
+        Acc::buffer_ptr(out), static_cast<int>(n) // Cᵀ col-major = C row-major, ldc=n
     );
     if (st != CUBLAS_STATUS_SUCCESS)
         throw std::runtime_error("dm_cuda_matmul: cublasDgemm failed");

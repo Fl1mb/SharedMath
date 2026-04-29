@@ -24,11 +24,11 @@ option(${PROJECT_NAME}_USE_CUDA "Enable CUDA support in LinearAlgebra" ON)
 
 if(${PROJECT_NAME}_USE_CUDA)
     include(CheckLanguage)
-    check_language(CUDA)          # sets CMAKE_CUDA_COMPILER if nvcc is found
+    check_language(CUDA)
 
     if(CMAKE_CUDA_COMPILER)
         enable_language(CUDA)
-        find_package(CUDAToolkit REQUIRED)   # provides CUDA::cublas, CUDA::cudart, etc.
+        find_package(CUDAToolkit REQUIRED)
 
         if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
             set(CMAKE_CUDA_ARCHITECTURES "75;80;86;89" CACHE STRING "CUDA architectures")
