@@ -15,7 +15,45 @@ string(TOLOWER ${PROJECT_NAME} PROJECT_NAME_LOWER)
 string(TOUPPER ${PROJECT_NAME} PROJECT_NAME_UPPER)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/utils.cmake)
-include(GNUInstallDirs)   # defines CMAKE_INSTALL_LIBDIR, INCLUDEDIR, etc. globally
+include(GNUInstallDirs)
+
+# --------------------------------------------------------------------------- #
+# CUDA Configuration (Optional & Auto-Detect)
+# --------------------------------------------------------------------------- #
+option(${PROJECT_NAME}_USE_CUDA "Enable CUDA support in LinearAlgebra" ON)
+
+if(${PROJECT_NAME}_USE_CUDA)
+    include(CheckLanguage)
+    check_language(CUDA)
+
+    if(CMAKE_CUDA_COMPILER)
+        enable_language(CUDA)
+        find_package(CUDAToolkit REQUIRED)
+
+        if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+            set(CMAKE_CUDA_ARCHITECTURES "75;80;86;89" CACHE STRING "CUDA architectures")
+        endif()
+
+        set(CMAKE_CUDA_STANDARD 17)
+        set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+        set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
+
+        if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+            set(CMAKE_CUDA_FLAGS_DEBUG "${CMAKE_CUDA_FLAGS_DEBUG} -G -lineinfo")
+        else()
+            set(CMAKE_CUDA_FLAGS_RELEASE "${CMAKE_CUDA_FLAGS_RELEASE} -O3")
+        endif()
+
+        message(STATUS "[${PROJECT_NAME}] CUDA enabled: ON")
+        message(STATUS "[${PROJECT_NAME}] CUDA version:      ${CMAKE_CUDA_COMPILER_VERSION}")
+        message(STATUS "[${PROJECT_NAME}] CUDA architectures: ${CMAKE_CUDA_ARCHITECTURES}")
+    else()
+        message(STATUS "[${PROJECT_NAME}] CUDA not found. Disabling CUDA support.")
+        set(${PROJECT_NAME}_USE_CUDA OFF CACHE BOOL "Enable CUDA support" FORCE)
+    endif()
+else()
+    message(STATUS "[${PROJECT_NAME}] CUDA enabled: OFF (disabled by user)")
+endif()
 
 # --------------------------------------------------------------------------- #
 # Options
@@ -43,6 +81,7 @@ message(STATUS "[${PROJECT_NAME}] Version:      ${PROJECT_VERSION}")
 message(STATUS "[${PROJECT_NAME}] Build type:   ${CMAKE_BUILD_TYPE}")
 message(STATUS "[${PROJECT_NAME}] Shared libs:  ${BUILD_SHARED_LIBS}")
 message(STATUS "[${PROJECT_NAME}] Top-level:    ${is_top_level}")
+message(STATUS "[${PROJECT_NAME}] CUDA enabled: ${${PROJECT_NAME}_USE_CUDA}")
 
 # --------------------------------------------------------------------------- #
 # Subdirectories
@@ -55,12 +94,16 @@ add_subdirectory(Graphs)
 add_subdirectory(DSP)
 add_subdirectory(NumericalMethods)
 
-# Umbrella target — links every module so users can do:
-#   target_link_libraries(myapp PRIVATE SharedMath::SharedMath)
+# Umbrella target
 add_library(SharedMath INTERFACE)
 add_library(SharedMath::SharedMath ALIAS SharedMath)
 
 target_compile_features(SharedMath INTERFACE cxx_std_17)
+
+# CUDA-фичи добавляем только если язык успешно включён
+if(${PROJECT_NAME}_USE_CUDA)
+    target_compile_features(SharedMath INTERFACE cuda_std_17)
+endif()
 
 target_link_libraries(SharedMath INTERFACE
     SharedMath_Core
@@ -73,6 +116,7 @@ target_link_libraries(SharedMath INTERFACE
 )
 
 if(${PROJECT_NAME}_BUILD_TESTS)
+    enable_testing()
     add_subdirectory(tests)
 endif()
 
@@ -86,21 +130,15 @@ endif()
 if(${PROJECT_NAME}_INSTALL AND NOT CMAKE_SKIP_INSTALL_RULES)
     include(CMakePackageConfigHelpers)
 
-    # INTERFACE targets (no artifacts — just headers + compile requirements)
     install(TARGETS
         SharedMath
         SharedMath_Core
-        SharedMath_Functions   # header-only INTERFACE
+        SharedMath_Functions
         SharedMath_Graphs
         SharedMath_DSP
         EXPORT ${PROJECT_NAME}_export
     )
 
-    # Compiled module targets
-    # RUNTIME  → DLL on Windows, executable on Linux  (component: bin)
-    # LIBRARY  → .so/.dylib on Linux/Mac               (component: bin)
-    # ARCHIVE  → .lib / .a import/static library       (component: devel)
-    # NAMELINK → .so symlink without version suffix    (component: devel)
     install(TARGETS
         SharedMath_LinearAlgebra
         SharedMath_Geometry
@@ -129,7 +167,6 @@ if(${PROJECT_NAME}_INSTALL AND NOT CMAKE_SKIP_INSTALL_RULES)
             FILES_MATCHING PATTERN "*.h")
     endforeach()
 
-    # Install generated export headers for each module
     install(DIRECTORY ${PROJECT_BINARY_DIR}/include/
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
         COMPONENT   devel
@@ -157,16 +194,13 @@ if(${PROJECT_NAME}_INSTALL AND NOT CMAKE_SKIP_INSTALL_RULES)
         DESTINATION "${${PROJECT_NAME}_INSTALL_CMAKEDIR}"
         COMPONENT   devel)
 
-    # ----------------------------------------------------------------------- #
-    # CPack (top-level only)
-    # ----------------------------------------------------------------------- #
     if(is_top_level)
         set(CPACK_VERBATIM_VARIABLES YES)
         set(CPACK_PACKAGE_CONTACT    "D.Rylov <danila.rylov2005@mail.ru>")
         set(CPACK_PACKAGE_VENDOR     "SharedMath Team")
         set(CPACK_PACKAGE_NAME       ${PROJECT_NAME})
         set(CPACK_PACKAGE_VERSION    ${PROJECT_VERSION})
-        set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Shared Math Library")
+        set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Shared Math Library with CUDA Support")
         set(CPACK_PACKAGE_FILE_NAME
             "${PROJECT_NAME}_${PROJECT_VERSION}_${CMAKE_SYSTEM_NAME}")
         set(CPACK_STRIP_FILES ON)
