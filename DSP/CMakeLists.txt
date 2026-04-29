@@ -14,6 +14,7 @@
 #   Hz-first filter API       (FilterDesign.h)
 #   Practical signal helpers  (SignalProcessing.h)
 #   Stateful streaming filters(Streaming.h)
+#   RBJ audio biquads         (FilterDesign.h)
 #   Polyphase resampling      (Resampling.h)
 #   CUDA acceleration stub    (CUDABackend.h)
 

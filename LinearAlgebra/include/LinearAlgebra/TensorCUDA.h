@@ -38,9 +38,11 @@ Tensor cuda_clip(const Tensor& a, double lo, double hi);
 // Provides controlled access to Tensor private members for TensorCUDA.cu.
 struct TensorCUDAImpl {
     // Raw pointer to GPU buffer (nullptr if on CPU or CUDA disabled).
-    static double* cuda_ptr(const Tensor& t) {
-        return t.m_cuda_buf ? t.m_cuda_buf->ptr : nullptr;
-    }
+    static double* cuda_ptr(const Tensor& t);
+    static double* buffer_ptr(const std::shared_ptr<Tensor::CUDABuffer>& buf);
+    static std::shared_ptr<Tensor::CUDABuffer> make_buffer(size_t n);
+    static std::shared_ptr<Tensor::CUDABuffer> make_buffer(const double* host_src,
+                                                           size_t n);
 
     // Wrap an existing GPU buffer into a new GPU Tensor.
     static Tensor make(Tensor::Shape shape,

@@ -19,6 +19,13 @@
 //
 // Notch biquad (RBJ cookbook):
 //   designNotchHz
+//
+// RBJ audio-EQ cookbook biquads:
+//   designRBJLowPassHz    designRBJHighPassHz
+//   designRBJBandPassHz   designRBJNotchHz
+//   designRBJAllPassHz
+//   designRBJLowShelfHz   designRBJHighShelfHz
+//   designRBJPeakingEQHz
 
 #include "FIR.h"
 #include "IIR.h"
@@ -175,6 +182,147 @@ inline BiquadCoeffs designNotchHz(
     const double a2 = 1.0 - alpha;
 
     return { b0 / a0, b1 / a0, b2 / a0, a1 / a0, a2 / a0 };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RBJ cookbook filters, Hz-first variants.
+//
+// All return a single normalized biquad section. Use BiquadCascade, IIRFilter,
+// or applyIIR(signal, {section}) to process samples.
+// ─────────────────────────────────────────────────────────────────────────────
+
+inline BiquadCoeffs designRBJLowPassHz(
+    double cutoffHz,
+    double sampleRate,
+    double q = 0.7071067811865476)
+{
+    detail::checkCutoffHz(cutoffHz, sampleRate, "designRBJLowPassHz");
+    if (q <= 0.0)
+        throw std::invalid_argument("designRBJLowPassHz: q must be > 0");
+
+    const double omega0 = 2.0 * detail::IIR_PI * cutoffHz / sampleRate;
+    const double cos_w  = std::cos(omega0);
+    const double alpha  = std::sin(omega0) / (2.0 * q);
+
+    const double b0 = (1.0 - cos_w) * 0.5;
+    const double b1 =  1.0 - cos_w;
+    const double b2 = (1.0 - cos_w) * 0.5;
+    const double a0 =  1.0 + alpha;
+    const double a1 = -2.0 * cos_w;
+    const double a2 =  1.0 - alpha;
+
+    return { b0 / a0, b1 / a0, b2 / a0, a1 / a0, a2 / a0 };
+}
+
+inline BiquadCoeffs designRBJHighPassHz(
+    double cutoffHz,
+    double sampleRate,
+    double q = 0.7071067811865476)
+{
+    detail::checkCutoffHz(cutoffHz, sampleRate, "designRBJHighPassHz");
+    if (q <= 0.0)
+        throw std::invalid_argument("designRBJHighPassHz: q must be > 0");
+
+    const double omega0 = 2.0 * detail::IIR_PI * cutoffHz / sampleRate;
+    const double cos_w  = std::cos(omega0);
+    const double alpha  = std::sin(omega0) / (2.0 * q);
+
+    const double b0 =  (1.0 + cos_w) * 0.5;
+    const double b1 = -(1.0 + cos_w);
+    const double b2 =  (1.0 + cos_w) * 0.5;
+    const double a0 =   1.0 + alpha;
+    const double a1 =  -2.0 * cos_w;
+    const double a2 =   1.0 - alpha;
+
+    return { b0 / a0, b1 / a0, b2 / a0, a1 / a0, a2 / a0 };
+}
+
+inline BiquadCoeffs designRBJBandPassHz(
+    double centerHz,
+    double sampleRate,
+    double q = 1.0)
+{
+    detail::checkCutoffHz(centerHz, sampleRate, "designRBJBandPassHz");
+    if (q <= 0.0)
+        throw std::invalid_argument("designRBJBandPassHz: q must be > 0");
+
+    const double omega0 = 2.0 * detail::IIR_PI * centerHz / sampleRate;
+    const double cos_w  = std::cos(omega0);
+    const double alpha  = std::sin(omega0) / (2.0 * q);
+
+    // Constant skirt gain, peak gain = Q.
+    const double b0 =  alpha;
+    const double b1 =  0.0;
+    const double b2 = -alpha;
+    const double a0 =  1.0 + alpha;
+    const double a1 = -2.0 * cos_w;
+    const double a2 =  1.0 - alpha;
+
+    return { b0 / a0, b1 / a0, b2 / a0, a1 / a0, a2 / a0 };
+}
+
+inline BiquadCoeffs designRBJNotchHz(
+    double freqHz,
+    double sampleRate,
+    double q = 1.0)
+{
+    return designNotchHz(freqHz, sampleRate, q);
+}
+
+inline BiquadCoeffs designRBJAllPassHz(
+    double centerHz,
+    double sampleRate,
+    double q = 1.0)
+{
+    detail::checkCutoffHz(centerHz, sampleRate, "designRBJAllPassHz");
+    if (q <= 0.0)
+        throw std::invalid_argument("designRBJAllPassHz: q must be > 0");
+
+    const double omega0 = 2.0 * detail::IIR_PI * centerHz / sampleRate;
+    const double cos_w  = std::cos(omega0);
+    const double alpha  = std::sin(omega0) / (2.0 * q);
+
+    const double b0 =  1.0 - alpha;
+    const double b1 = -2.0 * cos_w;
+    const double b2 =  1.0 + alpha;
+    const double a0 =  1.0 + alpha;
+    const double a1 = -2.0 * cos_w;
+    const double a2 =  1.0 - alpha;
+
+    return { b0 / a0, b1 / a0, b2 / a0, a1 / a0, a2 / a0 };
+}
+
+inline BiquadCoeffs designRBJPeakingEQHz(
+    double centerHz,
+    double sampleRate,
+    double gainDB,
+    double q = 1.0)
+{
+    detail::checkCutoffHz(centerHz, sampleRate, "designRBJPeakingEQHz");
+    return designPeakingEQ(detail::hzToNyquistNorm(centerHz, sampleRate),
+                           gainDB, q);
+}
+
+inline BiquadCoeffs designRBJLowShelfHz(
+    double cutoffHz,
+    double sampleRate,
+    double gainDB,
+    double q = 0.7071067811865476)
+{
+    detail::checkCutoffHz(cutoffHz, sampleRate, "designRBJLowShelfHz");
+    return designLowShelf(detail::hzToNyquistNorm(cutoffHz, sampleRate),
+                          gainDB, q);
+}
+
+inline BiquadCoeffs designRBJHighShelfHz(
+    double cutoffHz,
+    double sampleRate,
+    double gainDB,
+    double q = 0.7071067811865476)
+{
+    detail::checkCutoffHz(cutoffHz, sampleRate, "designRBJHighShelfHz");
+    return designHighShelf(detail::hzToNyquistNorm(cutoffHz, sampleRate),
+                           gainDB, q);
 }
 
 } // namespace SharedMath::DSP

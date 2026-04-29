@@ -43,7 +43,7 @@ if(SHAREDMATH_ENABLE_CUDA)
     target_compile_definitions(SharedMath_LinearAlgebra PUBLIC SHAREDMATH_CUDA)
 
     set_target_properties(SharedMath_LinearAlgebra PROPERTIES
-        CUDA_SEPARABLE_COMPILATION ON          # needed for device code in .cu
+        CUDA_SEPARABLE_COMPILATION OFF         # no cross-TU device calls; avoids extra device-link step
         CUDA_ARCHITECTURES          "75;86;89" # Turing / Ampere / Ada — adjust to your GPU
     )
 
