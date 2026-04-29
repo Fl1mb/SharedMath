@@ -17,3 +17,8 @@
 #include "Spectral.h"
 #include "FilterResponse.h"
 #include "SignalGenerator.h"
+#include "FilterDesign.h"
+#include "SignalProcessing.h"
+#include "Streaming.h"
+#include "Resampling.h"
+#include "CUDABackend.h"

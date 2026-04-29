@@ -11,6 +11,21 @@
 #   Power spectral density    (Spectral.h)
 #   FIR frequency response    (FilterResponse.h)
 #   Signal generators         (SignalGenerator.h)
+#   Hz-first filter API       (FilterDesign.h)
+#   Practical signal helpers  (SignalProcessing.h)
+#   Stateful streaming filters(Streaming.h)
+#   Polyphase resampling      (Resampling.h)
+#   CUDA acceleration stub    (CUDABackend.h)
+
+option(SharedMath_ENABLE_CUDA_DSP
+    "Enable CUDA-accelerated DSP primitives (requires CUDAToolkit)"
+    OFF)
+
+if(SharedMath_ENABLE_CUDA_DSP)
+    find_package(CUDAToolkit REQUIRED)
+    target_compile_definitions(SharedMath_DSP INTERFACE SHAREDMATH_CUDA_DSP)
+    message(STATUS "SharedMath DSP: CUDA backend enabled")
+endif()
 
 add_library(SharedMath_DSP INTERFACE)
 add_library(SharedMath::DSP ALIAS SharedMath_DSP)

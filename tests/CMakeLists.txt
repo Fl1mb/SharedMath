@@ -54,6 +54,9 @@ add_executable(${PROJECT_NAME}Tests
     test_dsp_spectral.cpp
     test_dsp_signal_generator.cpp
     test_dsp_filter_response.cpp
+    test_dsp_filter_design_hz.cpp
+    test_dsp_signal_processing.cpp
+    test_dsp_streaming.cpp
 )
 
 if(SHAREDMATH_ENABLE_CUDA)
