@@ -102,6 +102,8 @@ public:
     // Transpose for 2-D tensors.
     AutoTensor T() const;
 
+    AutoTensor reshape(Tensor::Shape new_shape) const;
+
     // ── Reductions → scalar node (shape {1}) ─────────────────────────── //
 
     AutoTensor sum()  const;

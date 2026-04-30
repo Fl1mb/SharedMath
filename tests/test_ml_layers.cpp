@@ -352,3 +352,76 @@ TEST(Sequential, ConvActivationFlattenLinearChain) {
     for (auto* p : model->parameters())
         EXPECT_TRUE(p->has_grad());
 }
+
+TEST(LayerNorm, NormalisesLastDimensionAndBackpropagatesParams) {
+    LayerNorm ln(3, 1e-12);
+    auto x = AutoTensor::from(Tensor({2, 3}, {1, 2, 3, 2, 4, 6}), true);
+
+    auto y = ln.forward(x);
+    EXPECT_NEAR(y.data()(0, 0) + y.data()(0, 1) + y.data()(0, 2), 0.0, 1e-9);
+    EXPECT_NEAR(y.data()(1, 0) + y.data()(1, 1) + y.data()(1, 2), 0.0, 1e-9);
+
+    y.sum().backward();
+    ASSERT_TRUE(x.has_grad());
+    ASSERT_TRUE(ln.gamma().has_grad());
+    ASSERT_TRUE(ln.beta().has_grad());
+    EXPECT_DOUBLE_EQ(ln.beta().grad().flat(0), 2.0);
+}
+
+TEST(Embedding, ForwardAndBackwardAccumulatesRepeatedTokenGradients) {
+    Embedding emb(4, 2);
+    for (size_t i = 0; i < emb.weight().data().size(); ++i)
+        emb.weight().data().flat(i) = static_cast<double>(i + 1);
+
+    auto ids = AutoTensor::from(Tensor::from_vector({1, 2, 1}));
+    auto y = emb.forward(ids);
+    ASSERT_EQ(y.data().shape(), (Tensor::Shape{3, 2}));
+    EXPECT_DOUBLE_EQ(y.data()(0, 0), 3.0);
+    EXPECT_DOUBLE_EQ(y.data()(2, 1), 4.0);
+
+    y.sum().backward();
+    ASSERT_TRUE(emb.weight().has_grad());
+    EXPECT_DOUBLE_EQ(emb.weight().grad()(1, 0), 2.0);
+    EXPECT_DOUBLE_EQ(emb.weight().grad()(1, 1), 2.0);
+    EXPECT_DOUBLE_EQ(emb.weight().grad()(2, 0), 1.0);
+}
+
+TEST(MultiHeadAttention, ForwardShapeAndAllProjectionGradients) {
+    MultiHeadAttention mha(4, 2);
+    auto x = AutoTensor::from(Tensor({2, 3, 4}, {
+        1.0, 0.0, 0.5, -0.5,
+        0.2, 1.0, -0.1, 0.3,
+        -0.4, 0.7, 1.2, 0.1,
+        0.3, -0.8, 0.9, 1.0,
+        1.1, 0.4, -0.6, 0.2,
+        -0.2, 0.5, 0.8, -1.0
+    }), true);
+
+    auto y = mha.forward(x);
+    ASSERT_EQ(y.data().shape(), (Tensor::Shape{2, 3, 4}));
+    y.sum().backward();
+
+    auto params = mha.parameters();
+    ASSERT_EQ(params.size(), 4u);
+    EXPECT_TRUE(x.has_grad());
+    for (auto* p : params) {
+        EXPECT_TRUE(p->has_grad());
+    }
+}
+
+TEST(ModuleSerialization, SaveAndLoadLinearParameters) {
+    Linear src(2, 1);
+    src.weight().data()(0, 0) = 3.0;
+    src.weight().data()(1, 0) = 4.0;
+    src.bias().data()(0, 0) = 5.0;
+
+    const std::string path = "/tmp/sharedmath_linear_params.bin";
+    src.save(path);
+
+    Linear dst(2, 1);
+    dst.load(path);
+
+    EXPECT_DOUBLE_EQ(dst.weight().data()(0, 0), 3.0);
+    EXPECT_DOUBLE_EQ(dst.weight().data()(1, 0), 4.0);
+    EXPECT_DOUBLE_EQ(dst.bias().data()(0, 0), 5.0);
+}

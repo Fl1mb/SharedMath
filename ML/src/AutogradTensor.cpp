@@ -273,6 +273,18 @@ AutoTensor AutoTensor::T() const {
         [si](const Tensor& g) { si->propagate(g.transpose()); });
 }
 
+AutoTensor AutoTensor::reshape(Tensor::Shape new_shape) const {
+    Tensor::Shape original_shape = m_impl->data.shape();
+    auto out_data = m_impl->data.reshape(std::move(new_shape));
+    if (!m_impl->requires_grad) return AutoTensor(out_data);
+
+    auto si = m_impl;
+    return make_result(std::move(out_data), true,
+        [si, original_shape](const Tensor& g) {
+            si->propagate(g.reshape(original_shape));
+        });
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Reductions → scalar node (shape {1})
 // ─────────────────────────────────────────────────────────────────────────────

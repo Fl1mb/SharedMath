@@ -12,11 +12,17 @@
 // Optimizers
 #include "Optimizer.h"
 
+// Losses
+#include "Loss.h"
+
 // Classical ML models
 #include "Models.h"
 
 // Dataset / DataLoader
 #include "DataLoader.h"
+
+// Training loop
+#include "Trainer.h"
 
 // Metrics
 #include "Metrics.h"

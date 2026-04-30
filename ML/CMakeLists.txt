@@ -3,9 +3,11 @@ include(GenerateExportHeader)
 add_library(SharedMath_ML
     src/AutogradTensor.cpp
     src/DataLoader.cpp
+    src/Loss.cpp
     src/Models.cpp
     src/Module.cpp
     src/Optimizer.cpp
+    src/Trainer.cpp
 )
 add_library(SharedMath::ML ALIAS SharedMath_ML)
 

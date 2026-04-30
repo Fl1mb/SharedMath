@@ -8,6 +8,9 @@
 // Dropout      — training-time dropout with inverted scaling
 // Flatten      — flatten feature dimensions for Linear layers
 // ReLU/Sigmoid/Tanh/GELU/Softmax — activation layers
+// LayerNorm   — normalisation over the last dimension
+// Embedding   — lookup table for token ids
+// MultiHeadAttention — transformer-style self-attention
 // Conv2d       — NCHW 2-D convolution
 // BatchNorm1d  — feature-wise normalisation for [N, C]
 // BatchNorm2d  — channel-wise normalisation for [N, C, H, W]
@@ -21,6 +24,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <string>
 #include <vector>
 
 namespace SharedMath::ML {
@@ -46,6 +50,8 @@ public:
     void cuda(int device_id = -1);
     void cuda_auto();
     void cpu();
+    void save(const std::string& path) const;
+    void load(const std::string& path);
 
 protected:
     bool m_training = true;
@@ -147,6 +153,59 @@ private:
     size_t m_axis;
 };
 
+class SHAREDMATH_ML_EXPORT LayerNorm : public Module {
+public:
+    LayerNorm(size_t normalized_shape, double eps = 1e-5, bool affine = true);
+
+    AutoTensor forward(const AutoTensor& x) override;
+    std::vector<AutoTensor*> parameters() override;
+
+    AutoTensor& gamma();
+    AutoTensor& beta();
+    const AutoTensor& gamma() const;
+    const AutoTensor& beta() const;
+
+private:
+    size_t     m_normalized_shape;
+    double     m_eps;
+    bool       m_affine;
+    AutoTensor m_gamma;
+    AutoTensor m_beta;
+};
+
+class SHAREDMATH_ML_EXPORT Embedding : public Module {
+public:
+    Embedding(size_t num_embeddings, size_t embedding_dim);
+
+    AutoTensor forward(const AutoTensor& indices) override;
+    std::vector<AutoTensor*> parameters() override;
+
+    AutoTensor& weight();
+    const AutoTensor& weight() const;
+
+private:
+    size_t     m_num_embeddings;
+    size_t     m_embedding_dim;
+    AutoTensor m_weight;
+};
+
+class SHAREDMATH_ML_EXPORT MultiHeadAttention : public Module {
+public:
+    MultiHeadAttention(size_t embed_dim, size_t num_heads);
+
+    AutoTensor forward(const AutoTensor& x) override;
+    std::vector<AutoTensor*> parameters() override;
+
+private:
+    size_t     m_embed_dim;
+    size_t     m_num_heads;
+    size_t     m_head_dim;
+    AutoTensor m_wq;
+    AutoTensor m_wk;
+    AutoTensor m_wv;
+    AutoTensor m_wo;
+};
+
 class SHAREDMATH_ML_EXPORT Conv2d : public Module {
 public:
     Conv2d(size_t in_channels,
@@ -190,6 +249,8 @@ public:
 
     AutoTensor forward(const AutoTensor& x) override;
     std::vector<AutoTensor*> parameters() override;
+    void to(SharedMath::LinearAlgebra::Device device,
+            int device_id = -1) override;
 
     AutoTensor& gamma();
     AutoTensor& beta();
@@ -218,6 +279,8 @@ public:
 
     AutoTensor forward(const AutoTensor& x) override;
     std::vector<AutoTensor*> parameters() override;
+    void to(SharedMath::LinearAlgebra::Device device,
+            int device_id = -1) override;
 
     AutoTensor& gamma();
     AutoTensor& beta();

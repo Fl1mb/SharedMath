@@ -63,6 +63,7 @@ add_executable(${PROJECT_NAME}Tests
     test_ml_autograd.cpp
     test_ml_layers.cpp
     test_ml_optimizers.cpp
+    test_ml_training.cpp
     test_ml_models.cpp
     test_ml_dataloader.cpp
     test_ml_metrics.cpp
