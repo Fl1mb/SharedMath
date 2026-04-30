@@ -2,6 +2,10 @@ include(GenerateExportHeader)
 
 add_library(SharedMath_ML
     src/AutogradTensor.cpp
+    src/DataLoader.cpp
+    src/Models.cpp
+    src/Module.cpp
+    src/Optimizer.cpp
 )
 add_library(SharedMath::ML ALIAS SharedMath_ML)
 
@@ -15,6 +19,8 @@ target_include_directories(SharedMath_ML
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+        # Generated export header
+        $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include/ML
 )
