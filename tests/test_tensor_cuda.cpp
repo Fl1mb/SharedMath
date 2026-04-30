@@ -75,6 +75,14 @@ static double rel_fro_err(const Tensor& ref, const Tensor& got) {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
+// Constants
+// ════════════════════════════════════════════════════════════════════════════
+
+static constexpr size_t kSmallSize = 4096;
+static constexpr size_t k1M = 1'048'576;
+static constexpr size_t k4M = 4'194'304;
+
+// ════════════════════════════════════════════════════════════════════════════
 // 1. Device management
 // ════════════════════════════════════════════════════════════════════════════
 
@@ -223,8 +231,6 @@ TEST(TensorCUDA_Binary, TestName) {                                           \
     EXPECT_TRUE(std::isfinite(fro_norm(C)));                                  \
 }
 
-static constexpr size_t k4M = 4'194'304;
-
 BINARY_GPU_TEST(Add_4M, +, k4M)
 BINARY_GPU_TEST(Sub_4M, -, k4M)
 BINARY_GPU_TEST(Mul_4M, *, k4M)
@@ -259,8 +265,6 @@ TEST(TensorCUDA_Scalar, MulAndDiv_Small) {
 // ════════════════════════════════════════════════════════════════════════════
 // 6. Unary element-wise ops
 // ════════════════════════════════════════════════════════════════════════════
-
-static constexpr size_t k1M = 1'048'576;
 
 // Lightweight correctness check (CPU reference kept intentionally).
 TEST(TensorCUDA_Unary, CorrectnessVsCPU_Sin) {
@@ -310,7 +314,7 @@ TEST(TensorCUDA_Unary, Pow2_1M) {
 
 TEST(TensorCUDA_Unary, Clip_Small) {
     SKIP_IF_NO_GPU();
-    Tensor A = make_positive(k1M);
+    Tensor A = make_positive(kSmallSize);
     Tensor B = A.cuda().pow(0.5).cpu();
     EXPECT_TRUE(std::isfinite(fro_norm(B)));
 }
@@ -344,8 +348,8 @@ TEST(TensorCUDA_Chained, AddThenMul_2M) {
     EXPECT_TRUE(std::isfinite(fro_norm(res)));
 }
 
-// Lightweight correctness check: exp(sin(A)) on 1M — CPU kept intentionally.
-TEST(TensorCUDA_Chained, ExpSin_1M) {
+// Lightweight correctness check: exp(sin(A)) on small size — CPU kept intentionally.
+TEST(TensorCUDA_Chained, ExpSin_Small) {
     SKIP_IF_NO_GPU();
     Tensor A = make_wave(kSmallSize);
     Tensor ref = A.sin().exp();
@@ -369,7 +373,7 @@ TEST(TensorCUDA_Chained, MatmulThenTanh_512) {
 // 8. Numerical properties
 // ════════════════════════════════════════════════════════════════════════════
 
-TEST(TensorCUDA_Numerics, SumConsistency_2M) {
+TEST(TensorCUDA_Numerics, SumConsistency_Small) {
     SKIP_IF_NO_GPU();
     Tensor A = make_wave(kSmallSize);
     double s_cpu = A.sum();
@@ -377,7 +381,7 @@ TEST(TensorCUDA_Numerics, SumConsistency_2M) {
     EXPECT_NEAR(s_cpu, s_gpu, std::abs(s_cpu) * 1e-12 + 1e-9);
 }
 
-TEST(TensorCUDA_Numerics, FrobeniusNormPreserved_1024x1024) {
+TEST(TensorCUDA_Numerics, FrobeniusNormPreserved_64x64) {
     SKIP_IF_NO_GPU();
     Tensor A = make_mat(64, 64);
     double n_cpu = fro_norm(A);
