@@ -118,9 +118,14 @@ public:
     // Transfer to GPU (copy host→device). No-op if already on GPU.
     // When built without CUDA support, returns *this unchanged.
     Tensor cuda() const;
+    Tensor cuda(int device_id) const;
+    Tensor cuda_auto() const;
 
     // Transfer to CPU (copy device→host). No-op if already on CPU.
     Tensor cpu()  const;
+    Tensor to(Device device, int device_id = -1) const;
+
+    int device_id() const noexcept { return m_device_id; }
 
     // Convert flat index to multi-index (row-major)
     std::vector<size_t> unravel(size_t flat_idx) const;
@@ -232,6 +237,9 @@ public:
     Tensor pow(double exponent)       const;
     Tensor clip(double lo, double hi) const;
     Tensor softmax(size_t axis)        const;
+    Tensor relu()                      const;
+    Tensor sigmoid()                   const;
+    Tensor gelu()                      const;
     Tensor sign()                     const;
     Tensor floor()                    const;
     Tensor ceil()                     const;
@@ -246,6 +254,35 @@ public:
 
     // Matrix multiply (both must be 2-D)
     Tensor matmul(const Tensor& other) const;
+
+    // ML-oriented dense NCHW kernels. These are intentionally exposed at the
+    // Tensor level so higher ML modules can dispatch through the same CPU/CUDA
+    // backend instead of hand-writing loops in layers.
+    Tensor conv2d(const Tensor& weight, const Tensor* bias = nullptr,
+                  size_t stride = 1, size_t padding = 0) const;
+    static Tensor conv2d_backward_input(const Tensor& grad_out,
+                                        const Tensor& weight,
+                                        Shape input_shape,
+                                        size_t stride = 1,
+                                        size_t padding = 0);
+    Tensor conv2d_backward_weight(const Tensor& input,
+                                  Shape weight_shape,
+                                  size_t stride = 1,
+                                  size_t padding = 0) const;
+    Tensor conv2d_backward_bias() const;
+
+    Tensor max_pool2d(size_t kernel_size, size_t stride = 0,
+                      size_t padding = 0) const;
+    Tensor max_pool2d_backward(const Tensor& input,
+                               size_t kernel_size,
+                               size_t stride = 0,
+                               size_t padding = 0) const;
+    Tensor avg_pool2d(size_t kernel_size, size_t stride = 0,
+                      size_t padding = 0) const;
+    Tensor avg_pool2d_backward(Shape input_shape,
+                               size_t kernel_size,
+                               size_t stride = 0,
+                               size_t padding = 0) const;
 
     // Sum of main-diagonal elements (square 2-D tensor)
     double trace() const;
@@ -275,6 +312,7 @@ private:
     // ── GPU storage ──────────────────────────────────────────────────────//
     std::shared_ptr<CUDABuffer> m_cuda_buf;     // null → CPU tensor
     Device m_device = Device::CPU;
+    int m_device_id = -1;                       // CUDA ordinal, -1 on CPU
 
     // ── Helpers ───────────────────────────────────────────────────────── //
     void   computeStrides();
@@ -288,7 +326,8 @@ private:
                       double init) const;
 
     // Private factory used by TensorCUDA.cu to wrap a GPU buffer
-    static Tensor from_cuda(Shape shape, std::shared_ptr<CUDABuffer> buf);
+    static Tensor from_cuda(Shape shape, std::shared_ptr<CUDABuffer> buf,
+                            int device_id = 0);
 
     friend struct detail::TensorCUDAImpl;   // CUDA implementation accessor
     friend class TensorView;

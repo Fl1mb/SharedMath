@@ -659,3 +659,66 @@ TEST(TensorOutput, StreamOperator) {
     EXPECT_FALSE(oss.str().empty());
     EXPECT_NE(oss.str().find("Tensor"), std::string::npos);
 }
+
+TEST(TensorMLPrimitives, ActivationsAndSoftmax) {
+    Tensor x = Tensor::from_vector({-1.0, 0.0, 1.0});
+
+    auto relu = x.relu();
+    EXPECT_DOUBLE_EQ(relu.flat(0), 0.0);
+    EXPECT_DOUBLE_EQ(relu.flat(1), 0.0);
+    EXPECT_DOUBLE_EQ(relu.flat(2), 1.0);
+
+    auto sigmoid = x.sigmoid();
+    EXPECT_NEAR(sigmoid.flat(1), 0.5, 1e-12);
+
+    auto gelu = x.gelu();
+    EXPECT_NEAR(gelu.flat(1), 0.0, 1e-12);
+
+    auto sm = Tensor({2, 3}, {1, 2, 3, 1, 1, 1}).softmax(1);
+    EXPECT_NEAR(sm(0, 0) + sm(0, 1) + sm(0, 2), 1.0, 1e-12);
+    EXPECT_NEAR(sm(1, 0), 1.0 / 3.0, 1e-12);
+}
+
+TEST(TensorMLPrimitives, Conv2dForwardAndBackward) {
+    Tensor x({1, 1, 3, 3}, {
+        1, 2, 3,
+        4, 5, 6,
+        7, 8, 9
+    });
+    Tensor w({1, 1, 2, 2}, {1, 1, 1, 1});
+
+    auto y = x.conv2d(w, nullptr, 1, 0);
+    ASSERT_EQ(y.shape(), (Tensor::Shape{1, 1, 2, 2}));
+    EXPECT_DOUBLE_EQ(y(0, 0, 0, 0), 12.0);
+    EXPECT_DOUBLE_EQ(y(0, 0, 1, 1), 28.0);
+
+    Tensor go = Tensor::ones({1, 1, 2, 2});
+    auto dx = Tensor::conv2d_backward_input(go, w, x.shape(), 1, 0);
+    EXPECT_DOUBLE_EQ(dx(0, 0, 0, 0), 1.0);
+    EXPECT_DOUBLE_EQ(dx(0, 0, 1, 1), 4.0);
+    EXPECT_DOUBLE_EQ(dx(0, 0, 2, 2), 1.0);
+
+    auto dw = go.conv2d_backward_weight(x, w.shape(), 1, 0);
+    EXPECT_DOUBLE_EQ(dw(0, 0, 0, 0), 12.0);
+    EXPECT_DOUBLE_EQ(dw(0, 0, 1, 1), 28.0);
+
+    auto db = go.conv2d_backward_bias();
+    EXPECT_DOUBLE_EQ(db.flat(0), 4.0);
+}
+
+TEST(TensorMLPrimitives, Pool2dForwardAndBackward) {
+    Tensor x({1, 1, 2, 2}, {1, 5, 2, 4});
+
+    auto maxp = x.max_pool2d(2);
+    ASSERT_EQ(maxp.shape(), (Tensor::Shape{1, 1, 1, 1}));
+    EXPECT_DOUBLE_EQ(maxp.flat(0), 5.0);
+    auto max_dx = Tensor::ones({1, 1, 1, 1}).max_pool2d_backward(x, 2);
+    EXPECT_DOUBLE_EQ(max_dx.flat(0), 0.0);
+    EXPECT_DOUBLE_EQ(max_dx.flat(1), 1.0);
+
+    auto avgp = x.avg_pool2d(2);
+    EXPECT_DOUBLE_EQ(avgp.flat(0), 3.0);
+    auto avg_dx = Tensor::ones({1, 1, 1, 1}).avg_pool2d_backward(x.shape(), 2);
+    for (size_t i = 0; i < avg_dx.size(); ++i)
+        EXPECT_DOUBLE_EQ(avg_dx.flat(i), 0.25);
+}

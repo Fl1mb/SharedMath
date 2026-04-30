@@ -158,3 +158,197 @@ TEST(Dropout, ZeroGradModule) {
     Dropout drop(0.3);
     EXPECT_NO_THROW(drop.zero_grad());  // empty parameters → no-op
 }
+
+TEST(Conv2d, ForwardSingleChannelNoBias) {
+    Conv2d conv(1, 1, 2, 1, 0, false);
+    for (size_t i = 0; i < conv.weight().data().size(); ++i)
+        conv.weight().data().flat(i) = 1.0;
+
+    auto x = AutoTensor::from(Tensor({1, 1, 3, 3},
+        {1, 2, 3,
+         4, 5, 6,
+         7, 8, 9}));
+
+    auto y = conv.forward(x);
+    ASSERT_EQ(y.data().shape(), (Tensor::Shape{1, 1, 2, 2}));
+    EXPECT_DOUBLE_EQ(y.data()(0, 0, 0, 0), 12.0);
+    EXPECT_DOUBLE_EQ(y.data()(0, 0, 0, 1), 16.0);
+    EXPECT_DOUBLE_EQ(y.data()(0, 0, 1, 0), 24.0);
+    EXPECT_DOUBLE_EQ(y.data()(0, 0, 1, 1), 28.0);
+}
+
+TEST(Conv2d, BackwardComputesInputAndWeightGradients) {
+    Conv2d conv(1, 1, 2, 1, 0, false);
+    for (size_t i = 0; i < conv.weight().data().size(); ++i)
+        conv.weight().data().flat(i) = 1.0;
+
+    auto x = AutoTensor::from(Tensor({1, 1, 3, 3},
+        {1, 2, 3,
+         4, 5, 6,
+         7, 8, 9}), true);
+
+    auto loss = conv.forward(x).sum();
+    loss.backward();
+
+    ASSERT_TRUE(x.has_grad());
+    ASSERT_TRUE(conv.weight().has_grad());
+    EXPECT_DOUBLE_EQ(x.grad()(0, 0, 0, 0), 1.0);
+    EXPECT_DOUBLE_EQ(x.grad()(0, 0, 1, 1), 4.0);
+    EXPECT_DOUBLE_EQ(x.grad()(0, 0, 2, 2), 1.0);
+    EXPECT_DOUBLE_EQ(conv.weight().grad()(0, 0, 0, 0), 12.0);
+    EXPECT_DOUBLE_EQ(conv.weight().grad()(0, 0, 1, 1), 28.0);
+}
+
+TEST(MaxPool2d, ForwardAndBackward) {
+    MaxPool2d pool(2);
+    auto x = AutoTensor::from(Tensor({1, 1, 2, 2}, {1, 5, 2, 4}), true);
+
+    auto y = pool.forward(x);
+    ASSERT_EQ(y.data().shape(), (Tensor::Shape{1, 1, 1, 1}));
+    EXPECT_DOUBLE_EQ(y.data().flat(0), 5.0);
+
+    y.sum().backward();
+    EXPECT_DOUBLE_EQ(x.grad().flat(0), 0.0);
+    EXPECT_DOUBLE_EQ(x.grad().flat(1), 1.0);
+    EXPECT_DOUBLE_EQ(x.grad().flat(2), 0.0);
+    EXPECT_DOUBLE_EQ(x.grad().flat(3), 0.0);
+}
+
+TEST(AvgPool2d, ForwardAndBackward) {
+    AvgPool2d pool(2);
+    auto x = AutoTensor::from(Tensor({1, 1, 2, 2}, {1, 5, 2, 4}), true);
+
+    auto y = pool.forward(x);
+    ASSERT_EQ(y.data().shape(), (Tensor::Shape{1, 1, 1, 1}));
+    EXPECT_DOUBLE_EQ(y.data().flat(0), 3.0);
+
+    y.sum().backward();
+    for (size_t i = 0; i < x.grad().size(); ++i)
+        EXPECT_DOUBLE_EQ(x.grad().flat(i), 0.25);
+}
+
+TEST(BatchNorm1d, NormalisesAndBackpropagatesAffineParams) {
+    BatchNorm1d bn(2, 1e-12);
+    auto x = AutoTensor::from(Tensor({2, 2}, {1, 3, 3, 7}), true);
+
+    auto y = bn.forward(x);
+    EXPECT_NEAR(y.data()(0, 0), -1.0, 1e-6);
+    EXPECT_NEAR(y.data()(1, 0),  1.0, 1e-6);
+    EXPECT_NEAR(y.data()(0, 1), -1.0, 1e-6);
+    EXPECT_NEAR(y.data()(1, 1),  1.0, 1e-6);
+
+    y.sum().backward();
+    ASSERT_TRUE(bn.gamma().has_grad());
+    ASSERT_TRUE(bn.beta().has_grad());
+    EXPECT_NEAR(bn.gamma().grad().flat(0), 0.0, 1e-6);
+    EXPECT_NEAR(bn.gamma().grad().flat(1), 0.0, 1e-6);
+    EXPECT_DOUBLE_EQ(bn.beta().grad().flat(0), 2.0);
+    EXPECT_DOUBLE_EQ(bn.beta().grad().flat(1), 2.0);
+}
+
+TEST(BatchNorm2d, NormalisesPerChannel) {
+    BatchNorm2d bn(1, 1e-12);
+    auto x = AutoTensor::from(Tensor({1, 1, 2, 2}, {1, 2, 3, 4}), true);
+
+    auto y = bn.forward(x);
+    EXPECT_NEAR(y.data().mean(), 0.0, 1e-9);
+    EXPECT_NEAR(y.data().var(), 1.0, 1e-9);
+
+    y.sum().backward();
+    ASSERT_TRUE(x.has_grad());
+    ASSERT_TRUE(bn.gamma().has_grad());
+    ASSERT_TRUE(bn.beta().has_grad());
+    EXPECT_DOUBLE_EQ(bn.beta().grad().flat(0), 4.0);
+}
+
+TEST(Flatten, FlattensFeatureDimensionsAndBackpropagatesShape) {
+    Flatten flatten;
+    auto x = AutoTensor::from(Tensor({2, 3, 2}, {
+        1, 2, 3, 4, 5, 6,
+        7, 8, 9, 10, 11, 12
+    }), true);
+
+    auto y = flatten.forward(x);
+    ASSERT_EQ(y.data().shape(), (Tensor::Shape{2, 6}));
+    EXPECT_DOUBLE_EQ(y.data()(0, 0), 1.0);
+    EXPECT_DOUBLE_EQ(y.data()(1, 5), 12.0);
+
+    y.sum().backward();
+    ASSERT_TRUE(x.has_grad());
+    ASSERT_EQ(x.grad().shape(), (Tensor::Shape{2, 3, 2}));
+    for (size_t i = 0; i < x.grad().size(); ++i)
+        EXPECT_DOUBLE_EQ(x.grad().flat(i), 1.0);
+}
+
+TEST(ActivationLayers, ReLUSigmoidTanhForward) {
+    auto x = AutoTensor::from(Tensor::from_vector({-1.0, 0.0, 1.0}), true);
+
+    auto relu = ReLU().forward(x);
+    EXPECT_DOUBLE_EQ(relu.data().flat(0), 0.0);
+    EXPECT_DOUBLE_EQ(relu.data().flat(1), 0.0);
+    EXPECT_DOUBLE_EQ(relu.data().flat(2), 1.0);
+
+    auto sigmoid = Sigmoid().forward(x);
+    EXPECT_NEAR(sigmoid.data().flat(0), 1.0 / (1.0 + std::exp(1.0)), 1e-9);
+    EXPECT_NEAR(sigmoid.data().flat(1), 0.5, 1e-9);
+
+    auto tanh = Tanh().forward(x);
+    EXPECT_NEAR(tanh.data().flat(0), std::tanh(-1.0), 1e-9);
+    EXPECT_NEAR(tanh.data().flat(2), std::tanh(1.0), 1e-9);
+}
+
+TEST(GELU, ForwardAndBackwardAtZero) {
+    auto x = AutoTensor::from(Tensor::from_vector({0.0}), true);
+
+    auto y = GELU().forward(x);
+    EXPECT_NEAR(y.data().flat(0), 0.0, 1e-12);
+
+    y.backward();
+    ASSERT_TRUE(x.has_grad());
+    EXPECT_NEAR(x.grad().flat(0), 0.5, 1e-12);
+}
+
+TEST(Softmax, ForwardNormalisesRows) {
+    Softmax softmax(1);
+    auto x = AutoTensor::from(Tensor({2, 3}, {
+        1.0, 2.0, 3.0,
+        1.0, 1.0, 1.0
+    }));
+
+    auto y = softmax.forward(x);
+    ASSERT_EQ(y.data().shape(), (Tensor::Shape{2, 3}));
+    EXPECT_NEAR(y.data()(0, 0) + y.data()(0, 1) + y.data()(0, 2), 1.0, 1e-12);
+    EXPECT_NEAR(y.data()(1, 0), 1.0 / 3.0, 1e-12);
+    EXPECT_NEAR(y.data()(1, 1), 1.0 / 3.0, 1e-12);
+    EXPECT_NEAR(y.data()(1, 2), 1.0 / 3.0, 1e-12);
+}
+
+TEST(Softmax, BackwardMatchesTwoClassJacobian) {
+    Softmax softmax(0);
+    auto x = AutoTensor::from(Tensor::from_vector({0.0, 0.0}), true);
+
+    auto y = softmax.forward(x);
+    y.backward(Tensor::from_vector({1.0, 0.0}));
+
+    ASSERT_TRUE(x.has_grad());
+    EXPECT_NEAR(x.grad().flat(0), 0.25, 1e-12);
+    EXPECT_NEAR(x.grad().flat(1), -0.25, 1e-12);
+}
+
+TEST(Sequential, ConvActivationFlattenLinearChain) {
+    auto model = std::make_shared<Sequential>();
+    model->add(std::make_shared<Conv2d>(1, 2, 3, 1, 1));
+    model->add(std::make_shared<ReLU>());
+    model->add(std::make_shared<MaxPool2d>(2));
+    model->add(std::make_shared<Flatten>());
+    model->add(std::make_shared<Linear>(8, 3));
+
+    auto x = AutoTensor::from(Tensor::ones({1, 1, 4, 4}), true);
+    auto y = model->forward(x);
+
+    ASSERT_EQ(y.data().shape(), (Tensor::Shape{1, 3}));
+    y.sum().backward();
+    ASSERT_TRUE(x.has_grad());
+    for (auto* p : model->parameters())
+        EXPECT_TRUE(p->has_grad());
+}

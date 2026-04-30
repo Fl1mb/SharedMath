@@ -309,20 +309,19 @@ AutoTensor AutoTensor::mean() const {
 // ─────────────────────────────────────────────────────────────────────────────
 
 AutoTensor AutoTensor::relu() const {
-    auto out_data = m_impl->data.apply([](double v) { return v > 0.0 ? v : 0.0; });
+    auto out_data = m_impl->data.relu();
     if (!m_impl->requires_grad) return AutoTensor(out_data);
 
     auto si = m_impl;
     return make_result(std::move(out_data), true,
         [si](const Tensor& g) {
-            Tensor mask = si->data.apply([](double v) { return v > 0.0 ? 1.0 : 0.0; });
+            Tensor mask = si->data.sign().clip(0.0, 1.0);
             si->propagate(g * mask);
         });
 }
 
 AutoTensor AutoTensor::sigmoid() const {
-    auto out_data = m_impl->data.apply(
-        [](double v) { return 1.0 / (1.0 + std::exp(-v)); });
+    auto out_data = m_impl->data.sigmoid();
     if (!m_impl->requires_grad) return AutoTensor(out_data);
 
     Tensor s_copy = out_data; // capture sigmoid output for backward
@@ -330,7 +329,7 @@ AutoTensor AutoTensor::sigmoid() const {
     return make_result(std::move(out_data), true,
         [si, s_copy](const Tensor& g) {
             // σ'(x) = σ(x)(1 − σ(x))
-            Tensor dsig = s_copy * s_copy.apply([](double v) { return 1.0 - v; });
+            Tensor dsig = s_copy * (1.0 - s_copy);
             si->propagate(g * dsig);
         });
 }
@@ -344,7 +343,7 @@ AutoTensor AutoTensor::tanh() const {
     return make_result(std::move(out_data), true,
         [si, t_copy](const Tensor& g) {
             // tanh'(x) = 1 − tanh²(x)
-            Tensor dtanh = t_copy.apply([](double v) { return 1.0 - v * v; });
+            Tensor dtanh = 1.0 - (t_copy * t_copy);
             si->propagate(g * dtanh);
         });
 }

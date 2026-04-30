@@ -6,14 +6,22 @@
 // Linear       — fully-connected layer  (y = x @ W + b)
 // Sequential   — ordered container of modules
 // Dropout      — training-time dropout with inverted scaling
+// Flatten      — flatten feature dimensions for Linear layers
+// ReLU/Sigmoid/Tanh/GELU/Softmax — activation layers
+// Conv2d       — NCHW 2-D convolution
+// BatchNorm1d  — feature-wise normalisation for [N, C]
+// BatchNorm2d  — channel-wise normalisation for [N, C, H, W]
+// MaxPool2d    — NCHW max pooling
+// AvgPool2d    — NCHW average pooling
 
 #include <sharedmath_ml_export.h>
 
 #include "AutogradTensor.h"
+#include "LinearAlgebra/Tensor.h"
 
+#include <cstdint>
 #include <memory>
 #include <vector>
-#include <cstdint>
 
 namespace SharedMath::ML {
 
@@ -33,6 +41,11 @@ public:
     bool is_training() const noexcept;
 
     void zero_grad();
+    virtual void to(SharedMath::LinearAlgebra::Device device,
+                    int device_id = -1);
+    void cuda(int device_id = -1);
+    void cuda_auto();
+    void cpu();
 
 protected:
     bool m_training = true;
@@ -88,6 +101,172 @@ public:
 private:
     double        m_p;
     std::uint64_t m_seed = 12345;
+};
+
+class SHAREDMATH_ML_EXPORT Flatten : public Module {
+public:
+    explicit Flatten(size_t start_dim = 1);
+
+    AutoTensor forward(const AutoTensor& x) override;
+
+    size_t start_dim() const noexcept;
+
+private:
+    size_t m_start_dim;
+};
+
+class SHAREDMATH_ML_EXPORT ReLU : public Module {
+public:
+    AutoTensor forward(const AutoTensor& x) override;
+};
+
+class SHAREDMATH_ML_EXPORT Sigmoid : public Module {
+public:
+    AutoTensor forward(const AutoTensor& x) override;
+};
+
+class SHAREDMATH_ML_EXPORT Tanh : public Module {
+public:
+    AutoTensor forward(const AutoTensor& x) override;
+};
+
+class SHAREDMATH_ML_EXPORT GELU : public Module {
+public:
+    AutoTensor forward(const AutoTensor& x) override;
+};
+
+class SHAREDMATH_ML_EXPORT Softmax : public Module {
+public:
+    explicit Softmax(size_t axis = 1);
+
+    AutoTensor forward(const AutoTensor& x) override;
+
+    size_t axis() const noexcept;
+
+private:
+    size_t m_axis;
+};
+
+class SHAREDMATH_ML_EXPORT Conv2d : public Module {
+public:
+    Conv2d(size_t in_channels,
+           size_t out_channels,
+           size_t kernel_size,
+           size_t stride = 1,
+           size_t padding = 0,
+           bool use_bias = true);
+
+    AutoTensor forward(const AutoTensor& x) override;
+    std::vector<AutoTensor*> parameters() override;
+
+    AutoTensor& weight();
+    AutoTensor& bias();
+    const AutoTensor& weight() const;
+    const AutoTensor& bias() const;
+
+    size_t in_channels() const noexcept;
+    size_t out_channels() const noexcept;
+    size_t kernel_size() const noexcept;
+    size_t stride() const noexcept;
+    size_t padding() const noexcept;
+
+private:
+    size_t     m_in_channels;
+    size_t     m_out_channels;
+    size_t     m_kernel_size;
+    size_t     m_stride;
+    size_t     m_padding;
+    bool       m_use_bias;
+    AutoTensor m_weight;
+    AutoTensor m_bias;
+};
+
+class SHAREDMATH_ML_EXPORT BatchNorm1d : public Module {
+public:
+    BatchNorm1d(size_t num_features,
+                double eps = 1e-5,
+                double momentum = 0.1,
+                bool affine = true);
+
+    AutoTensor forward(const AutoTensor& x) override;
+    std::vector<AutoTensor*> parameters() override;
+
+    AutoTensor& gamma();
+    AutoTensor& beta();
+    const AutoTensor& gamma() const;
+    const AutoTensor& beta() const;
+    const Tensor& running_mean() const noexcept;
+    const Tensor& running_var() const noexcept;
+
+private:
+    size_t     m_num_features;
+    double     m_eps;
+    double     m_momentum;
+    bool       m_affine;
+    AutoTensor m_gamma;
+    AutoTensor m_beta;
+    Tensor     m_running_mean;
+    Tensor     m_running_var;
+};
+
+class SHAREDMATH_ML_EXPORT BatchNorm2d : public Module {
+public:
+    BatchNorm2d(size_t num_features,
+                double eps = 1e-5,
+                double momentum = 0.1,
+                bool affine = true);
+
+    AutoTensor forward(const AutoTensor& x) override;
+    std::vector<AutoTensor*> parameters() override;
+
+    AutoTensor& gamma();
+    AutoTensor& beta();
+    const AutoTensor& gamma() const;
+    const AutoTensor& beta() const;
+    const Tensor& running_mean() const noexcept;
+    const Tensor& running_var() const noexcept;
+
+private:
+    size_t     m_num_features;
+    double     m_eps;
+    double     m_momentum;
+    bool       m_affine;
+    AutoTensor m_gamma;
+    AutoTensor m_beta;
+    Tensor     m_running_mean;
+    Tensor     m_running_var;
+};
+
+class SHAREDMATH_ML_EXPORT MaxPool2d : public Module {
+public:
+    MaxPool2d(size_t kernel_size, size_t stride = 0, size_t padding = 0);
+
+    AutoTensor forward(const AutoTensor& x) override;
+
+    size_t kernel_size() const noexcept;
+    size_t stride() const noexcept;
+    size_t padding() const noexcept;
+
+private:
+    size_t m_kernel_size;
+    size_t m_stride;
+    size_t m_padding;
+};
+
+class SHAREDMATH_ML_EXPORT AvgPool2d : public Module {
+public:
+    AvgPool2d(size_t kernel_size, size_t stride = 0, size_t padding = 0);
+
+    AutoTensor forward(const AutoTensor& x) override;
+
+    size_t kernel_size() const noexcept;
+    size_t stride() const noexcept;
+    size_t padding() const noexcept;
+
+private:
+    size_t m_kernel_size;
+    size_t m_stride;
+    size_t m_padding;
 };
 
 } // namespace SharedMath::ML

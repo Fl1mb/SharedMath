@@ -6,6 +6,15 @@
 
 namespace SharedMath::ML {
 
+namespace {
+
+Tensor zerosLikeParam(const AutoTensor* p) {
+    return Tensor::zeros(p->data().shape()).to(p->data().device(),
+                                               p->data().device_id());
+}
+
+} // namespace
+
 Optimizer::Optimizer(std::vector<AutoTensor*> params)
     : m_params(std::move(params))
 {}
@@ -27,7 +36,7 @@ SGD::SGD(std::vector<AutoTensor*> params, double lr, double momentum)
     if (m_momentum > 0.0) {
         m_velocity.reserve(m_params.size());
         for (auto* p : m_params)
-            m_velocity.push_back(Tensor::zeros(p->data().shape()));
+            m_velocity.push_back(zerosLikeParam(p));
     }
 }
 
@@ -39,6 +48,9 @@ void SGD::step() {
         const Tensor& g = p->grad();
 
         if (m_momentum > 0.0) {
+            if (m_velocity[i].device() != g.device() ||
+                m_velocity[i].device_id() != g.device_id())
+                m_velocity[i] = m_velocity[i].to(g.device(), g.device_id());
             m_velocity[i] = m_velocity[i] * m_momentum + g;
             p->data() -= m_velocity[i] * m_lr;
         } else {
@@ -62,7 +74,7 @@ AdaGrad::AdaGrad(std::vector<AutoTensor*> params, double lr, double eps)
 
     m_accumulator.reserve(m_params.size());
     for (auto* p : m_params)
-        m_accumulator.push_back(Tensor::zeros(p->data().shape()));
+        m_accumulator.push_back(zerosLikeParam(p));
 }
 
 void AdaGrad::step() {
@@ -71,15 +83,11 @@ void AdaGrad::step() {
         if (!p->has_grad()) continue;
 
         const Tensor& g = p->grad();
+        if (m_accumulator[i].device() != g.device() ||
+            m_accumulator[i].device_id() != g.device_id())
+            m_accumulator[i] = m_accumulator[i].to(g.device(), g.device_id());
         m_accumulator[i] += g * g;
-
-        Tensor& param = p->data();
-        const size_t sz = param.size();
-        for (size_t j = 0; j < sz; ++j) {
-            const double adjusted_lr =
-                m_lr / (std::sqrt(m_accumulator[i].flat(j)) + m_eps);
-            param.flat(j) -= adjusted_lr * g.flat(j);
-        }
+        p->data() -= (g / (m_accumulator[i].sqrt() + m_eps)) * m_lr;
     }
 }
 
@@ -104,7 +112,7 @@ RMSProp::RMSProp(std::vector<AutoTensor*> params,
 
     m_square_avg.reserve(m_params.size());
     for (auto* p : m_params)
-        m_square_avg.push_back(Tensor::zeros(p->data().shape()));
+        m_square_avg.push_back(zerosLikeParam(p));
 }
 
 void RMSProp::step() {
@@ -113,15 +121,12 @@ void RMSProp::step() {
         if (!p->has_grad()) continue;
 
         const Tensor& g = p->grad();
+        if (m_square_avg[i].device() != g.device() ||
+            m_square_avg[i].device_id() != g.device_id())
+            m_square_avg[i] = m_square_avg[i].to(g.device(), g.device_id());
         m_square_avg[i] =
             m_square_avg[i] * m_alpha + (g * g) * (1.0 - m_alpha);
-
-        Tensor& param = p->data();
-        const size_t sz = param.size();
-        for (size_t j = 0; j < sz; ++j) {
-            const double denom = std::sqrt(m_square_avg[i].flat(j)) + m_eps;
-            param.flat(j) -= m_lr * g.flat(j) / denom;
-        }
+        p->data() -= (g / (m_square_avg[i].sqrt() + m_eps)) * m_lr;
     }
 }
 
@@ -146,8 +151,8 @@ Adam::Adam(std::vector<AutoTensor*> params,
     m_m.reserve(m_params.size());
     m_v.reserve(m_params.size());
     for (auto* p : m_params) {
-        m_m.push_back(Tensor::zeros(p->data().shape()));
-        m_v.push_back(Tensor::zeros(p->data().shape()));
+        m_m.push_back(zerosLikeParam(p));
+        m_v.push_back(zerosLikeParam(p));
     }
 }
 
@@ -161,16 +166,16 @@ void Adam::step() {
         if (!p->has_grad()) continue;
 
         const Tensor& g = p->grad();
+        if (m_m[i].device() != g.device() || m_m[i].device_id() != g.device_id()) {
+            m_m[i] = m_m[i].to(g.device(), g.device_id());
+            m_v[i] = m_v[i].to(g.device(), g.device_id());
+        }
         m_m[i] = m_m[i] * m_beta1 + g * (1.0 - m_beta1);
         m_v[i] = m_v[i] * m_beta2 + (g * g) * (1.0 - m_beta2);
 
-        Tensor& param = p->data();
-        const size_t sz = param.size();
-        for (size_t j = 0; j < sz; ++j) {
-            double mh = m_m[i].flat(j) / bc1;
-            double vh = m_v[i].flat(j) / bc2;
-            param.flat(j) -= m_lr * mh / (std::sqrt(vh) + m_eps);
-        }
+        Tensor mh = m_m[i] / bc1;
+        Tensor vh = m_v[i] / bc2;
+        p->data() -= (mh / (vh.sqrt() + m_eps)) * m_lr;
     }
 }
 
