@@ -59,4 +59,107 @@ AutoTensor CrossEntropyLoss::operator()(const AutoTensor& logits, const Tensor& 
     return forward(logits, labels);
 }
 
+// ─── HuberLoss ──────────────────────────────────────────────────────────────
+
+HuberLoss::HuberLoss(double delta)
+    : m_delta(delta)
+{
+    if (delta <= 0.0)
+        throw std::invalid_argument("HuberLoss: delta must be > 0");
+}
+
+AutoTensor HuberLoss::forward(const AutoTensor& y_pred, const AutoTensor& y_true) {
+    const double d = m_delta;
+    auto diff = y_pred - y_true;
+
+    // Element-wise Huber: 0.5*err^2 if |err|<=delta, else delta*(|err|-0.5*delta)
+    Tensor out_data = diff.data().apply([d](double v) {
+        return std::abs(v) <= d ? 0.5 * v * v : d * (std::abs(v) - 0.5 * d);
+    });
+    AutoTensor huber = AutoTensor::make_result(
+        std::move(out_data), diff.requires_grad(),
+        [di = diff.impl(), d](const Tensor& g) {
+            Tensor grad = di->data.apply([d](double v) {
+                if (v > d)  return d;
+                if (v < -d) return -d;
+                return v;
+            });
+            di->propagate(g * grad);
+        });
+    return huber.mean();
+}
+
+double HuberLoss::delta() const noexcept { return m_delta; }
+
+// ─── BCELoss ────────────────────────────────────────────────────────────────
+
+BCELoss::BCELoss(double eps)
+    : m_eps(eps)
+{
+    if (eps <= 0.0)
+        throw std::invalid_argument("BCELoss: eps must be > 0");
+}
+
+AutoTensor BCELoss::forward(const AutoTensor& y_pred, const AutoTensor& y_true) {
+    const double eps = m_eps;
+    const size_t N = y_pred.data().size();
+    if (N != y_true.data().size())
+        throw std::invalid_argument("BCELoss: size mismatch between y_pred and y_true");
+
+    // loss = -mean(y*log(p) + (1-y)*log(1-p))
+    Tensor p  = y_pred.data();
+    Tensor yt = y_true.data();
+    double loss_val = 0.0;
+    Tensor grad_data(p.shape());
+    for (size_t i = 0; i < N; ++i) {
+        double pi = std::max(eps, std::min(1.0 - eps, p.flat(i)));
+        double yi = yt.flat(i);
+        loss_val -= (yi * std::log(pi) + (1.0 - yi) * std::log(1.0 - pi));
+        grad_data.flat(i) = (pi - yi) / (pi * (1.0 - pi));
+    }
+    loss_val /= static_cast<double>(N);
+    grad_data /= static_cast<double>(N);
+
+    auto pi_impl = y_pred.impl();
+    return AutoTensor::make_result(
+        Tensor::from_vector({loss_val}), y_pred.requires_grad(),
+        [pi_impl, grad_data](const Tensor& upstream) {
+            double s = upstream.cpu().flat(0);
+            pi_impl->propagate(grad_data * s);
+        });
+}
+
+double BCELoss::eps() const noexcept { return m_eps; }
+
+// ─── BCEWithLogitsLoss ──────────────────────────────────────────────────────
+
+AutoTensor BCEWithLogitsLoss::forward(const AutoTensor& logits, const AutoTensor& y_true) {
+    const size_t N = logits.data().size();
+    if (N != y_true.data().size())
+        throw std::invalid_argument("BCEWithLogitsLoss: size mismatch");
+
+    // numerically stable: max(z,0) - z*y + log(1+exp(-|z|))
+    Tensor z  = logits.data();
+    Tensor yt = y_true.data();
+    double loss_val = 0.0;
+    Tensor grad_data(z.shape());
+    for (size_t i = 0; i < N; ++i) {
+        double zi = z.flat(i);
+        double yi = yt.flat(i);
+        loss_val += std::max(0.0, zi) - zi * yi + std::log(1.0 + std::exp(-std::abs(zi)));
+        double sig = 1.0 / (1.0 + std::exp(-zi));
+        grad_data.flat(i) = (sig - yi);
+    }
+    loss_val /= static_cast<double>(N);
+    grad_data /= static_cast<double>(N);
+
+    auto li = logits.impl();
+    return AutoTensor::make_result(
+        Tensor::from_vector({loss_val}), logits.requires_grad(),
+        [li, grad_data](const Tensor& upstream) {
+            double s = upstream.cpu().flat(0);
+            li->propagate(grad_data * s);
+        });
+}
+
 } // namespace SharedMath::ML

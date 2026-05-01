@@ -108,4 +108,31 @@ private:
     std::vector<Tensor> m_v;
 };
 
+class SHAREDMATH_ML_EXPORT AdamW : public Optimizer {
+public:
+    AdamW(std::vector<AutoTensor*> params,
+          double lr           = 1e-3,
+          double beta1        = 0.9,
+          double beta2        = 0.999,
+          double eps          = 1e-8,
+          double weight_decay = 1e-2);
+
+    void step() override;
+
+    double lr()           const noexcept;
+    double beta1()        const noexcept;
+    double beta2()        const noexcept;
+    double weight_decay() const noexcept;
+
+private:
+    double              m_lr;
+    double              m_beta1;
+    double              m_beta2;
+    double              m_eps;
+    double              m_weight_decay;
+    size_t              m_t = 0;
+    std::vector<Tensor> m_m;
+    std::vector<Tensor> m_v;
+};
+
 } // namespace SharedMath::ML

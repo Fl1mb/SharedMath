@@ -183,4 +183,60 @@ double Adam::lr() const noexcept { return m_lr; }
 double Adam::beta1() const noexcept { return m_beta1; }
 double Adam::beta2() const noexcept { return m_beta2; }
 
+AdamW::AdamW(std::vector<AutoTensor*> params,
+             double lr,
+             double beta1,
+             double beta2,
+             double eps,
+             double weight_decay)
+    : Optimizer(std::move(params)),
+      m_lr(lr),
+      m_beta1(beta1),
+      m_beta2(beta2),
+      m_eps(eps),
+      m_weight_decay(weight_decay)
+{
+    if (lr <= 0.0)           throw std::invalid_argument("AdamW: lr must be > 0");
+    if (eps <= 0.0)          throw std::invalid_argument("AdamW: eps must be > 0");
+    if (weight_decay < 0.0)  throw std::invalid_argument("AdamW: weight_decay must be >= 0");
+
+    m_m.reserve(m_params.size());
+    m_v.reserve(m_params.size());
+    for (auto* p : m_params) {
+        m_m.push_back(zerosLikeParam(p));
+        m_v.push_back(zerosLikeParam(p));
+    }
+}
+
+void AdamW::step() {
+    ++m_t;
+    const double bc1 = 1.0 - std::pow(m_beta1, static_cast<double>(m_t));
+    const double bc2 = 1.0 - std::pow(m_beta2, static_cast<double>(m_t));
+
+    for (size_t i = 0; i < m_params.size(); ++i) {
+        auto* p = m_params[i];
+        if (!p->has_grad()) continue;
+
+        const Tensor& g = p->grad();
+        if (m_m[i].device() != g.device() || m_m[i].device_id() != g.device_id()) {
+            m_m[i] = m_m[i].to(g.device(), g.device_id());
+            m_v[i] = m_v[i].to(g.device(), g.device_id());
+        }
+        // Weight decay applied to parameter before gradient step
+        p->data() -= p->data() * m_weight_decay;
+
+        m_m[i] = m_m[i] * m_beta1 + g * (1.0 - m_beta1);
+        m_v[i] = m_v[i] * m_beta2 + (g * g) * (1.0 - m_beta2);
+
+        Tensor mh = m_m[i] / bc1;
+        Tensor vh = m_v[i] / bc2;
+        p->data() -= (mh / (vh.sqrt() + m_eps)) * m_lr;
+    }
+}
+
+double AdamW::lr()           const noexcept { return m_lr; }
+double AdamW::beta1()        const noexcept { return m_beta1; }
+double AdamW::beta2()        const noexcept { return m_beta2; }
+double AdamW::weight_decay() const noexcept { return m_weight_decay; }
+
 } // namespace SharedMath::ML

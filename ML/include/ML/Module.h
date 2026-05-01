@@ -332,4 +332,33 @@ private:
     size_t m_padding;
 };
 
+class SHAREDMATH_ML_EXPORT LeakyReLU : public Module {
+public:
+    explicit LeakyReLU(double negative_slope = 0.01);
+
+    AutoTensor forward(const AutoTensor& x) override;
+
+    double negative_slope() const noexcept;
+
+private:
+    double m_negative_slope;
+};
+
+class SHAREDMATH_ML_EXPORT ELU : public Module {
+public:
+    explicit ELU(double alpha = 1.0);
+
+    AutoTensor forward(const AutoTensor& x) override;
+
+    double alpha() const noexcept;
+
+private:
+    double m_alpha;
+};
+
+class SHAREDMATH_ML_EXPORT SiLU : public Module {
+public:
+    AutoTensor forward(const AutoTensor& x) override;
+};
+
 } // namespace SharedMath::ML

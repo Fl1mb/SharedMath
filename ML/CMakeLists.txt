@@ -8,6 +8,12 @@ add_library(SharedMath_ML
     src/Module.cpp
     src/Optimizer.cpp
     src/Trainer.cpp
+    src/Preprocessing.cpp
+    src/TreeModels.cpp
+    src/RegularizedModels.cpp
+    src/NaiveBayes.cpp
+    src/SVM.cpp
+    src/ModelSelection.cpp
 )
 add_library(SharedMath::ML ALIAS SharedMath_ML)
 

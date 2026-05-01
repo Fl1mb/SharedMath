@@ -67,6 +67,11 @@ add_executable(${PROJECT_NAME}Tests
     test_ml_models.cpp
     test_ml_dataloader.cpp
     test_ml_metrics.cpp
+    test_ml_preprocessing.cpp
+    test_ml_tree_models.cpp
+    test_ml_forest_models.cpp
+    test_ml_regularized_models.cpp
+    test_ml_model_selection.cpp
 )
 
 if(SHAREDMATH_ENABLE_CUDA)

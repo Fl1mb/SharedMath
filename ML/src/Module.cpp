@@ -1044,4 +1044,75 @@ size_t AvgPool2d::kernel_size() const noexcept { return m_kernel_size; }
 size_t AvgPool2d::stride() const noexcept { return m_stride; }
 size_t AvgPool2d::padding() const noexcept { return m_padding; }
 
+// ─── LeakyReLU ──────────────────────────────────────────────────────────────
+
+LeakyReLU::LeakyReLU(double negative_slope)
+    : m_negative_slope(negative_slope)
+{}
+
+AutoTensor LeakyReLU::forward(const AutoTensor& x) {
+    const double ns = m_negative_slope;
+    Tensor out_data = x.data().apply([ns](double v) {
+        return v >= 0.0 ? v : ns * v;
+    });
+    if (!x.requires_grad()) return AutoTensor::from(std::move(out_data));
+
+    auto xi = x.impl();
+    return AutoTensor::make_result(std::move(out_data), true,
+        [xi, ns](const Tensor& g) {
+            Tensor mask = xi->data.apply([ns](double v) {
+                return v >= 0.0 ? 1.0 : ns;
+            });
+            xi->propagate(g * mask);
+        });
+}
+
+double LeakyReLU::negative_slope() const noexcept { return m_negative_slope; }
+
+// ─── ELU ────────────────────────────────────────────────────────────────────
+
+ELU::ELU(double alpha)
+    : m_alpha(alpha)
+{}
+
+AutoTensor ELU::forward(const AutoTensor& x) {
+    const double alpha = m_alpha;
+    Tensor out_data = x.data().apply([alpha](double v) {
+        return v >= 0.0 ? v : alpha * (std::exp(v) - 1.0);
+    });
+    if (!x.requires_grad()) return AutoTensor::from(std::move(out_data));
+
+    auto xi = x.impl();
+    return AutoTensor::make_result(std::move(out_data), true,
+        [xi, alpha](const Tensor& g) {
+            Tensor mask = xi->data.apply([alpha](double v) {
+                return v >= 0.0 ? 1.0 : alpha * std::exp(v);
+            });
+            xi->propagate(g * mask);
+        });
+}
+
+double ELU::alpha() const noexcept { return m_alpha; }
+
+// ─── SiLU (Swish) ───────────────────────────────────────────────────────────
+
+AutoTensor SiLU::forward(const AutoTensor& x) {
+    // SiLU(x) = x * sigmoid(x)
+    Tensor out_data = x.data().apply([](double v) {
+        return v / (1.0 + std::exp(-v));
+    });
+    if (!x.requires_grad()) return AutoTensor::from(std::move(out_data));
+
+    auto xi = x.impl();
+    return AutoTensor::make_result(std::move(out_data), true,
+        [xi](const Tensor& g) {
+            // d/dx [x * sig(x)] = sig(x) + x * sig(x) * (1 - sig(x))
+            Tensor grad = xi->data.apply([](double v) {
+                const double s = 1.0 / (1.0 + std::exp(-v));
+                return s * (1.0 + v * (1.0 - s));
+            });
+            xi->propagate(g * grad);
+        });
+}
+
 } // namespace SharedMath::ML
