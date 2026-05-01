@@ -1,6 +1,6 @@
 #pragma once
 
-// SharedMath::ML — Gaussian Naive Bayes classifier
+/// SharedMath::ML — Gaussian Naive Bayes classifier
 
 #include <sharedmath_ml_export.h>
 
@@ -13,12 +13,12 @@ namespace SharedMath::ML {
 
 using Tensor = SharedMath::LinearAlgebra::Tensor;
 
-// ─────────────────────────────────────────────────────────────────────────────
-// GaussianNB
-//
-// Assumes each feature ~ N(μ_c, σ²_c) per class c.
-// Prediction: argmax_c [ log P(c) + Σ_d log N(x_d | μ_cd, σ²_cd) ]
-// ─────────────────────────────────────────────────────────────────────────────
+/// ─────────────────────────────────────────────────────────────────────────────
+/// GaussianNB
+///
+/// Assumes each feature ~ N(μ_c, σ²_c) per class c.
+/// Prediction: argmax_c [ log P(c) + Σ_d log N(x_d | μ_cd, σ²_cd) ]
+/// ─────────────────────────────────────────────────────────────────────────────
 class SHAREDMATH_ML_EXPORT GaussianNB {
 public:
     explicit GaussianNB(double var_smoothing = 1e-9);
@@ -31,7 +31,7 @@ public:
     size_t n_features() const noexcept;
     bool   fitted()     const noexcept;
 
-    // Per-class statistics
+    /// Per-class statistics
     const Tensor& class_prior()   const noexcept;  // [C] log priors
     const Tensor& theta()         const noexcept;  // [C, D] means
     const Tensor& sigma()         const noexcept;  // [C, D] variances

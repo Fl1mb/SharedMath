@@ -23,7 +23,7 @@ namespace SharedMath
             Transform3D& operator=(Transform3D&&) noexcept = default;
             ~Transform3D() = default;
 
-            // Static factories
+            /// Static factories
             static Transform3D identity();
             static Transform3D translation(double dx, double dy, double dz);
             static Transform3D rotationX(double angle);
@@ -31,7 +31,7 @@ namespace SharedMath
             static Transform3D rotationZ(double angle);
             static Transform3D scale(double sx, double sy, double sz);
 
-            // View matrix
+            /// View matrix
             static Transform3D lookAt(const Point3D& eye, const Point3D& target, const Vector3D& up);
 
             // Composition

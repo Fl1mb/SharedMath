@@ -1,12 +1,34 @@
 #pragma once
 
-// SharedMath::ML — Optimizers
-//
-// Optimizer  — abstract base (step, zero_grad)
-// SGD        — stochastic gradient descent with optional momentum
-// AdaGrad    — per-parameter adaptive learning rates
-// RMSProp    — exponentially-smoothed adaptive learning rates
-// Adam       — adaptive moment estimation (Kingma & Ba, 2015)
+/**
+ * @file Optimizer.h
+ * @brief Gradient-descent optimizers.
+ *
+ * @defgroup ML_Optimizers Optimizers
+ * @ingroup ML
+ * @{
+ *
+ * All optimizers inherit from @ref SharedMath::ML::Optimizer.  Usage:
+ * @code{.cpp}
+ * Adam opt(model.parameters(), 1e-3);
+ * for (auto& batch : loader) {
+ *     opt.zero_grad();
+ *     auto loss = model(batch.X);
+ *     loss.backward();
+ *     opt.step();
+ * }
+ * @endcode
+ *
+ * | Class | Algorithm |
+ * |-------|-----------|
+ * | SGD | Stochastic gradient descent (optional momentum) |
+ * | AdaGrad | Adaptive per-parameter learning rates |
+ * | RMSProp | Exponentially-smoothed adaptive rates |
+ * | Adam | Adaptive moment estimation (Kingma & Ba, 2015) |
+ * | AdamW | Adam with decoupled weight decay |
+ *
+ * @}
+ */
 
 #include <sharedmath_ml_export.h>
 

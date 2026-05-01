@@ -1,5 +1,33 @@
 #pragma once
 
+/**
+ * @file ModelSelection.h
+ * @brief Cross-validation and model selection utilities.
+ *
+ * @defgroup ML_ModelSelection Model Selection
+ * @ingroup ML
+ * @{
+ *
+ * ### Example — 5-fold CV with KNN
+ * @code{.cpp}
+ * KFold kf(5, true, 42);
+ * auto folds = kf.split(X.dim(0));
+ *
+ * using ModelPtr = std::shared_ptr<KNNClassifier>;
+ * auto scores = cross_val_score<ModelPtr>(
+ *     X, y, folds,
+ *     [](const Tensor& Xtr, const Tensor& ytr) {
+ *         auto m = std::make_shared<KNNClassifier>(3);
+ *         m->fit(Xtr, ytr); return m;
+ *     },
+ *     [](ModelPtr& m, const Tensor& Xv, const Tensor& yv) {
+ *         return accuracy(m->predict(Xv), yv);
+ *     });
+ * @endcode
+ *
+ * @}
+ */
+
 // SharedMath::ML — Model Selection Utilities
 //
 // KFold           — stratification-agnostic k-fold split
@@ -20,21 +48,21 @@ namespace SharedMath::ML {
 
 using Tensor = SharedMath::LinearAlgebra::Tensor;
 
-// A single fold: indices that belong to the validation (test) set.
-// The training set is everything else.
+/// A single fold: indices that belong to the validation (test) set.
+/// The training set is everything else.
 struct SHAREDMATH_ML_EXPORT Fold {
     std::vector<size_t> train_indices;
     std::vector<size_t> val_indices;
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// KFold
-// ─────────────────────────────────────────────────────────────────────────────
+/// ─────────────────────────────────────────────────────────────────────────────
+/// KFold
+/// ─────────────────────────────────────────────────────────────────────────────
 class SHAREDMATH_ML_EXPORT KFold {
 public:
     explicit KFold(size_t n_splits = 5, bool shuffle = false, uint64_t seed = 0);
 
-    // Split N samples into k folds.
+    /// Split N samples into k folds.
     std::vector<Fold> split(size_t n_samples) const;
 
     size_t n_splits() const noexcept;
@@ -45,14 +73,14 @@ private:
     uint64_t m_seed;
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// StratifiedKFold — preserves class proportions in each fold
-// ─────────────────────────────────────────────────────────────────────────────
+/// ─────────────────────────────────────────────────────────────────────────────
+/// StratifiedKFold — preserves class proportions in each fold
+/// ─────────────────────────────────────────────────────────────────────────────
 class SHAREDMATH_ML_EXPORT StratifiedKFold {
 public:
     explicit StratifiedKFold(size_t n_splits = 5, bool shuffle = false, uint64_t seed = 0);
 
-    // labels: 1-D integer class labels (stored as doubles).
+    /// labels: 1-D integer class labels (stored as doubles).
     std::vector<Fold> split(const Tensor& labels) const;
 
     size_t n_splits() const noexcept;

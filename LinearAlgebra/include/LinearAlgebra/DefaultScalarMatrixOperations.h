@@ -14,7 +14,7 @@ public:
         if (!isSupported(*A))
             throw std::invalid_argument(
                 "MatrixDeterminantStrategy: matrix must be square");
-        // LUDecomposition requires DynamicMatrix; copy through virtual interface
+        /// LUDecomposition requires DynamicMatrix; copy through virtual interface
         DynamicMatrix M(*A);
         LUDecomposition lu(M);
         try {

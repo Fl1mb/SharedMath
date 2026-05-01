@@ -36,7 +36,7 @@ namespace SharedMath::Graphs {
 template<typename V, typename W = double>
 class AdjacencyListGraph {
 public:
-    // ── Types ─────────────────────────────────────────────────────────────
+    /// ── Types ─────────────────────────────────────────────────────────────
     struct Edge {
         V to;
         W weight;
@@ -49,12 +49,12 @@ public:
     explicit AdjacencyListGraph(bool directed = true)
         : directed_(directed) {}
 
-    // ── Vertex operations ─────────────────────────────────────────────────
+    /// ── Vertex operations ─────────────────────────────────────────────────
 
-    // Add a vertex with no edges. Idempotent.
+    /// Add a vertex with no edges. Idempotent.
     void addVertex(const V& v) { ensureVertex(v); }
 
-    // Remove a vertex and all incident edges.
+    /// Remove a vertex and all incident edges.
     void removeVertex(const V& v) {
         if (!adj_.count(v)) return;
 
@@ -63,7 +63,7 @@ public:
             for (const auto& e : adj_[v])
                 if (inDeg_.count(e.to)) --inDeg_[e.to];
 
-        // Remove all edges from other vertices that point to v
+        /// Remove all edges from other vertices that point to v
         for (auto& [u, edges] : adj_) {
             if (u == v) continue;
             edges.erase(
@@ -97,7 +97,7 @@ public:
         }
     }
 
-    // Remove the first edge from→to (does nothing if not found).
+    /// Remove the first edge from→to (does nothing if not found).
     void removeEdge(const V& from, const V& to) {
         auto it = adj_.find(from);
         if (it == adj_.end()) return;
@@ -125,7 +125,7 @@ public:
                            [&](const Edge& e) { return e.to == to; });
     }
 
-    // Returns the weight of the first matching edge, or std::nullopt.
+    /// Returns the weight of the first matching edge, or std::nullopt.
     std::optional<W> weight(const V& from, const V& to) const {
         auto it = adj_.find(from);
         if (it == adj_.end()) return std::nullopt;
@@ -134,7 +134,7 @@ public:
         return std::nullopt;
     }
 
-    // ── Accessors ─────────────────────────────────────────────────────────
+    /// ── Accessors ─────────────────────────────────────────────────────────
 
     const EdgeList& neighbors(const V& v) const {
         auto it = adj_.find(v);
@@ -143,7 +143,7 @@ public:
         return it->second;
     }
 
-    // Returns all vertex IDs (order not guaranteed for unordered_map).
+    /// Returns all vertex IDs (order not guaranteed for unordered_map).
     std::vector<V> vertices() const {
         std::vector<V> vs;
         vs.reserve(adj_.size());
@@ -164,7 +164,7 @@ public:
         return it == adj_.end() ? 0 : it->second.size();
     }
 
-    // For undirected graphs this equals outDegree (O(1)).
+    /// For undirected graphs this equals outDegree (O(1)).
     size_t inDegree(const V& v) const {
         if (!directed_) return outDegree(v);
         auto it = inDeg_.find(v);
@@ -173,9 +173,9 @@ public:
 
     bool isDirected() const noexcept { return directed_; }
 
-    // ── Graph transformations ─────────────────────────────────────────────
+    /// ── Graph transformations ─────────────────────────────────────────────
 
-    // Returns a new directed graph with every arc reversed (no-op for undirected).
+    /// Returns a new directed graph with every arc reversed (no-op for undirected).
     AdjacencyListGraph reversed() const {
         if (!directed_) return *this;
         AdjacencyListGraph rev(true);
@@ -186,7 +186,7 @@ public:
         return rev;
     }
 
-    // ── Raw access (for algorithms) ───────────────────────────────────────
+    /// ── Raw access (for algorithms) ───────────────────────────────────────
     const AdjMap&                            adjacency()  const noexcept { return adj_;    }
     const std::unordered_map<V, size_t>&     inDegrees()  const noexcept { return inDeg_;  }
 

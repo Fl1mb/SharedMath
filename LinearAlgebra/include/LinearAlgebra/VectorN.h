@@ -22,7 +22,7 @@ public:
     using iterator        = double*;
     using const_iterator  = const double*;
 
-    // ── Construction ──────────────────────────────────────────────────────
+    /// ── Construction ──────────────────────────────────────────────────────
     Vector() noexcept { data_.fill(0.0); }
 
     explicit Vector(double fill) noexcept { data_.fill(fill); }
@@ -55,7 +55,7 @@ public:
     double*       data() noexcept       { return data_.data(); }
     const double* data() const noexcept { return data_.data(); }
 
-    // ── STL iterators ─────────────────────────────────────────────────────
+    /// ── STL iterators ─────────────────────────────────────────────────────
     iterator       begin()  noexcept       { return data_.data(); }
     iterator       end()    noexcept       { return data_.data() + N; }
     const_iterator begin()  const noexcept { return data_.data(); }
@@ -63,7 +63,7 @@ public:
     const_iterator cbegin() const noexcept { return data_.data(); }
     const_iterator cend()   const noexcept { return data_.data() + N; }
 
-    // ── Metadata ──────────────────────────────────────────────────────────
+    /// ── Metadata ──────────────────────────────────────────────────────────
     static constexpr size_t size()     noexcept { return N; }
     static constexpr bool   empty()    noexcept { return N == 0; }
 
@@ -119,7 +119,7 @@ public:
         return *this;
     }
 
-    // ── Linear algebra ────────────────────────────────────────────────────
+    /// ── Linear algebra ────────────────────────────────────────────────────
     double dot(const Vector& o) const noexcept {
         double r = 0.0;
         for (size_t i = 0; i < N; ++i) r += data_[i] * o.data_[i];
@@ -144,7 +144,7 @@ public:
                  data_[0]*o.data_[1] - data_[1]*o.data_[0] };
     }
 
-    // ── Reductions ────────────────────────────────────────────────────────
+    /// ── Reductions ────────────────────────────────────────────────────────
     double sum()  const noexcept {
         return std::accumulate(data_.begin(), data_.end(), 0.0);
     }

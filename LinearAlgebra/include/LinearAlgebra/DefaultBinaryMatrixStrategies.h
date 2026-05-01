@@ -74,8 +74,8 @@ public:
         if (dA && dB)
             return std::make_shared<DynamicMatrix>(*dA * *dB);
 
-        // General path with cache-friendly i-k-j loop.
-        // Copies A into a DynamicMatrix so inner-loop rows are contiguous.
+        /// General path with cache-friendly i-k-j loop.
+        /// Copies A into a DynamicMatrix so inner-loop rows are contiguous.
         DynamicMatrix cA(*A), cB(*B);
         return std::make_shared<DynamicMatrix>(cA * cB);
     }

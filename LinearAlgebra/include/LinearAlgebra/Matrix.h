@@ -23,7 +23,7 @@ template<size_t Rows, size_t Cols>
 class Matrix : public AbstractMatrix {
     static_assert(Rows > 0 && Cols > 0, "Matrix dimensions must be > 0");
 public:
-    // ── Construction ──────────────────────────────────────────────────────
+    /// ── Construction ──────────────────────────────────────────────────────
     Matrix() noexcept { for (auto& row : data_) row = Vector<Cols>(); }
 
     Matrix(std::initializer_list<std::initializer_list<double>> values) {
@@ -45,9 +45,9 @@ public:
     Matrix& operator=(Matrix&&) noexcept = default;
     ~Matrix() override = default;
 
-    // ── Element access ────────────────────────────────────────────────────
+    /// ── Element access ────────────────────────────────────────────────────
 
-    // Preferred: direct (row, col) access
+    /// Preferred: direct (row, col) access
     double& operator()(size_t r, size_t c) {
         if (r >= Rows || c >= Cols)
             throw std::out_of_range("Matrix: index out of range");
@@ -63,18 +63,18 @@ public:
     Vector<Cols>& operator[](size_t r) noexcept { return data_[r]; }
     const Vector<Cols>& operator[](size_t r) const noexcept { return data_[r]; }
 
-    // AbstractMatrix interface
+    /// AbstractMatrix interface
     double  get(size_t r, size_t c) const override { return (*this)(r, c); }
     double& get(size_t r, size_t c)       override { return (*this)(r, c); }
     void    set(size_t r, size_t c, double v) override { (*this)(r, c) = v; }
 
-    // Contiguous flat pointer to all Rows*Cols elements in row-major order.
-    // Safe: Vector<Cols> is standard-layout, so &data_[0][0] is the first double
-    // and the layout is identical to double[Rows][Cols].
+    /// Contiguous flat pointer to all Rows*Cols elements in row-major order.
+    /// Safe: Vector<Cols> is standard-layout, so &data_[0][0] is the first double
+    /// and the layout is identical to double[Rows][Cols].
     double*       toPtr()       override { return data_[0].data(); }
     const double* toPtr() const override { return data_[0].data(); }
 
-    // Pointer to the start of row r
+    /// Pointer to the start of row r
     double*       rowPtr(size_t r) {
         if (r >= Rows) throw std::out_of_range("Matrix::rowPtr: row out of range");
         return data_[r].data();
@@ -84,7 +84,7 @@ public:
         return data_[r].data();
     }
 
-    // ── Metadata ──────────────────────────────────────────────────────────
+    /// ── Metadata ──────────────────────────────────────────────────────────
     size_t rows() const noexcept override { return Rows; }
     size_t cols() const noexcept override { return Cols; }
     static constexpr size_t totalElements() noexcept { return Rows * Cols; }
@@ -171,7 +171,7 @@ public:
                 data_[i][j] = ptr[j * Rows + i];
     }
 
-    // ── Comma initializer  (mat << 1, 2, 3, ...) ─────────────────────────
+    /// ── Comma initializer  (mat << 1, 2, 3, ...) ─────────────────────────
     class CommaInitializer {
     public:
         explicit CommaInitializer(Matrix& mat) : mat_(mat) {

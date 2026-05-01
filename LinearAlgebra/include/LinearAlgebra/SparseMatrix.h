@@ -12,22 +12,22 @@
 
 namespace SharedMath::LinearAlgebra {
 
-// Sparse matrix in Compressed Sparse Row (CSR) format.
-//
-// Memory layout:
-//   values_[k]      — nonzero value of the k-th stored entry
-//   col_idx_[k]     — column index of the k-th stored entry
-//   row_ptr_[i]     — index into values_/col_idx_ of the first entry in row i
-//   row_ptr_[rows_] — total number of stored entries (== nnz())
-//
-// All entries within a row are stored in ascending column order.
-// Duplicate (i,j) entries in from_triplets() are summed automatically.
-//
+/// Sparse matrix in Compressed Sparse Row (CSR) format.
+///
+/// Memory layout:
+///   values_[k]      — nonzero value of the k-th stored entry
+///   col_idx_[k]     — column index of the k-th stored entry
+///   row_ptr_[i]     — index into values_/col_idx_ of the first entry in row i
+///   row_ptr_[rows_] — total number of stored entries (== nnz())
+///
+/// All entries within a row are stored in ascending column order.
+/// Duplicate (i,j) entries in from_triplets() are summed automatically.
+///
 class SHAREDMATH_LINEARALGEBRA_EXPORT SparseMatrix : public AbstractMatrix {
 public:
-    // ── Construction ──────────────────────────────────────────────────────
+    /// ── Construction ──────────────────────────────────────────────────────
 
-    // Empty matrix with given dimensions (zero non-zeros)
+    /// Empty matrix with given dimensions (zero non-zeros)
     SparseMatrix(size_t rows, size_t cols);
 
     // Build from COO triplets.  Duplicate (i,j) entries are summed.
@@ -37,13 +37,13 @@ public:
                                       const std::vector<size_t>& col_idx,
                                       const std::vector<double>& values);
 
-    // Convert dense matrix to sparse (drop entries with |v| <= tol).
+    /// Convert dense matrix to sparse (drop entries with |v| <= tol).
     static SparseMatrix from_dense(const AbstractMatrix& A, double tol = 0.0);
 
-    // Diagonal sparse matrix from vector
+    /// Diagonal sparse matrix from vector
     static SparseMatrix diag(const std::vector<double>& d);
 
-    // n×n identity
+    /// n×n identity
     static SparseMatrix eye(size_t n);
 
     SparseMatrix(const SparseMatrix&)            = default;
@@ -52,11 +52,11 @@ public:
     SparseMatrix& operator=(SparseMatrix&&) noexcept = default;
     ~SparseMatrix() override                     = default;
 
-    // ── AbstractMatrix interface ──────────────────────────────────────────
+    /// ── AbstractMatrix interface ──────────────────────────────────────────
     size_t rows() const noexcept override { return rows_; }
     size_t cols() const noexcept override { return cols_; }
 
-    // O(log nnz_per_row) via binary search in row
+    /// O(log nnz_per_row) via binary search in row
     double  get(size_t r, size_t c) const override;
     double& get(size_t r, size_t c)       override;
     void    set(size_t r, size_t c, double v) override;
@@ -64,7 +64,7 @@ public:
     double* toPtr()       noexcept override { return values_.data(); }
     const double* toPtr() const noexcept override { return values_.data(); }
 
-    // ── CSR storage accessors ─────────────────────────────────────────────
+    /// ── CSR storage accessors ─────────────────────────────────────────────
     const std::vector<double>& values()    const noexcept { return values_;  }
     const std::vector<size_t>& col_indices() const noexcept { return col_idx_; }
     const std::vector<size_t>& row_ptr()   const noexcept { return row_ptr_; }
@@ -92,16 +92,16 @@ public:
 
     friend SparseMatrix operator*(double s, const SparseMatrix& m) { return m * s; }
 
-    // Sparse–sparse matrix multiply
+    /// Sparse–sparse matrix multiply
     SparseMatrix matmul(const SparseMatrix& B) const;
 
-    // ── Transpose ─────────────────────────────────────────────────────────
+    /// ── Transpose ─────────────────────────────────────────────────────────
     SparseMatrix transposed() const;
 
-    // ── Conversion ────────────────────────────────────────────────────────
+    /// ── Conversion ────────────────────────────────────────────────────────
     DynamicMatrix to_dense() const;
 
-    // ── Display ───────────────────────────────────────────────────────────
+    /// ── Display ───────────────────────────────────────────────────────────
     std::string str() const;
 
 private:
@@ -111,8 +111,8 @@ private:
     std::vector<size_t> col_idx_;  // column indices  (size == nnz)
     std::vector<size_t> row_ptr_;  // row pointers    (size == rows+1)
 
-    // Find the index into values_/col_idx_ for entry (r, c).
-    // Returns values_.size() if not found (structural zero).
+    /// Find the index into values_/col_idx_ for entry (r, c).
+    /// Returns values_.size() if not found (structural zero).
     size_t find(size_t r, size_t c) const noexcept;
 
     // Helper for binary operations: merge two sorted rows

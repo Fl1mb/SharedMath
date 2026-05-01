@@ -1,9 +1,9 @@
 #pragma once
 
-// SharedMath::ML — Linear Support Vector Machine
-//
-// LinearSVM — binary SVM trained via mini-batch subgradient (hinge loss + L2)
-//             Labels must be {0, 1} or {-1, +1} (auto-detected).
+/// SharedMath::ML — Linear Support Vector Machine
+///
+/// LinearSVM — binary SVM trained via mini-batch subgradient (hinge loss + L2)
+///             Labels must be {0, 1} or {-1, +1} (auto-detected).
 
 #include <sharedmath_ml_export.h>
 

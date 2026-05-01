@@ -8,7 +8,7 @@ namespace SharedMath
 {
     namespace Geometry
     {
-        // Centripetal Catmull-Rom spline
+        /// Centripetal Catmull-Rom spline
         class CatmullRomSpline {
         public:
             CatmullRomSpline() : alpha_(0.5) {}
@@ -74,7 +74,7 @@ namespace SharedMath
             std::vector<Point2D> controlPoints_;
             double alpha_;
 
-            // Knot parameterization
+            /// Knot parameterization
             double tj(double ti, const Point2D& pi, const Point2D& pj) const {
                 double dx = pj.x() - pi.x();
                 double dy = pj.y() - pi.y();

@@ -1,15 +1,15 @@
 #pragma once
 
-// SharedMath::DSP — Convolution and Correlation
-//
-// Free functions for:
-//   • Linear convolution  (FFT-based and direct)
-//   • Circular (cyclic) convolution
-//   • Streaming convolution: Overlap-Add and Overlap-Save
-//   • Cross-correlation and autocorrelation (FFT-based)
-//   • Normalized variants of correlation
-//
-// All functions operate on std::vector<double> and are header-only.
+/// SharedMath::DSP — Convolution and Correlation
+///
+/// Free functions for:
+///   • Linear convolution  (FFT-based and direct)
+///   • Circular (cyclic) convolution
+///   • Streaming convolution: Overlap-Add and Overlap-Save
+///   • Cross-correlation and autocorrelation (FFT-based)
+///   • Normalized variants of correlation
+///
+/// All functions operate on std::vector<double> and are header-only.
 
 #include "FFTPlan.h"
 #include "FFTConfig.h"
@@ -24,9 +24,9 @@
 
 namespace SharedMath::DSP {
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Output-length mode  (same semantics as NumPy / SciPy)
-// ─────────────────────────────────────────────────────────────────────────────
+/// ─────────────────────────────────────────────────────────────────────────────
+/// Output-length mode  (same semantics as NumPy / SciPy)
+/// ─────────────────────────────────────────────────────────────────────────────
 
 enum class ConvolutionMode {
     Full,   // Full linear output: length = len(a) + len(b) − 1
@@ -35,9 +35,9 @@ enum class ConvolutionMode {
             // (empty when la == lb for correlate; 1 when la == lb for convolve)
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Internal helpers
-// ─────────────────────────────────────────────────────────────────────────────
+/// ─────────────────────────────────────────────────────────────────────────────
+/// Internal helpers
+/// ─────────────────────────────────────────────────────────────────────────────
 
 namespace detail {
 
@@ -277,7 +277,7 @@ inline std::vector<double> convolveOverlapSave(
     size_t numBlocks = (outLen + step - 1) / step;
     size_t totalPad  = pad + numBlocks * step;  // total padded signal length
 
-    // Padded input: (kLen−1) leading zeros, signal, trailing zeros
+    /// Padded input: (kLen−1) leading zeros, signal, trailing zeros
     std::vector<double> padded(totalPad, 0.0);
     for (size_t i = 0; i < signal.size(); ++i) padded[pad + i] = signal[i];
 
@@ -341,8 +341,8 @@ inline std::vector<double> crossCorrelate(
 
     FFTPlan::create(fftN, {FFTDirection::Inverse, FFTNorm::ByN}).execute(ca);
 
-    // After IFFT, ca[k] = corr at lag k (positive), ca[fftN-k] = corr at lag -k.
-    // Rearrange so that index 0 = most-negative lag -(la-1).
+    /// After IFFT, ca[k] = corr at lag k (positive), ca[fftN-k] = corr at lag -k.
+    /// Rearrange so that index 0 = most-negative lag -(la-1).
     std::vector<double> full(outLen);
     //   Negative lags -(la-1)..−1 live in ca[fftN-(la-1)..fftN-1]
     size_t negStart = fftN - (la - 1);

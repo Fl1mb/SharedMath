@@ -70,7 +70,7 @@ namespace SharedMath
             }
 
             bool contains(const Point3D& p) const {
-                // Project p onto axis, check height
+                /// Project p onto axis, check height
                 Vector3D bp(baseCenter_, p);
                 double t = bp.x() * axis_.x() + bp.y() * axis_.y() + bp.z() * axis_.z();
                 if (t < -Epsilon || t > height_ + Epsilon) return false;

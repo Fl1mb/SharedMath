@@ -24,7 +24,7 @@ namespace SharedMath::Graphs {
 // ─────────────────────────────────────────────────────────────────────────────
 template<typename T, typename Compare = std::less<T>>
 class AVLTree {
-    // ── Internal node ─────────────────────────────────────────────────────
+    /// ── Internal node ─────────────────────────────────────────────────────
     struct Node {
         T data;
         int height = 1;
@@ -33,7 +33,7 @@ class AVLTree {
         explicit Node(T val) : data(std::move(val)) {}
     };
 
-    // ── Helpers ───────────────────────────────────────────────────────────
+    /// ── Helpers ───────────────────────────────────────────────────────────
     static int  nodeHeight(const Node* n) noexcept { return n ? n->height : 0; }
     static int  bf(const Node* n) noexcept {
         return n ? nodeHeight(n->left.get()) - nodeHeight(n->right.get()) : 0;
@@ -44,7 +44,7 @@ class AVLTree {
                                      nodeHeight(n->right.get()));
     }
 
-    // Right rotation (LL imbalance)
+    /// Right rotation (LL imbalance)
     static std::unique_ptr<Node> rotateRight(std::unique_ptr<Node> y) {
         auto x    = std::move(y->left);
         y->left   = std::move(x->right);
@@ -54,7 +54,7 @@ class AVLTree {
         return x;
     }
 
-    // Left rotation (RR imbalance)
+    /// Left rotation (RR imbalance)
     static std::unique_ptr<Node> rotateLeft(std::unique_ptr<Node> x) {
         auto y    = std::move(x->right);
         x->right  = std::move(y->left);
@@ -64,7 +64,7 @@ class AVLTree {
         return y;
     }
 
-    // Rebalance after insert/delete
+    /// Rebalance after insert/delete
     static std::unique_ptr<Node> balance(std::unique_ptr<Node> n) {
         updateHeight(n.get());
         int b = bf(n.get());
@@ -82,7 +82,7 @@ class AVLTree {
         return n;
     }
 
-    // ── Recursive operations ──────────────────────────────────────────────
+    /// ── Recursive operations ──────────────────────────────────────────────
     std::unique_ptr<Node> insert(std::unique_ptr<Node> n, T val) {
         if (!n) { ++size_; return std::make_unique<Node>(std::move(val)); }
 
@@ -90,7 +90,7 @@ class AVLTree {
             n->left  = insert(std::move(n->left),  std::move(val));
         else if (cmp_(n->data, val))
             n->right = insert(std::move(n->right), std::move(val));
-        // else: duplicate — ignore
+        /// else: duplicate — ignore
 
         return balance(std::move(n));
     }
@@ -104,7 +104,7 @@ class AVLTree {
         return n;
     }
 
-    // Remove the minimum node in subtree n, return updated subtree
+    /// Remove the minimum node in subtree n, return updated subtree
     static std::unique_ptr<Node> removeMin(std::unique_ptr<Node> n) {
         if (!n->left) return std::move(n->right);
         n->left = removeMin(std::move(n->left));
@@ -164,18 +164,18 @@ public:
     AVLTree(AVLTree&&)            noexcept = default;
     AVLTree& operator=(AVLTree&&) noexcept = default;
 
-    // ── Modification ──────────────────────────────────────────────────────
+    /// ── Modification ──────────────────────────────────────────────────────
 
-    // Insert val. Duplicates are ignored (set semantics).
+    /// Insert val. Duplicates are ignored (set semantics).
     void insert(T val) { root_ = insert(std::move(root_), std::move(val)); }
 
-    // Remove val. No-op if not present.
+    /// Remove val. No-op if not present.
     void remove(const T& val) { root_ = remove(std::move(root_), val); }
 
-    // Remove all elements.
+    /// Remove all elements.
     void clear() noexcept { root_.reset(); size_ = 0; }
 
-    // ── Queries ───────────────────────────────────────────────────────────
+    /// ── Queries ───────────────────────────────────────────────────────────
 
     bool contains(const T& val) const noexcept { return find(root_.get(), val) != nullptr; }
 
@@ -183,7 +183,7 @@ public:
     bool   empty()  const noexcept { return size_ == 0; }
     int    height() const noexcept { return nodeHeight(root_.get()); }
 
-    // Minimum / maximum element (std::nullopt if empty).
+    /// Minimum / maximum element (std::nullopt if empty).
     std::optional<T> min() const {
         if (!root_) return std::nullopt;
         return findMin(root_.get())->data;
@@ -193,7 +193,7 @@ public:
         return findMax(root_.get())->data;
     }
 
-    // In-order traversal — returns elements in sorted order. O(n).
+    /// In-order traversal — returns elements in sorted order. O(n).
     std::vector<T> inorder() const {
         std::vector<T> out;
         out.reserve(size_);
@@ -201,7 +201,7 @@ public:
         return out;
     }
 
-    // In-order callback traversal — avoids building a vector.
+    /// In-order callback traversal — avoids building a vector.
     void forEach(std::function<void(const T&)> fn) const {
         std::function<void(const Node*)> impl = [&](const Node* n) {
             if (!n) return;
@@ -212,7 +212,7 @@ public:
         impl(root_.get());
     }
 
-    // Balance factor of the root node (useful for debugging).
+    /// Balance factor of the root node (useful for debugging).
     int rootBalanceFactor() const noexcept { return bf(root_.get()); }
 };
 

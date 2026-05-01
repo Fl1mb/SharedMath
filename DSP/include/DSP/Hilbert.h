@@ -1,12 +1,12 @@
 #pragma once
 
-// SharedMath::DSP — Hilbert transform and instantaneous signal characteristics
-//
-// analyticSignal()          — complex analytic signal  z = x + j·H{x}
-// hilbert()                 — Hilbert transform of a real signal
-// instantaneousAmplitude()  — envelope: |z[n]|
-// instantaneousPhase()      — arg(z[n]), optionally unwrapped
-// instantaneousFrequency()  — dφ/dt / (2π), in Hz
+/// SharedMath::DSP — Hilbert transform and instantaneous signal characteristics
+///
+/// analyticSignal()          — complex analytic signal  z = x + j·H{x}
+/// hilbert()                 — Hilbert transform of a real signal
+/// instantaneousAmplitude()  — envelope: |z[n]|
+/// instantaneousPhase()      — arg(z[n]), optionally unwrapped
+/// instantaneousFrequency()  — dφ/dt / (2π), in Hz
 
 #include "FFTPlan.h"
 #include "FFTConfig.h"
@@ -22,7 +22,7 @@ namespace detail {
 
 constexpr double HILBERT_2PI = 6.28318530717958647692;
 
-// Standard phase unwrapping: accumulate corrected increments.
+/// Standard phase unwrapping: accumulate corrected increments.
 inline std::vector<double> unwrapPhase(const std::vector<double>& phi) {
     if (phi.empty()) return {};
     std::vector<double> out(phi.size());
@@ -77,9 +77,9 @@ inline std::vector<std::complex<double>> analyticSignal(
 }
 
 
-// ─────────────────────────────────────────────────────────────────────────────
-// hilbert — imaginary part of the analytic signal (= quadrature component)
-// ─────────────────────────────────────────────────────────────────────────────
+/// ─────────────────────────────────────────────────────────────────────────────
+/// hilbert — imaginary part of the analytic signal (= quadrature component)
+/// ─────────────────────────────────────────────────────────────────────────────
 inline std::vector<double> hilbert(const std::vector<double>& x) {
     auto z = analyticSignal(x);
     std::vector<double> out(z.size());
@@ -88,9 +88,9 @@ inline std::vector<double> hilbert(const std::vector<double>& x) {
 }
 
 
-// ─────────────────────────────────────────────────────────────────────────────
-// instantaneousAmplitude — signal envelope: |z[n]| = sqrt(x²+H{x}²)
-// ─────────────────────────────────────────────────────────────────────────────
+/// ─────────────────────────────────────────────────────────────────────────────
+/// instantaneousAmplitude — signal envelope: |z[n]| = sqrt(x²+H{x}²)
+/// ─────────────────────────────────────────────────────────────────────────────
 inline std::vector<double> instantaneousAmplitude(const std::vector<double>& x) {
     auto z = analyticSignal(x);
     std::vector<double> out(z.size());

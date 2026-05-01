@@ -1,5 +1,42 @@
 #pragma once
 
+/**
+ * @file Graphs.h
+ * @brief Umbrella header for the Graphs module — include this single file to
+ *        pull in all graph and tree data structures and algorithms.
+ * @ingroup Graphs
+ */
+
+/**
+ * @defgroup Graphs Graph Data Structures and Algorithms
+ * @brief Complete collection of tree structures, graph representations, and
+ *        graph/tree algorithms provided by SharedMath::Graphs.
+ *
+ * The module is organised into three layers:
+ *
+ * **Tree structures**
+ * - `BaseGraph<T>`          — generic N-ary tree with raw-pointer nodes
+ * - `BinaryTree<T>`         — binary search tree (insert / remove / search)
+ * - `AVLTree<T, Compare>`   — self-balancing BST; O(log n) all operations
+ *
+ * **Graph representations**
+ * - `AdjacencyListGraph<V,W>` — weighted directed / undirected graph backed
+ *                               by an adjacency list
+ *
+ * **Utilities**
+ * - `UnionFind<T>`          — disjoint-set union (path compression + rank)
+ *
+ * **Tree traversal** (operate on `BaseGraph` / `GraphNode`)
+ * - bfs, dfsRecursive, dfsIterative, findFirst, topologicalSort (Kahn's)
+ *
+ * **Graph algorithms** (operate on `AdjacencyListGraph`)
+ * - bfsTraversal, dfsTraversal, bfsDistances
+ * - dijkstra, bellmanFord, floydWarshall
+ * - prim, kruskal
+ * - topologicalSort, hasCycle, connectedComponents, isConnected
+ * - kosaraju, tarjanSCC
+ */
+
 // ─────────────────────────────────────────────────────────────────────────────
 //  SharedMath :: Graphs  —  umbrella header
 //

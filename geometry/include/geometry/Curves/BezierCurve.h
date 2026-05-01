@@ -28,7 +28,7 @@ namespace SharedMath
                 controlPoints_ = pts;
             }
 
-            // De Casteljau algorithm
+            /// De Casteljau algorithm
             Point2D evaluate(double t) const {
                 std::array<Point2D, Degree + 1> pts = controlPoints_;
                 size_t n = Degree + 1;

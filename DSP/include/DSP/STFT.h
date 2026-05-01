@@ -1,11 +1,11 @@
 #pragma once
 
-// SharedMath::DSP — Short-Time Fourier Transform
-//
-// stft()                 — analysis: real signal → complex time-frequency matrix
-// istft()                — synthesis: OLA reconstruction from STFTResult
-// magnitudeSpectrogram() — convenience: |X[frame][bin]|
-// powerSpectrogram()     — convenience: |X[frame][bin]|²
+/// SharedMath::DSP — Short-Time Fourier Transform
+///
+/// stft()                 — analysis: real signal → complex time-frequency matrix
+/// istft()                — synthesis: OLA reconstruction from STFTResult
+/// magnitudeSpectrogram() — convenience: |X[frame][bin]|
+/// powerSpectrogram()     — convenience: |X[frame][bin]|²
 
 #include "FFTPlan.h"
 #include "FFTConfig.h"
@@ -21,12 +21,12 @@
 
 namespace SharedMath::DSP {
 
-// ─────────────────────────────────────────────────────────────────────────────
-// STFTResult — analysis output container
-//
-// frames[i] holds the rfft output (fftSize/2+1 complex bins) for frame i.
-// The analysis window and signal metadata are stored for ISTFT reconstruction.
-// ─────────────────────────────────────────────────────────────────────────────
+/// ─────────────────────────────────────────────────────────────────────────────
+/// STFTResult — analysis output container
+///
+/// frames[i] holds the rfft output (fftSize/2+1 complex bins) for frame i.
+/// The analysis window and signal metadata are stored for ISTFT reconstruction.
+/// ─────────────────────────────────────────────────────────────────────────────
 struct STFTResult {
     std::vector<std::vector<std::complex<double>>> frames;
     std::vector<double> window;
@@ -38,7 +38,7 @@ struct STFTResult {
     size_t numFrames() const noexcept { return frames.size(); }
     size_t numBins()   const noexcept { return fftSize / 2 + 1; }
 
-    // Start time (seconds) of each frame
+    /// Start time (seconds) of each frame
     std::vector<double> timeAxis() const {
         std::vector<double> t(frames.size());
         double dt = static_cast<double>(hopSize) / sampleRate;
@@ -47,7 +47,7 @@ struct STFTResult {
         return t;
     }
 
-    // Frequency (Hz) for each bin: 0 .. sampleRate/2
+    /// Frequency (Hz) for each bin: 0 .. sampleRate/2
     std::vector<double> freqAxis() const {
         return rfftFrequencies(fftSize, sampleRate);
     }
@@ -131,22 +131,22 @@ inline STFTResult stft(
 }
 
 
-// ─────────────────────────────────────────────────────────────────────────────
-// istft — Inverse STFT via overlap-add (OLA)
-//
-// Reconstructs the time-domain signal from an STFTResult.
-//
-// Each frame is processed as:
-//   y_i = IDFT(frame_i)   [= analysis_window * original_frame for unmodified STFT]
-//   output[i*hop .. i*hop+fftSize-1] += y_i
-//   norm  [i*hop .. i*hop+fftSize-1] += window
-//
-// The output is normalized by the accumulated window sum, giving
-// perfect reconstruction for any COLA window (e.g. Hann at 50% / 75% overlap).
-//
-// Output length: (numFrames-1)*hopSize + fftSize, then trimmed to
-// result.signalLength if it was recorded by stft().
-// ─────────────────────────────────────────────────────────────────────────────
+/// ─────────────────────────────────────────────────────────────────────────────
+/// istft — Inverse STFT via overlap-add (OLA)
+///
+/// Reconstructs the time-domain signal from an STFTResult.
+///
+/// Each frame is processed as:
+///   y_i = IDFT(frame_i)   [= analysis_window * original_frame for unmodified STFT]
+///   output[i*hop .. i*hop+fftSize-1] += y_i
+///   norm  [i*hop .. i*hop+fftSize-1] += window
+///
+/// The output is normalized by the accumulated window sum, giving
+/// perfect reconstruction for any COLA window (e.g. Hann at 50% / 75% overlap).
+///
+/// Output length: (numFrames-1)*hopSize + fftSize, then trimmed to
+/// result.signalLength if it was recorded by stft().
+/// ─────────────────────────────────────────────────────────────────────────────
 inline std::vector<double> istft(const STFTResult& result) {
     if (result.frames.empty()) return {};
 

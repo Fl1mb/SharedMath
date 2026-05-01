@@ -1,13 +1,13 @@
 #pragma once
 
-// SharedMath::DSP — FIR frequency response analysis
-//
-// frequencyResponseFIR    — complex H(f) at nfft/2+1 one-sided bins
-// firResponseFrequencies  — matching frequency axis in Hz
-// magnitudeResponseFIR    — |H(f)|
-// magnitudeResponseFIRDB  — 20·log10(|H(f)|)
-// phaseResponseFIR        — arg(H(f)) in radians
-// groupDelayFIR           — group delay in samples
+/// SharedMath::DSP — FIR frequency response analysis
+///
+/// frequencyResponseFIR    — complex H(f) at nfft/2+1 one-sided bins
+/// firResponseFrequencies  — matching frequency axis in Hz
+/// magnitudeResponseFIR    — |H(f)|
+/// magnitudeResponseFIRDB  — 20·log10(|H(f)|)
+/// phaseResponseFIR        — arg(H(f)) in radians
+/// groupDelayFIR           — group delay in samples
 
 #include "FFT.h"   // magnitude, phase, magnitudeDB, rfftFrequencies, FFTPlan
 

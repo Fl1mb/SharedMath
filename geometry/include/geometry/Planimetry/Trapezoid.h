@@ -26,7 +26,7 @@ namespace SharedMath
 
             static bool isTrapezoid(const std::array<Point2D, 4>& points);
 
-            // Returns the two parallel sides as Line2D
+            /// Returns the two parallel sides as Line2D
             Line2D getBase1() const;
             Line2D getBase2() const;
 
@@ -37,7 +37,7 @@ namespace SharedMath
 
             bool isIsosceles() const;
 
-            // Returns midline as Line2D (connects midpoints of non-parallel sides)
+            /// Returns midline as Line2D (connects midpoints of non-parallel sides)
             Line2D getMidline() const;
 
         private:

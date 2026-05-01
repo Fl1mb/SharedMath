@@ -1,11 +1,11 @@
 #pragma once
 
-// SharedMath::DSP — FIR filter design and application
-//
-// Windowed-sinc design:  designFIRLowPass / HighPass / BandPass / BandStop
-// Auto-sized Kaiser FIR: designKaiserFIR
-// Filter application:    applyFIR  (Same-mode convolution)
-// Zero-phase filtering:  filtfilt  (forward + backward pass)
+/// SharedMath::DSP — FIR filter design and application
+///
+/// Windowed-sinc design:  designFIRLowPass / HighPass / BandPass / BandStop
+/// Auto-sized Kaiser FIR: designKaiserFIR
+/// Filter application:    applyFIR  (Same-mode convolution)
+/// Zero-phase filtering:  filtfilt  (forward + backward pass)
 
 #include "Window.h"
 #include "Convolution.h"
@@ -24,8 +24,8 @@ namespace detail {
 
 constexpr double FIR_PI = 3.14159265358979323846;
 
-// Ideal (unwindowed) low-pass sinc coefficients, Type I (even M).
-// Normalized cutoff fc ∈ (0,1); returns M+1 coefficients.
+/// Ideal (unwindowed) low-pass sinc coefficients, Type I (even M).
+/// Normalized cutoff fc ∈ (0,1); returns M+1 coefficients.
 inline std::vector<double> idealLPCoeffs(size_t M, double fc) {
     std::vector<double> h(M + 1);
     double center = static_cast<double>(M) * 0.5;

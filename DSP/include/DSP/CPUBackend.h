@@ -12,14 +12,14 @@
 
 namespace SharedMath::DSP {
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Internal implementation details — not part of the public API.
-// ─────────────────────────────────────────────────────────────────────────────
+/// ─────────────────────────────────────────────────────────────────────────────
+/// Internal implementation details — not part of the public API.
+/// ─────────────────────────────────────────────────────────────────────────────
 namespace detail {
 
 constexpr double DSP_PI = 3.14159265358979323846;
 
-// ── Bit manipulation helpers ─────────────────────────────────────────────────
+/// ── Bit manipulation helpers ─────────────────────────────────────────────────
 
 inline bool isPow2(size_t n) noexcept { return n > 0 && (n & (n - 1)) == 0; }
 
@@ -29,7 +29,7 @@ inline size_t nextPow2(size_t n) noexcept {
     return p;
 }
 
-// ── Bit-reversal permutation table ───────────────────────────────────────────
+/// ── Bit-reversal permutation table ───────────────────────────────────────────
 
 inline std::vector<size_t> makeBitrev(size_t n) {
     size_t bits = 0;
@@ -43,9 +43,9 @@ inline std::vector<size_t> makeBitrev(size_t n) {
     return rev;
 }
 
-// ── Twiddle-factor table ─────────────────────────────────────────────────────
-// Returns n/2 entries: tw[k] = exp(sign·2πi·k/n), where sign = -1 (forward)
-// or +1 (inverse).  Stored for the butterfly: x[i+k] ± tw[k*stride]*x[i+k+half].
+/// ── Twiddle-factor table ─────────────────────────────────────────────────────
+/// Returns n/2 entries: tw[k] = exp(sign·2πi·k/n), where sign = -1 (forward)
+/// or +1 (inverse).  Stored for the butterfly: x[i+k] ± tw[k*stride]*x[i+k+half].
 
 inline std::vector<std::complex<double>> makeTwiddles(size_t n, bool inverse) {
     std::vector<std::complex<double>> tw(n / 2);
@@ -112,7 +112,7 @@ inline void bluestein(std::complex<double>* x, size_t n, bool inverse,
     double sign = inverse ? 1.0 : -1.0;
     double piOverN = DSP_PI / static_cast<double>(n);
 
-    // Chirp sequence: chirp[k] = exp(sign·πi·k²/N)
+    /// Chirp sequence: chirp[k] = exp(sign·πi·k²/N)
     std::vector<std::complex<double>> chirp(n);
     for (size_t k = 0; k < n; ++k) {
         double ang = sign * piOverN * static_cast<double>(k) * static_cast<double>(k);
@@ -135,7 +135,7 @@ inline void bluestein(std::complex<double>* x, size_t n, bool inverse,
         if (k > 0) b[M - k] = std::conj(chirp[k]);
     }
 
-    // Forward FFT of a and b (size M, always forward)
+    /// Forward FFT of a and b (size M, always forward)
     cooleyTukeyDIT(a.data(), M, bitrevM, twiddlesM);
     cooleyTukeyDIT(b.data(), M, bitrevM, twiddlesM);
 
@@ -156,23 +156,23 @@ inline void bluestein(std::complex<double>* x, size_t n, bool inverse,
 } // namespace detail
 
 
-// ─────────────────────────────────────────────────────────────────────────────
-// CPUBackend
-//
-// Pure-C++ FFT backend.  No external dependencies.
-//
-// Algorithms:
-//   • Cooley-Tukey radix-2 DIT  — O(N log N), requires N = 2^k
-//   • Bluestein chirp-z          — O(N log N), works for any N
-//
-// All expensive table computation (bit-reversal, twiddle factors) is done
-// once in prepare(); execute() is then a pure arithmetic operation.
-// ─────────────────────────────────────────────────────────────────────────────
+/// ─────────────────────────────────────────────────────────────────────────────
+/// CPUBackend
+///
+/// Pure-C++ FFT backend.  No external dependencies.
+///
+/// Algorithms:
+///   • Cooley-Tukey radix-2 DIT  — O(N log N), requires N = 2^k
+///   • Bluestein chirp-z          — O(N log N), works for any N
+///
+/// All expensive table computation (bit-reversal, twiddle factors) is done
+/// once in prepare(); execute() is then a pure arithmetic operation.
+/// ─────────────────────────────────────────────────────────────────────────────
 class CPUBackend final : public IFFTBackend {
 public:
     CPUBackend() = default;
 
-    // ── IFFTBackend::prepare ─────────────────────────────────────────────
+    /// ── IFFTBackend::prepare ─────────────────────────────────────────────
     void prepare(size_t n, const FFTConfig& cfg) override {
         if (n == 0) throw std::invalid_argument("CPUBackend: n must be > 0");
 
@@ -199,7 +199,7 @@ public:
         }
     }
 
-    // ── IFFTBackend::execute ─────────────────────────────────────────────
+    /// ── IFFTBackend::execute ─────────────────────────────────────────────
     void execute(std::complex<double>* data) const override {
         if (usePow2_)
             detail::cooleyTukeyDIT(data, n_, bitrev_, twiddles_);
@@ -209,7 +209,7 @@ public:
         applyNorm(data);
     }
 
-    // ── IFFTBackend::name ────────────────────────────────────────────────
+    /// ── IFFTBackend::name ────────────────────────────────────────────────
     const char* name() const noexcept override {
         return usePow2_ ? "CPU – Cooley-Tukey radix-2 DIT"
                         : "CPU – Bluestein chirp-z";

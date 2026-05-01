@@ -1,14 +1,32 @@
 #pragma once
 
-// SharedMath::ML — Classification Metrics
-//
-// All functions accept 1-D integer label tensors (class labels stored as doubles).
-//
-// accuracy(y_pred, y_true)
-// precision(y_pred, y_true, positive_class)
-// recall(y_pred, y_true, positive_class)
-// f1_score(y_pred, y_true, positive_class)
-// confusion_matrix(y_pred, y_true, num_classes)  → [C, C] Tensor
+/**
+ * @file Metrics.h
+ * @brief Evaluation metrics for classification, regression, and clustering.
+ *
+ * @defgroup ML_Metrics Metrics
+ * @ingroup ML
+ * @{
+ *
+ * All functions operate on 1-D `Tensor` vectors.  Class labels are stored as
+ * `double` (integers cast to double).
+ *
+ * **Classification**
+ * - accuracy(), precision(), recall(), f1_score()
+ * - macro_f1_score(), micro_f1_score()
+ * - confusion_matrix()
+ *
+ * **Regression**
+ * - mean_squared_error(), mean_absolute_error(), r2_score()
+ *
+ * **Probabilistic**
+ * - log_loss()
+ *
+ * **Clustering**
+ * - silhouette_score()
+ *
+ * @}
+ */
 
 #include "LinearAlgebra/Tensor.h"
 
@@ -35,9 +53,9 @@ inline void checkLabels(const Tensor& pred, const Tensor& true_,
 
 } // namespace detail
 
-// ─────────────────────────────────────────────────────────────────────────────
-// accuracy — fraction of correctly predicted labels
-// ─────────────────────────────────────────────────────────────────────────────
+/// ─────────────────────────────────────────────────────────────────────────────
+/// accuracy — fraction of correctly predicted labels
+/// ─────────────────────────────────────────────────────────────────────────────
 inline double accuracy(const Tensor& y_pred, const Tensor& y_true) {
     detail::checkLabels(y_pred, y_true, "accuracy");
     const size_t N = y_pred.size();
@@ -262,12 +280,12 @@ inline double micro_f1_score(const Tensor& y_pred, const Tensor& y_true,
     return 2.0 * static_cast<double>(tp_total) / denom;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// silhouette_score — clustering quality metric in [-1, 1]
-//
-// X       : [N, D] data matrix
-// labels  : [N] cluster assignment for each sample
-// ─────────────────────────────────────────────────────────────────────────────
+/// ─────────────────────────────────────────────────────────────────────────────
+/// silhouette_score — clustering quality metric in [-1, 1]
+///
+/// X       : [N, D] data matrix
+/// labels  : [N] cluster assignment for each sample
+/// ─────────────────────────────────────────────────────────────────────────────
 inline double silhouette_score(const Tensor& X, const Tensor& labels) {
     if (X.ndim() != 2)
         throw std::invalid_argument("silhouette_score: X must be 2-D");

@@ -25,18 +25,18 @@ namespace SharedMath
 
             static bool isRhombus(const std::array<Point2D, 4>& points);
 
-            // Returns diagonal from vertex 0 to vertex 2
+            /// Returns diagonal from vertex 0 to vertex 2
             Line2D getDiagonal1() const;
-            // Returns diagonal from vertex 1 to vertex 3
+            /// Returns diagonal from vertex 1 to vertex 3
             Line2D getDiagonal2() const;
 
-            // Returns the acute angle (in radians) of the rhombus
+            /// Returns the acute angle (in radians) of the rhombus
             double getAngle() const;
 
-            // Area = d1 * d2 / 2
+            /// Area = d1 * d2 / 2
             double area() const override;
 
-            // Inradius = area / (2 * side)
+            /// Inradius = area / (2 * side)
             double inradius() const;
         };
 

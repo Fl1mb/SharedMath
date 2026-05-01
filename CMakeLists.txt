@@ -67,6 +67,7 @@ option(${PROJECT_NAME}_BUILD_TESTS    "Build ${PROJECT_NAME} unit tests"       O
 option(${PROJECT_NAME}_INSTALL        "Generate install rules"                 ${is_top_level})
 option(${PROJECT_NAME}_SHARED_LIBS    "Build ${PROJECT_NAME} as a shared lib"  OFF)
 option(${PROJECT_NAME}_BUILD_EXAMPLES "Build ${PROJECT_NAME} examples"         ON)
+option(${PROJECT_NAME}_BUILD_DOCS     "Generate API documentation via Doxygen" OFF)
 
 set_if_undefined(${PROJECT_NAME}_INSTALL_CMAKEDIR
     "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}"
@@ -129,6 +130,10 @@ endif()
 
 if(${PROJECT_NAME}_BUILD_EXAMPLES)
     add_subdirectory(examples)
+endif()
+
+if(${PROJECT_NAME}_BUILD_DOCS)
+    add_subdirectory(docs)
 endif()
 
 # --------------------------------------------------------------------------- #

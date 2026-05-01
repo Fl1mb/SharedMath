@@ -1,10 +1,19 @@
 #pragma once
 
-// SharedMath::ML — Data Preprocessing
-//
-// StandardScaler  — zero-mean / unit-variance normalisation
-// MinMaxScaler    — scale features to [feature_range_min, feature_range_max]
-// train_test_split — random train/test split of (X, y) datasets
+/**
+ * @file Preprocessing.h
+ * @brief Data preprocessing utilities.
+ *
+ * @defgroup ML_Preprocessing Preprocessing
+ * @ingroup ML
+ * @{
+ */
+
+/// SharedMath::ML — Data Preprocessing
+///
+/// StandardScaler  — zero-mean / unit-variance normalisation
+/// MinMaxScaler    — scale features to [feature_range_min, feature_range_max]
+/// train_test_split — random train/test split of (X, y) datasets
 
 #include <sharedmath_ml_export.h>
 
@@ -17,9 +26,9 @@ namespace SharedMath::ML {
 
 using Tensor = SharedMath::LinearAlgebra::Tensor;
 
-// ─────────────────────────────────────────────────────────────────────────────
-// StandardScaler — z-score normalisation per feature column
-// ─────────────────────────────────────────────────────────────────────────────
+/// ─────────────────────────────────────────────────────────────────────────────
+/// StandardScaler — z-score normalisation per feature column
+/// ─────────────────────────────────────────────────────────────────────────────
 class SHAREDMATH_ML_EXPORT StandardScaler {
 public:
     StandardScaler() = default;
@@ -39,9 +48,9 @@ private:
     bool   m_fitted = false;
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// MinMaxScaler — scale features to a given range (default [0, 1])
-// ─────────────────────────────────────────────────────────────────────────────
+/// ─────────────────────────────────────────────────────────────────────────────
+/// MinMaxScaler — scale features to a given range (default [0, 1])
+/// ─────────────────────────────────────────────────────────────────────────────
 class SHAREDMATH_ML_EXPORT MinMaxScaler {
 public:
     explicit MinMaxScaler(double feature_min = 0.0, double feature_max = 1.0);
@@ -65,13 +74,13 @@ private:
     bool   m_fitted = false;
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// train_test_split — split (X, y) into (X_train, X_test, y_train, y_test)
-//
-// test_size : fraction of samples to assign to the test set (e.g. 0.2 = 20%)
-// shuffle   : whether to shuffle before splitting
-// seed      : RNG seed used when shuffle == true
-// ─────────────────────────────────────────────────────────────────────────────
+/// ─────────────────────────────────────────────────────────────────────────────
+/// train_test_split — split (X, y) into (X_train, X_test, y_train, y_test)
+///
+/// test_size : fraction of samples to assign to the test set (e.g. 0.2 = 20%)
+/// shuffle   : whether to shuffle before splitting
+/// seed      : RNG seed used when shuffle == true
+/// ─────────────────────────────────────────────────────────────────────────────
 struct SHAREDMATH_ML_EXPORT TrainTestSplit {
     Tensor X_train;
     Tensor X_test;
@@ -87,3 +96,5 @@ TrainTestSplit train_test_split(const Tensor& X,
                                 uint64_t seed      = 0);
 
 } // namespace SharedMath::ML
+
+/// @} // ML_Preprocessing

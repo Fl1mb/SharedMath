@@ -90,11 +90,11 @@ inline std::vector<double> irfft(const std::vector<std::complex<double>>& X,
     return out;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Spectral analysis helpers
-// ─────────────────────────────────────────────────────────────────────────────
+/// ─────────────────────────────────────────────────────────────────────────────
+/// Spectral analysis helpers
+/// ─────────────────────────────────────────────────────────────────────────────
 
-// Magnitude spectrum: |X[k]|
+/// Magnitude spectrum: |X[k]|
 inline std::vector<double> magnitude(const std::vector<std::complex<double>>& X) {
     std::vector<double> out(X.size());
     std::transform(X.begin(), X.end(), out.begin(),
@@ -102,7 +102,7 @@ inline std::vector<double> magnitude(const std::vector<std::complex<double>>& X)
     return out;
 }
 
-// Phase spectrum: arg(X[k]) in radians ∈ (−π, π]
+/// Phase spectrum: arg(X[k]) in radians ∈ (−π, π]
 inline std::vector<double> phase(const std::vector<std::complex<double>>& X) {
     std::vector<double> out(X.size());
     std::transform(X.begin(), X.end(), out.begin(),
@@ -110,7 +110,7 @@ inline std::vector<double> phase(const std::vector<std::complex<double>>& X) {
     return out;
 }
 
-// Power spectrum: |X[k]|²
+/// Power spectrum: |X[k]|²
 inline std::vector<double> powerSpectrum(const std::vector<std::complex<double>>& X) {
     std::vector<double> out(X.size());
     std::transform(X.begin(), X.end(), out.begin(),
@@ -145,13 +145,13 @@ inline std::vector<double> magnitudeDB(const std::vector<std::complex<double>>& 
     return out;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Frequency axis
-// ─────────────────────────────────────────────────────────────────────────────
+/// ─────────────────────────────────────────────────────────────────────────────
+/// Frequency axis
+/// ─────────────────────────────────────────────────────────────────────────────
 
-// Returns the frequency (Hz) for each of the n FFT output bins.
-// Bins 0..N/2 are positive frequencies; bins N/2+1..N-1 are negative
-// (matching NumPy fftfreq convention).
+/// Returns the frequency (Hz) for each of the n FFT output bins.
+/// Bins 0..N/2 are positive frequencies; bins N/2+1..N-1 are negative
+/// (matching NumPy fftfreq convention).
 inline std::vector<double> fftFrequencies(size_t n, double sampleRate) {
     if (n == 0) return {};
     std::vector<double> f(n);
@@ -162,7 +162,7 @@ inline std::vector<double> fftFrequencies(size_t n, double sampleRate) {
     return f;
 }
 
-// Frequency axis for rfft output (N/2+1 bins, 0..sampleRate/2).
+/// Frequency axis for rfft output (N/2+1 bins, 0..sampleRate/2).
 inline std::vector<double> rfftFrequencies(size_t n, double sampleRate) {
     size_t m = n / 2 + 1;
     std::vector<double> f(m);
@@ -300,7 +300,7 @@ inline std::vector<double> correlate(const std::vector<double>& a,
 
     FFTPlan::create(n, {FFTDirection::Inverse, FFTNorm::ByN}).execute(ca);
 
-    // Rearrange: negative lags first, then positive lags
+    /// Rearrange: negative lags first, then positive lags
     std::vector<double> out(outLen);
     size_t negStart = n - (a.size() - 1);
     for (size_t i = 0; i < a.size() - 1; ++i)

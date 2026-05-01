@@ -17,13 +17,13 @@ namespace SharedMath::LinearAlgebra {
 
 class DynamicMatrix;   // forward declaration — avoids circular include
 
-// Heap-allocated dense vector of doubles.
-// Complements DynamicMatrix: supports the same arithmetic patterns and
-// provides first-class matrix–vector multiply (A*x, x*A) as free functions.
-//
-// Design mirrors DynamicMatrix: all storage is a flat std::vector<double>,
-// element access is O(1), the class is value-semantic (copy/move are cheap).
-//
+/// Heap-allocated dense vector of doubles.
+/// Complements DynamicMatrix: supports the same arithmetic patterns and
+/// provides first-class matrix–vector multiply (A*x, x*A) as free functions.
+///
+/// Design mirrors DynamicMatrix: all storage is a flat std::vector<double>,
+/// element access is O(1), the class is value-semantic (copy/move are cheap).
+///
 class SHAREDMATH_LINEARALGEBRA_EXPORT DynamicVector {
 public:
     // ── Construction ──────────────────────────────────────────────────────
@@ -63,7 +63,7 @@ public:
         return data_[i];
     }
 
-    // ── Iterators / raw pointer ───────────────────────────────────────────
+    /// ── Iterators / raw pointer ───────────────────────────────────────────
     double*       begin()        noexcept { return data_.data(); }
     const double* begin()  const noexcept { return data_.data(); }
     double*       end()          noexcept { return data_.data() + data_.size(); }
@@ -77,7 +77,7 @@ public:
     const std::vector<double>& vec() const noexcept { return data_; }
     std::vector<double>&       vec()       noexcept { return data_; }
 
-    // ── Metadata ──────────────────────────────────────────────────────────
+    /// ── Metadata ──────────────────────────────────────────────────────────
     size_t size()  const noexcept { return data_.size(); }
     bool   empty() const noexcept { return data_.empty(); }
 
@@ -138,7 +138,7 @@ public:
 
     friend DynamicVector operator*(double s, const DynamicVector& v) { return v * s; }
 
-    // ── Element-wise multiply / divide ────────────────────────────────────
+    /// ── Element-wise multiply / divide ────────────────────────────────────
     DynamicVector hadamard(const DynamicVector& o) const {
         checkSize(o);
         DynamicVector r(data_.size());
@@ -146,7 +146,7 @@ public:
         return r;
     }
 
-    // ── Linear algebra ────────────────────────────────────────────────────
+    /// ── Linear algebra ────────────────────────────────────────────────────
 
     double dot(const DynamicVector& o) const {
         checkSize(o);
@@ -157,7 +157,7 @@ public:
 
     double norm_sq() const { return dot(*this); }
 
-    // p-norm: p=1 → L1, p=2 → L2 (default), p=inf → max|xi|
+    /// p-norm: p=1 → L1, p=2 → L2 (default), p=inf → max|xi|
     double norm(double p = 2.0) const {
         if (data_.empty()) return 0.0;
         if (p == std::numeric_limits<double>::infinity() || p < 0) {
@@ -186,17 +186,17 @@ public:
         return *this * (1.0 / n);
     }
 
-    // ── Reductions ────────────────────────────────────────────────────────
+    /// ── Reductions ────────────────────────────────────────────────────────
     double sum()  const { return std::accumulate(data_.begin(), data_.end(), 0.0); }
     double mean() const { return empty() ? 0.0 : sum() / static_cast<double>(data_.size()); }
     double min()  const { return *std::min_element(data_.begin(), data_.end()); }
     double max()  const { return *std::max_element(data_.begin(), data_.end()); }
 
-    // ── Named constructors ────────────────────────────────────────────────
+    /// ── Named constructors ────────────────────────────────────────────────
     static DynamicVector zeros(size_t n) { return DynamicVector(n, 0.0); }
     static DynamicVector ones (size_t n) { return DynamicVector(n, 1.0); }
 
-    // Standard basis vector e_k (all zeros except position k = 1)
+    /// Standard basis vector e_k (all zeros except position k = 1)
     static DynamicVector unit(size_t n, size_t k) {
         if (k >= n)
             throw std::out_of_range("DynamicVector::unit: k >= n");
@@ -205,15 +205,15 @@ public:
         return v;
     }
 
-    // ── Conversion to/from matrix ─────────────────────────────────────────
-    // Defined in DynamicVector.cpp (includes DynamicMatrix.h to avoid cycle)
+    /// ── Conversion to/from matrix ─────────────────────────────────────────
+    /// Defined in DynamicVector.cpp (includes DynamicMatrix.h to avoid cycle)
     DynamicMatrix to_column() const;   // n×1 DynamicMatrix
     DynamicMatrix to_row()    const;   // 1×n DynamicMatrix
 
     static DynamicVector from_column(const DynamicMatrix& A);
     static DynamicVector from_row   (const DynamicMatrix& A);
 
-    // ── Display ───────────────────────────────────────────────────────────
+    /// ── Display ───────────────────────────────────────────────────────────
     SHAREDMATH_LINEARALGEBRA_EXPORT
     friend std::ostream& operator<<(std::ostream& os, const DynamicVector& v);
 
@@ -229,18 +229,18 @@ private:
     }
 };
 
-// ── Matrix–vector free functions ──────────────────────────────────────────────
-// Declared here, implemented in DynamicVector.cpp (which includes both headers).
+/// ── Matrix–vector free functions ──────────────────────────────────────────────
+/// Declared here, implemented in DynamicVector.cpp (which includes both headers).
 
-// y = A * x  (rows(A) × 1 result)
+/// y = A * x  (rows(A) × 1 result)
 SHAREDMATH_LINEARALGEBRA_EXPORT
 DynamicVector matvec(const DynamicMatrix& A, const DynamicVector& x);
 
-// y = A^T * x  (cols(A) × 1 result)
+/// y = A^T * x  (cols(A) × 1 result)
 SHAREDMATH_LINEARALGEBRA_EXPORT
 DynamicVector rmatvec(const DynamicMatrix& A, const DynamicVector& x);
 
-// Outer product: u ⊗ v → DynamicMatrix (n×m)
+/// Outer product: u ⊗ v → DynamicMatrix (n×m)
 SHAREDMATH_LINEARALGEBRA_EXPORT
 DynamicMatrix outer(const DynamicVector& u, const DynamicVector& v);
 

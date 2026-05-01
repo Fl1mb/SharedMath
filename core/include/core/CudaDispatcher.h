@@ -11,35 +11,35 @@
 
 namespace SharedMath::Core {
 
-// ─────────────────────────────────────────────────────────────────────────────
-// CudaDispatcher  —  singleton
-//
-// Manages one dedicated worker thread per GPU.  Each worker calls
-// cudaSetDevice once at start so every job it runs is automatically on the
-// right device.
-//
-// Usage:
-//
-//   auto& disp = CudaDispatcher::instance();
-//
-//   // Submit to the least-loaded GPU (returns std::future).
-//   auto fut = disp.submit([](int deviceId) -> float {
-//       // your CUDA work here — device is already set
-//       return computeOnGPU(deviceId);
-//   });
-//
-//   float result = fut.get();   // blocks until done
-//
-//   // Or submit to a specific GPU:
-//   auto fut2 = disp.submitTo(2, myKernel);
-//
-//   // Wait for ALL pending tasks across every GPU:
-//   disp.sync();
-//
-// ─────────────────────────────────────────────────────────────────────────────
+/// ─────────────────────────────────────────────────────────────────────────────
+/// CudaDispatcher  —  singleton
+///
+/// Manages one dedicated worker thread per GPU.  Each worker calls
+/// cudaSetDevice once at start so every job it runs is automatically on the
+/// right device.
+///
+/// Usage:
+///
+///   auto& disp = CudaDispatcher::instance();
+///
+///   // Submit to the least-loaded GPU (returns std::future).
+///   auto fut = disp.submit([](int deviceId) -> float {
+///       // your CUDA work here — device is already set
+///       return computeOnGPU(deviceId);
+///   });
+///
+///   float result = fut.get();   // blocks until done
+///
+///   // Or submit to a specific GPU:
+///   auto fut2 = disp.submitTo(2, myKernel);
+///
+///   // Wait for ALL pending tasks across every GPU:
+///   disp.sync();
+///
+/// ─────────────────────────────────────────────────────────────────────────────
 class CudaDispatcher {
 public:
-    // ── Singleton access ─────────────────────────────────────────────────────
+    /// ── Singleton access ─────────────────────────────────────────────────────
     static CudaDispatcher& instance();
 
     CudaDispatcher(const CudaDispatcher&)            = delete;
@@ -66,13 +66,13 @@ public:
     auto submitTo(int deviceId, F&& task)
         -> std::future<std::invoke_result_t<F, int>>;
 
-    // ── Synchronisation ───────────────────────────────────────────────────────
+    /// ── Synchronisation ───────────────────────────────────────────────────────
 
     /// Block the calling thread until every submitted task has completed
     /// on every GPU.
     void sync();
 
-    // ── Queries ───────────────────────────────────────────────────────────────
+    /// ── Queries ───────────────────────────────────────────────────────────────
 
     int deviceCount() const noexcept;
 
@@ -82,11 +82,11 @@ public:
 private:
     CudaDispatcher();   // spawns one worker thread per available GPU
 
-    // Forward-declared so the .cpp owns the full definition.
+    /// Forward-declared so the .cpp owns the full definition.
     struct Worker;
     std::vector<std::unique_ptr<Worker>> workers_;
 
-    // Post a pre-bound void() job to a specific device queue.
+    /// Post a pre-bound void() job to a specific device queue.
     void enqueue(int deviceId, std::function<void()> job);
 };
 

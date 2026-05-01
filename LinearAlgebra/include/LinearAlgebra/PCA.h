@@ -10,20 +10,20 @@
 
 namespace SharedMath::LinearAlgebra {
 
-// Principal Component Analysis (PCA).
-//
-// Fits on a data matrix X of shape (n_samples × n_features), reduces to
-// n_components dimensions.  Backed by thin SVD of the mean-centred data.
-//
-// Example:
-//   PCA pca(50);
-//   pca.fit(X_train);
-//   DynamicMatrix Z  = pca.transform(X_test);
-//   DynamicMatrix Xr = pca.inverse_transform(Z);
-//
-//   auto ratios = pca.explained_variance_ratio();   // per-component fraction
-//   std::cout << "Total variance explained: " << pca.total_variance_explained();
-//
+/// Principal Component Analysis (PCA).
+///
+/// Fits on a data matrix X of shape (n_samples × n_features), reduces to
+/// n_components dimensions.  Backed by thin SVD of the mean-centred data.
+///
+/// Example:
+///   PCA pca(50);
+///   pca.fit(X_train);
+///   DynamicMatrix Z  = pca.transform(X_test);
+///   DynamicMatrix Xr = pca.inverse_transform(Z);
+///
+///   auto ratios = pca.explained_variance_ratio();   // per-component fraction
+///   std::cout << "Total variance explained: " << pca.total_variance_explained();
+///
 class SHAREDMATH_LINEARALGEBRA_EXPORT PCA {
 public:
     // n_components : number of principal components to keep
@@ -35,57 +35,57 @@ public:
                  bool   whiten        = false,
                  bool   use_randomized = false);
 
-    // ── Fit ───────────────────────────────────────────────────────────────
+    /// ── Fit ───────────────────────────────────────────────────────────────
 
-    // Fit PCA on X.  X must be (n_samples × n_features) with n_samples > 1.
+    /// Fit PCA on X.  X must be (n_samples × n_features) with n_samples > 1.
     PCA& fit(const DynamicMatrix& X);
 
-    // Fit and return projections in one call.
+    /// Fit and return projections in one call.
     DynamicMatrix fit_transform(const DynamicMatrix& X);
 
-    // ── Transform ─────────────────────────────────────────────────────────
+    /// ── Transform ─────────────────────────────────────────────────────────
 
-    // Project X to PC space: result is (n_samples × n_components).
-    // Requires fit() to have been called.
+    /// Project X to PC space: result is (n_samples × n_components).
+    /// Requires fit() to have been called.
     DynamicMatrix transform(const DynamicMatrix& X) const;
 
-    // Reconstruct approximate X from PC coordinates Z (n_samples × n_components).
+    /// Reconstruct approximate X from PC coordinates Z (n_samples × n_components).
     DynamicMatrix inverse_transform(const DynamicMatrix& Z) const;
 
-    // ── Results ───────────────────────────────────────────────────────────
+    /// ── Results ───────────────────────────────────────────────────────────
 
-    // Principal component directions, shape (n_components × n_features).
-    // Rows are sorted by descending explained variance.
+    /// Principal component directions, shape (n_components × n_features).
+    /// Rows are sorted by descending explained variance.
     const DynamicMatrix& components() const { requireFit(); return components_; }
 
-    // Per-component variance (eigenvalues of the covariance matrix).
+    /// Per-component variance (eigenvalues of the covariance matrix).
     const std::vector<double>& explained_variance() const {
         requireFit(); return explained_variance_;
     }
 
-    // Fraction of total variance explained by each component.
+    /// Fraction of total variance explained by each component.
     const std::vector<double>& explained_variance_ratio() const {
         requireFit(); return explained_variance_ratio_;
     }
 
-    // Sum of explained_variance_ratio_ for kept components.
+    /// Sum of explained_variance_ratio_ for kept components.
     double total_variance_explained() const;
 
-    // Per-feature mean estimated from the training data.
+    /// Per-feature mean estimated from the training data.
     const DynamicVector& mean() const { requireFit(); return mean_; }
 
-    // Singular values of the centred data matrix.
+    /// Singular values of the centred data matrix.
     const std::vector<double>& singular_values() const {
         requireFit(); return singular_values_;
     }
 
-    // Estimated noise variance (average of discarded eigenvalues).
+    /// Estimated noise variance (average of discarded eigenvalues).
     double noise_variance() const { requireFit(); return noise_variance_; }
 
-    // Whitening matrix W s.t. Z_white = Z * W  (or use whiten=true).
+    /// Whitening matrix W s.t. Z_white = Z * W  (or use whiten=true).
     DynamicMatrix whitening_matrix() const;
 
-    // Number of components actually kept.
+    /// Number of components actually kept.
     size_t n_components() const { return n_components_out_; }
 
     bool is_fitted() const noexcept { return fitted_; }

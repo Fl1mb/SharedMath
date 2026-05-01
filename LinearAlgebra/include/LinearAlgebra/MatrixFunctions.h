@@ -13,7 +13,7 @@
 
 namespace SharedMath::LinearAlgebra {
 
-// ── Matrix norms ──────────────────────────────────────────────────────────────
+/// ── Matrix norms ──────────────────────────────────────────────────────────────
 
 enum class NormType {
     Frobenius,  // sqrt(sum of squared elements)  — default
@@ -26,170 +26,170 @@ enum class NormType {
 SHAREDMATH_LINEARALGEBRA_EXPORT
 double norm(const AbstractMatrix& A, NormType type = NormType::Frobenius);
 
-// p-norm of a vector (p=2 → Euclidean; p=inf → max abs)
+/// p-norm of a vector (p=2 → Euclidean; p=inf → max abs)
 SHAREDMATH_LINEARALGEBRA_EXPORT
 double norm(const std::vector<double>& v, double p = 2.0);
 
-// ── Factory functions ─────────────────────────────────────────────────────────
+/// ── Factory functions ─────────────────────────────────────────────────────────
 
-// n×n identity matrix
+/// n×n identity matrix
 SHAREDMATH_LINEARALGEBRA_EXPORT DynamicMatrix eye(size_t n);
 
 SHAREDMATH_LINEARALGEBRA_EXPORT DynamicMatrix zeros(size_t rows, size_t cols);
 SHAREDMATH_LINEARALGEBRA_EXPORT DynamicMatrix ones(size_t rows, size_t cols);
 
-// Create n×n diagonal matrix from vector
+/// Create n×n diagonal matrix from vector
 SHAREDMATH_LINEARALGEBRA_EXPORT DynamicMatrix diag(const std::vector<double>& v);
 
-// Extract main diagonal of A as a vector
+/// Extract main diagonal of A as a vector
 SHAREDMATH_LINEARALGEBRA_EXPORT std::vector<double> diag(const AbstractMatrix& A);
 
-// ── Solve / Inverse ───────────────────────────────────────────────────────────
+/// ── Solve / Inverse ───────────────────────────────────────────────────────────
 
-// Solve Ax = b via LU decomposition (A must be square and non-singular)
+/// Solve Ax = b via LU decomposition (A must be square and non-singular)
 SHAREDMATH_LINEARALGEBRA_EXPORT
 std::vector<double> solve(const AbstractMatrix& A, const std::vector<double>& b);
 
-// Compute A^{-1} via LU decomposition (A must be square and non-singular)
+/// Compute A^{-1} via LU decomposition (A must be square and non-singular)
 SHAREDMATH_LINEARALGEBRA_EXPORT
 DynamicMatrix inv(const AbstractMatrix& A);
 
-// Moore-Penrose pseudoinverse via thin SVD
-// tol < 0  → machine-epsilon-based threshold
+/// Moore-Penrose pseudoinverse via thin SVD
+/// tol < 0  → machine-epsilon-based threshold
 SHAREDMATH_LINEARALGEBRA_EXPORT
 DynamicMatrix pinv(const AbstractMatrix& A, double tol = -1.0);
 
-// Least-squares solution: minimise ||Ax - b||_2
-// Works for overdetermined, underdetermined, and rank-deficient systems
+/// Least-squares solution: minimise ||Ax - b||_2
+/// Works for overdetermined, underdetermined, and rank-deficient systems
 SHAREDMATH_LINEARALGEBRA_EXPORT
 std::vector<double> lstsq(const AbstractMatrix& A, const std::vector<double>& b);
 
-// ── Matrix properties ─────────────────────────────────────────────────────────
+/// ── Matrix properties ─────────────────────────────────────────────────────────
 
-// Numerical rank via Gaussian elimination with partial pivoting
+/// Numerical rank via Gaussian elimination with partial pivoting
 SHAREDMATH_LINEARALGEBRA_EXPORT
 size_t rank(const AbstractMatrix& A, double tol = 1e-10);
 
-// Determinant via LU decomposition (A must be square)
+/// Determinant via LU decomposition (A must be square)
 SHAREDMATH_LINEARALGEBRA_EXPORT
 double det(const AbstractMatrix& A);
 
-// Sum of diagonal elements
+/// Sum of diagonal elements
 SHAREDMATH_LINEARALGEBRA_EXPORT
 double trace(const AbstractMatrix& A);
 
-// Condition number κ(A) = σ_max / σ_min via SVD
-// Returns infinity if A is rank-deficient
+/// Condition number κ(A) = σ_max / σ_min via SVD
+/// Returns infinity if A is rank-deficient
 SHAREDMATH_LINEARALGEBRA_EXPORT
 double cond(const AbstractMatrix& A, double tol = -1.0);
 
-// Returns true if A[i][j] ≈ A[j][i] within tol
+/// Returns true if A[i][j] ≈ A[j][i] within tol
 SHAREDMATH_LINEARALGEBRA_EXPORT
 bool isSymmetric(const AbstractMatrix& A, double tol = 1e-10);
 
-// Returns true if A^T * A ≈ I within tol (A must be square)
+/// Returns true if A^T * A ≈ I within tol (A must be square)
 SHAREDMATH_LINEARALGEBRA_EXPORT
 bool isOrthogonal(const AbstractMatrix& A, double tol = 1e-10);
 
-// Returns true if A is symmetric and passes Cholesky (i.e. SPD)
+/// Returns true if A is symmetric and passes Cholesky (i.e. SPD)
 SHAREDMATH_LINEARALGEBRA_EXPORT
 bool isPositiveDefinite(const AbstractMatrix& A);
 
-// Kronecker product: result[i*p+k][j*q+l] = A[i][j] * B[k][l]
+/// Kronecker product: result[i*p+k][j*q+l] = A[i][j] * B[k][l]
 SHAREDMATH_LINEARALGEBRA_EXPORT
 DynamicMatrix kron(const AbstractMatrix& A, const AbstractMatrix& B);
 
-// ── Vector operations ─────────────────────────────────────────────────────────
+/// ── Vector operations ─────────────────────────────────────────────────────────
 
-// Outer product: result[i][j] = u[i] * v[j]
+/// Outer product: result[i][j] = u[i] * v[j]
 SHAREDMATH_LINEARALGEBRA_EXPORT
 DynamicMatrix outer(const std::vector<double>& u, const std::vector<double>& v);
 
-// Dot (inner) product of two vectors
+/// Dot (inner) product of two vectors
 SHAREDMATH_LINEARALGEBRA_EXPORT
 double inner(const std::vector<double>& u, const std::vector<double>& v);
 
-// Cross product (3-D vectors only)
+/// Cross product (3-D vectors only)
 SHAREDMATH_LINEARALGEBRA_EXPORT
 std::vector<double> cross(const std::vector<double>& u, const std::vector<double>& v);
 
-// ── Matrix functions f(A) ─────────────────────────────────────────────────────
+/// ── Matrix functions f(A) ─────────────────────────────────────────────────────
 
-// Matrix exponential via Taylor series + scaling-and-squaring (A must be square)
+/// Matrix exponential via Taylor series + scaling-and-squaring (A must be square)
 SHAREDMATH_LINEARALGEBRA_EXPORT
 DynamicMatrix expm(const AbstractMatrix& A);
 
-// Matrix square root via eigendecomposition (A must be symmetric PSD)
+/// Matrix square root via eigendecomposition (A must be symmetric PSD)
 SHAREDMATH_LINEARALGEBRA_EXPORT
 DynamicMatrix sqrtm(const AbstractMatrix& A);
 
-// Matrix logarithm via eigendecomposition (A must be symmetric positive definite)
+/// Matrix logarithm via eigendecomposition (A must be symmetric positive definite)
 SHAREDMATH_LINEARALGEBRA_EXPORT
 DynamicMatrix logm(const AbstractMatrix& A);
 
 // ── Decompositions ────────────────────────────────────────────────────────────
 
-// LU decomposition with partial pivoting: P*A = L*U
-// Returns {L (lower-triangular, unit diagonal), U (upper-triangular), P (permutation)}
-// A must be square.
+/// LU decomposition with partial pivoting: P*A = L*U
+/// Returns {L (lower-triangular, unit diagonal), U (upper-triangular), P (permutation)}
+/// A must be square.
 SHAREDMATH_LINEARALGEBRA_EXPORT
 std::tuple<DynamicMatrix, DynamicMatrix, DynamicMatrix>
 lu(const AbstractMatrix& A);
 
-// QR decomposition via Householder reflections
-// Returns {Q (m×m orthogonal), R (m×n upper-triangular)}
+/// QR decomposition via Householder reflections
+/// Returns {Q (m×m orthogonal), R (m×n upper-triangular)}
 SHAREDMATH_LINEARALGEBRA_EXPORT
 std::pair<DynamicMatrix, DynamicMatrix> qr(const AbstractMatrix& A);
 
-// QR with column pivoting: A * P_mat = Q * R  (reveals numerical rank)
-// Returns {Q (m×m), R (m×n), pivot} where pivot[k] is the original column index
+/// QR with column pivoting: A * P_mat = Q * R  (reveals numerical rank)
+/// Returns {Q (m×m), R (m×n), pivot} where pivot[k] is the original column index
 SHAREDMATH_LINEARALGEBRA_EXPORT
 std::tuple<DynamicMatrix, DynamicMatrix, std::vector<size_t>>
 qrp(const AbstractMatrix& A);
 
-// Polar decomposition: A = U * P  (A must be square)
-// U is orthogonal, P is symmetric positive semidefinite
-// Returns {U, P}
+/// Polar decomposition: A = U * P  (A must be square)
+/// U is orthogonal, P is symmetric positive semidefinite
+/// Returns {U, P}
 SHAREDMATH_LINEARALGEBRA_EXPORT
 std::pair<DynamicMatrix, DynamicMatrix> polar(const AbstractMatrix& A);
 
-// Schur decomposition for real symmetric matrices: A = Q * T * Q^T
-// T is diagonal (eigenvalues descending), Q is orthogonal
-// Returns {Q, T}
+/// Schur decomposition for real symmetric matrices: A = Q * T * Q^T
+/// T is diagonal (eigenvalues descending), Q is orthogonal
+/// Returns {Q, T}
 SHAREDMATH_LINEARALGEBRA_EXPORT
 std::pair<DynamicMatrix, DynamicMatrix>
 schur(const AbstractMatrix& A, size_t max_iter = 1000);
 
-// Cholesky: returns L such that A = L * L^T
-// A must be symmetric positive-definite
+/// Cholesky: returns L such that A = L * L^T
+/// A must be symmetric positive-definite
 SHAREDMATH_LINEARALGEBRA_EXPORT
 DynamicMatrix cholesky(const AbstractMatrix& A);
 
-// ── Eigenvalues ───────────────────────────────────────────────────────────────
+/// ── Eigenvalues ───────────────────────────────────────────────────────────────
 
-// Eigenvalues of a real symmetric matrix via QR iteration (sorted descending)
+/// Eigenvalues of a real symmetric matrix via QR iteration (sorted descending)
 SHAREDMATH_LINEARALGEBRA_EXPORT
 std::vector<double> eigvals(const AbstractMatrix& A, size_t max_iter = 1000);
 
-// Full eigendecomposition of a real symmetric matrix via QR iteration
-// Returns {eigenvalues (descending), V} where columns of V are eigenvectors
+/// Full eigendecomposition of a real symmetric matrix via QR iteration
+/// Returns {eigenvalues (descending), V} where columns of V are eigenvectors
 SHAREDMATH_LINEARALGEBRA_EXPORT
 std::pair<std::vector<double>, DynamicMatrix>
 eig(const AbstractMatrix& A, size_t max_iter = 1000);
 
 // ── SVD ───────────────────────────────────────────────────────────────────────
 
-// Thin SVD: A ≈ U * diag(S) * Vt, where k = min(rows, cols)
-// Returns {U (m×k), S (k singular values, descending), Vt (k×n)}
+/// Thin SVD: A ≈ U * diag(S) * Vt, where k = min(rows, cols)
+/// Returns {U (m×k), S (k singular values, descending), Vt (k×n)}
 SHAREDMATH_LINEARALGEBRA_EXPORT
 std::tuple<DynamicMatrix, std::vector<double>, DynamicMatrix>
 svd(const AbstractMatrix& A, size_t max_iter = 1000);
 
-// Randomized SVD (Halko–Martinsson–Tropp 2011)
-// Computes a rank-k approximation: A ≈ U * diag(S) * Vt
-//   k          — number of singular values/vectors to compute
-//   n_oversampling — extra random columns (default 10); total sketch = k + n_oversampling
-//   n_power_iter   — power-iteration steps for improved accuracy on slowly-decaying spectra
+/// Randomized SVD (Halko–Martinsson–Tropp 2011)
+/// Computes a rank-k approximation: A ≈ U * diag(S) * Vt
+///   k          — number of singular values/vectors to compute
+///   n_oversampling — extra random columns (default 10); total sketch = k + n_oversampling
+///   n_power_iter   — power-iteration steps for improved accuracy on slowly-decaying spectra
 SHAREDMATH_LINEARALGEBRA_EXPORT
 std::tuple<DynamicMatrix, std::vector<double>, DynamicMatrix>
 rsvd(const AbstractMatrix& A,
@@ -199,83 +199,83 @@ rsvd(const AbstractMatrix& A,
 
 // ── Tensor operations ─────────────────────────────────────────────────────────
 
-// Generalised tensor contraction over paired axes
-// axes_a[i] of a is contracted with axes_b[i] of b; dimensions must match
+/// Generalised tensor contraction over paired axes
+/// axes_a[i] of a is contracted with axes_b[i] of b; dimensions must match
 SHAREDMATH_LINEARALGEBRA_EXPORT
 Tensor tensordot(const Tensor& a, const Tensor& b,
                  const std::vector<size_t>& axes_a,
                  const std::vector<size_t>& axes_b);
 
-// Einstein summation — single-operand form
-// Supported patterns: "ij->ji", "ii->", "ij->i", "ij->j", "ij->", "ii->i"
+/// Einstein summation — single-operand form
+/// Supported patterns: "ij->ji", "ii->", "ij->i", "ij->j", "ij->", "ii->i"
 SHAREDMATH_LINEARALGEBRA_EXPORT
 Tensor einsum(const std::string& subscripts, const Tensor& a);
 
-// Einstein summation — two-operand form
-// Supported patterns: "ij,jk->ik", "i,i->", "i,j->ij", "ij,ij->", etc.
+/// Einstein summation — two-operand form
+/// Supported patterns: "ij,jk->ik", "i,i->", "i,j->ij", "ij,ij->", etc.
 SHAREDMATH_LINEARALGEBRA_EXPORT
 Tensor einsum(const std::string& subscripts, const Tensor& a, const Tensor& b);
 
 // ── Structured matrix generators ─────────────────────────────────────────────
 
-// Symmetric Toeplitz matrix from first row c (and first column = c)
-// If c has length n the result is n×n; c[0] is the diagonal.
+/// Symmetric Toeplitz matrix from first row c (and first column = c)
+/// If c has length n the result is n×n; c[0] is the diagonal.
 SHAREDMATH_LINEARALGEBRA_EXPORT
 DynamicMatrix toeplitz(const std::vector<double>& c,
                        const std::vector<double>& r = {});
 
-// Circulant matrix: each row is a cyclic shift of the previous one
-// c[0] is the diagonal; result is n×n where n = c.size()
+/// Circulant matrix: each row is a cyclic shift of the previous one
+/// c[0] is the diagonal; result is n×n where n = c.size()
 SHAREDMATH_LINEARALGEBRA_EXPORT
 DynamicMatrix circulant(const std::vector<double>& c);
 
-// Hankel matrix: constant anti-diagonals
-// c — first column, r — last row (r[0] must equal c.back() or is unused)
+/// Hankel matrix: constant anti-diagonals
+/// c — first column, r — last row (r[0] must equal c.back() or is unused)
 SHAREDMATH_LINEARALGEBRA_EXPORT
 DynamicMatrix hankel(const std::vector<double>& c,
                      const std::vector<double>& r = {});
 
-// Vandermonde matrix:  V[i][j] = x[i]^j  (or reversed: V[i][0] = x[i]^{n-1})
-// increasing = true  → columns 1, x, x², …, x^{n-1}  (sklearn / numpy convention)
+/// Vandermonde matrix:  V[i][j] = x[i]^j  (or reversed: V[i][0] = x[i]^{n-1})
+/// increasing = true  → columns 1, x, x², …, x^{n-1}  (sklearn / numpy convention)
 SHAREDMATH_LINEARALGEBRA_EXPORT
 DynamicMatrix vandermonde(const std::vector<double>& x, bool increasing = false);
 
-// n×n Hilbert matrix: H[i][j] = 1 / (i + j + 1)
+/// n×n Hilbert matrix: H[i][j] = 1 / (i + j + 1)
 SHAREDMATH_LINEARALGEBRA_EXPORT
 DynamicMatrix hilbert(size_t n);
 
-// Companion matrix of monic polynomial  x^n + c[0]*x^{n-1} + … + c[n-1]
-// Eigenvalues of the companion matrix are the roots of the polynomial.
-// c has length n (coefficients of x^{n-1} down to x^0, leading 1 implicit)
+/// Companion matrix of monic polynomial  x^n + c[0]*x^{n-1} + … + c[n-1]
+/// Eigenvalues of the companion matrix are the roots of the polynomial.
+/// c has length n (coefficients of x^{n-1} down to x^0, leading 1 implicit)
 SHAREDMATH_LINEARALGEBRA_EXPORT
 DynamicMatrix companion(const std::vector<double>& c);
 
-// ── Random matrix generators ──────────────────────────────────────────────────
+/// ── Random matrix generators ──────────────────────────────────────────────────
 
 namespace random {
 
-// m×n matrix with i.i.d. N(0,1) entries (Box–Muller)
+/// m×n matrix with i.i.d. N(0,1) entries (Box–Muller)
 SHAREDMATH_LINEARALGEBRA_EXPORT
 DynamicMatrix gaussian(size_t m, size_t n, unsigned seed = 42);
 
-// m×n matrix with i.i.d. Uniform(lo, hi) entries
+/// m×n matrix with i.i.d. Uniform(lo, hi) entries
 SHAREDMATH_LINEARALGEBRA_EXPORT
 DynamicMatrix uniform(size_t m, size_t n,
                       double lo = 0.0, double hi = 1.0,
                       unsigned seed = 42);
 
-// n×n random orthogonal matrix via QR of a Gaussian matrix
+/// n×n random orthogonal matrix via QR of a Gaussian matrix
 SHAREDMATH_LINEARALGEBRA_EXPORT
 DynamicMatrix orthogonal(size_t n, unsigned seed = 42);
 
-// n×n random symmetric positive definite matrix
-//   eigenvalues drawn Uniform(lo_ev, hi_ev)
+/// n×n random symmetric positive definite matrix
+///   eigenvalues drawn Uniform(lo_ev, hi_ev)
 SHAREDMATH_LINEARALGEBRA_EXPORT
 DynamicMatrix spd(size_t n,
                   double lo_ev = 0.1, double hi_ev = 10.0,
                   unsigned seed = 42);
 
-// m×n sparse random matrix, density ∈ (0,1], non-zeros ~ N(0,1)
+/// m×n sparse random matrix, density ∈ (0,1], non-zeros ~ N(0,1)
 SHAREDMATH_LINEARALGEBRA_EXPORT
 DynamicMatrix sparse(size_t m, size_t n,
                      double density = 0.1,
@@ -285,9 +285,9 @@ DynamicMatrix sparse(size_t m, size_t n,
 
 // ── Generalized eigenvalue problem ────────────────────────────────────────────
 
-// Solve  A * V = B * V * diag(lambda)  (both A and B symmetric, B positive definite)
-// Returns {eigenvalues (ascending), V} where columns of V are B-orthonormal eigenvectors.
-// Uses Cholesky of B and reduces to standard symmetric eigenproblem.
+/// Solve  A * V = B * V * diag(lambda)  (both A and B symmetric, B positive definite)
+/// Returns {eigenvalues (ascending), V} where columns of V are B-orthonormal eigenvectors.
+/// Uses Cholesky of B and reduces to standard symmetric eigenproblem.
 SHAREDMATH_LINEARALGEBRA_EXPORT
 std::pair<std::vector<double>, DynamicMatrix>
 geig(const AbstractMatrix& A, const AbstractMatrix& B,
@@ -295,30 +295,30 @@ geig(const AbstractMatrix& A, const AbstractMatrix& B,
 
 // ── Matrix equations ──────────────────────────────────────────────────────────
 
-// Lyapunov equation: A * X + X * A^T = -C
-// A must be stable (all eigenvalues with negative real part) and square.
-// Solved via the Bartels–Stewart / Hammarling approach using Schur decomposition.
-// For simplicity this implementation uses the direct method: A*X + X*A^T + C = 0
-// solved iteratively via a Kronecker-product reformulation (O(n^3) per step).
+/// Lyapunov equation: A * X + X * A^T = -C
+/// A must be stable (all eigenvalues with negative real part) and square.
+/// Solved via the Bartels–Stewart / Hammarling approach using Schur decomposition.
+/// For simplicity this implementation uses the direct method: A*X + X*A^T + C = 0
+/// solved iteratively via a Kronecker-product reformulation (O(n^3) per step).
 SHAREDMATH_LINEARALGEBRA_EXPORT
 DynamicMatrix lyapunov(const AbstractMatrix& A, const AbstractMatrix& C,
                        double tol = 1e-12, size_t max_iter = 500);
 
-// Sylvester equation: A * X + X * B = C
-// A is m×m, B is n×n, C is m×n, X is m×n.
-// Solves via vec-and-Kronecker: (I⊗A + B^T⊗I) vec(X) = vec(C).
+/// Sylvester equation: A * X + X * B = C
+/// A is m×m, B is n×n, C is m×n, X is m×n.
+/// Solves via vec-and-Kronecker: (I⊗A + B^T⊗I) vec(X) = vec(C).
 SHAREDMATH_LINEARALGEBRA_EXPORT
 DynamicMatrix sylvester(const AbstractMatrix& A,
                         const AbstractMatrix& B,
                         const AbstractMatrix& C);
 
-// ── Generalized SVD ───────────────────────────────────────────────────────────
+/// ── Generalized SVD ───────────────────────────────────────────────────────────
 
-// Generalized SVD of the matrix pair (A, B)
-//   A (m×n), B (p×n) →  A = U * diag(alpha) * X^{-1}
-//                        B = V * diag(beta)  * X^{-1}
-// alpha[i]^2 + beta[i]^2 = 1  (cosine–sine decomposition)
-// Implements the CS decomposition via thin SVD of [A; B].
+/// Generalized SVD of the matrix pair (A, B)
+///   A (m×n), B (p×n) →  A = U * diag(alpha) * X^{-1}
+///                        B = V * diag(beta)  * X^{-1}
+/// alpha[i]^2 + beta[i]^2 = 1  (cosine–sine decomposition)
+/// Implements the CS decomposition via thin SVD of [A; B].
 struct GSVDResult {
     DynamicMatrix      U;      // m × k, orthonormal columns
     DynamicMatrix      V;      // p × k, orthonormal columns
@@ -330,11 +330,11 @@ struct GSVDResult {
 SHAREDMATH_LINEARALGEBRA_EXPORT
 GSVDResult gsvd(const AbstractMatrix& A, const AbstractMatrix& B);
 
-// ── CUDA runtime query ────────────────────────────────────────────────────────
+/// ── CUDA runtime query ────────────────────────────────────────────────────────
 
-// Returns true if the library was built with CUDA support AND at least one
-// CUDA-capable GPU is available at runtime.
-// When false, Tensor::cuda() is a no-op and all ops run on CPU.
+/// Returns true if the library was built with CUDA support AND at least one
+/// CUDA-capable GPU is available at runtime.
+/// When false, Tensor::cuda() is a no-op and all ops run on CPU.
 SHAREDMATH_LINEARALGEBRA_EXPORT
 bool cuda_is_available() noexcept;
 
