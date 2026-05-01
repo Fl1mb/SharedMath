@@ -1,6 +1,7 @@
 #include "core/CudaDeviceManager.h"
 
 #include <algorithm>
+#include <memory>
 #include <stdexcept>
 
 #ifdef SHAREDMATH_CUDA
@@ -27,7 +28,7 @@ CudaDeviceManager::CudaDeviceManager() {
     devices_.reserve(count);
     // std::atomic<int> is not movable in all standard versions, so resize
     // in-place and default-initialise (value = 0).
-    activeTasks_.resize(count);
+    activeTasks_.reserve(count);
 
     for (int i = 0; i < count; ++i) {
         cudaDeviceProp prop{};
@@ -52,6 +53,7 @@ CudaDeviceManager::CudaDeviceManager() {
             info.maxGridSize[d]   = prop.maxGridSize[d];
         }
         devices_.push_back(std::move(info));
+        activeTasks_.push_back(std::make_unique<std::atomic<int>>(0));
     }
 #endif // SHAREDMATH_CUDA
 }
@@ -78,10 +80,10 @@ int CudaDeviceManager::leastLoadedDevice() const noexcept {
     if (devices_.empty()) return -1;
 
     int best    = 0;
-    int minLoad = activeTasks_[0].load(std::memory_order_relaxed);
+    int minLoad = activeTasks_[0]->load(std::memory_order_relaxed);
 
     for (int i = 1; i < static_cast<int>(activeTasks_.size()); ++i) {
-        int load = activeTasks_[i].load(std::memory_order_relaxed);
+        int load = activeTasks_[i]->load(std::memory_order_relaxed);
         if (load < minLoad) {
             minLoad = load;
             best    = i;
@@ -93,17 +95,17 @@ int CudaDeviceManager::leastLoadedDevice() const noexcept {
 int CudaDeviceManager::activeTaskCount(int deviceId) const noexcept {
     if (deviceId < 0 || deviceId >= static_cast<int>(activeTasks_.size()))
         return 0;
-    return activeTasks_[deviceId].load(std::memory_order_relaxed);
+    return activeTasks_[deviceId]->load(std::memory_order_relaxed);
 }
 
 void CudaDeviceManager::incrementLoad(int deviceId) noexcept {
     if (deviceId >= 0 && deviceId < static_cast<int>(activeTasks_.size()))
-        activeTasks_[deviceId].fetch_add(1, std::memory_order_relaxed);
+        activeTasks_[deviceId]->fetch_add(1, std::memory_order_relaxed);
 }
 
 void CudaDeviceManager::decrementLoad(int deviceId) noexcept {
     if (deviceId >= 0 && deviceId < static_cast<int>(activeTasks_.size()))
-        activeTasks_[deviceId].fetch_sub(1, std::memory_order_relaxed);
+        activeTasks_[deviceId]->fetch_sub(1, std::memory_order_relaxed);
 }
 
 } // namespace SharedMath::Core

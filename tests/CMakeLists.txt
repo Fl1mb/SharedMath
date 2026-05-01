@@ -59,6 +59,19 @@ add_executable(${PROJECT_NAME}Tests
     test_dsp_streaming.cpp
     test_dsp_resampling.cpp
     test_dsp_rbj_filters.cpp
+    test_ml_module.cpp
+    test_ml_autograd.cpp
+    test_ml_layers.cpp
+    test_ml_optimizers.cpp
+    test_ml_training.cpp
+    test_ml_models.cpp
+    test_ml_dataloader.cpp
+    test_ml_metrics.cpp
+    test_ml_preprocessing.cpp
+    test_ml_tree_models.cpp
+    test_ml_forest_models.cpp
+    test_ml_regularized_models.cpp
+    test_ml_model_selection.cpp
 )
 
 if(SHAREDMATH_ENABLE_CUDA)
@@ -71,6 +84,7 @@ endif()
 target_link_libraries(${PROJECT_NAME}Tests
     PRIVATE
         SharedMath::SharedMath
+        SharedMath::ML
         ${GTEST_MAIN_TARGET}
 )
 

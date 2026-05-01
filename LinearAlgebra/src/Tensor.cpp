@@ -12,8 +12,116 @@
 #include <numeric>
 #include <algorithm>
 #include <stdexcept>
+#include <random>
+#include <cstdint>
 
 namespace SharedMath::LinearAlgebra {
+
+namespace {
+
+size_t shapeSize(const Tensor::Shape& shape) {
+    if (shape.empty()) return 0;
+    size_t total = 1;
+    for (size_t d : shape) total *= d;
+    return total;
+}
+
+Tensor::Shape shapeWithoutAxis(const Tensor::Shape& shape, size_t axis) {
+    Tensor::Shape out = shape;
+    out.erase(out.begin() + static_cast<std::ptrdiff_t>(axis));
+    if (out.empty()) out.push_back(1);
+    return out;
+}
+
+std::mt19937_64 makeGenerator(std::uint64_t seed) {
+    if (seed != 0) return std::mt19937_64(seed);
+    std::random_device rd;
+    return std::mt19937_64((static_cast<std::uint64_t>(rd()) << 32) ^ rd());
+}
+
+size_t mlOutDim(size_t input, size_t kernel, size_t stride,
+                size_t padding, const char* name) {
+    if (kernel == 0 || stride == 0)
+        throw std::invalid_argument(std::string(name) + ": kernel and stride must be > 0");
+    size_t padded = input + 2 * padding;
+    if (padded < kernel)
+        throw std::invalid_argument(std::string(name) + ": kernel larger than padded input");
+    return (padded - kernel) / stride + 1;
+}
+
+} // namespace
+
+// ─── TensorView ─────────────────────────────────────────────────────────────
+
+TensorView::TensorView(Tensor* base, Shape shape, Shape strides, size_t offset)
+    : m_base(base),
+      m_shape(std::move(shape)),
+      m_strides(std::move(strides)),
+      m_offset(offset)
+{}
+
+size_t TensorView::size() const noexcept {
+    if (m_shape.empty()) return 0;
+    size_t total = 1;
+    for (size_t d : m_shape) total *= d;
+    return total;
+}
+
+size_t TensorView::dim(size_t axis) const {
+    if (axis >= m_shape.size())
+        throw std::out_of_range("TensorView::dim: axis out of range");
+    return m_shape[axis];
+}
+
+std::vector<size_t> TensorView::unravel(size_t flat) const {
+    std::vector<size_t> idx(m_shape.size());
+    for (int i = static_cast<int>(m_shape.size()) - 1; i >= 0; --i) {
+        idx[static_cast<size_t>(i)] = flat % m_shape[static_cast<size_t>(i)];
+        flat /= m_shape[static_cast<size_t>(i)];
+    }
+    return idx;
+}
+
+size_t TensorView::physicalIndex(const std::vector<size_t>& idx) const {
+    if (!m_base)
+        throw std::runtime_error("TensorView: empty view");
+    if (idx.size() != m_shape.size())
+        throw std::invalid_argument("TensorView: index rank does not match view rank");
+    size_t flat = m_offset;
+    for (size_t i = 0; i < idx.size(); ++i) {
+        if (idx[i] >= m_shape[i])
+            throw std::out_of_range("TensorView: index out of range");
+        flat += idx[i] * m_strides[i];
+    }
+    return flat;
+}
+
+double& TensorView::at(const std::vector<size_t>& idx) {
+    return m_base->m_data[physicalIndex(idx)];
+}
+
+double TensorView::at(const std::vector<size_t>& idx) const {
+    return m_base->m_data[physicalIndex(idx)];
+}
+
+double& TensorView::flat(size_t logical_flat) {
+    if (logical_flat >= size())
+        throw std::out_of_range("TensorView::flat: index out of range");
+    return at(unravel(logical_flat));
+}
+
+double TensorView::flat(size_t logical_flat) const {
+    if (logical_flat >= size())
+        throw std::out_of_range("TensorView::flat: index out of range");
+    return at(unravel(logical_flat));
+}
+
+Tensor TensorView::to_tensor() const {
+    Tensor out(m_shape);
+    for (size_t i = 0; i < out.size(); ++i)
+        out.flat(i) = flat(i);
+    return out;
+}
 
 // ─── size / flat (must work for both CPU and GPU tensors) ────────────────────
 
@@ -46,12 +154,16 @@ double Tensor::flat(size_t i) const {
 
 #ifndef SHAREDMATH_CUDA
 Tensor Tensor::cuda() const { return *this; }
+Tensor Tensor::cuda(int /*device_id*/) const { return *this; }
+Tensor Tensor::cuda_auto() const { return *this; }
 Tensor Tensor::cpu()  const { return *this; }
+Tensor Tensor::to(Device /*device*/, int /*device_id*/) const { return *this; }
 
 // Private factory — only needed in TensorCUDA.cu; stub here to satisfy the
 // linker on CPU-only builds (it should never actually be called).
 Tensor Tensor::from_cuda(Shape /*shape*/,
-                          std::shared_ptr<CUDABuffer> /*buf*/) {
+                          std::shared_ptr<CUDABuffer> /*buf*/,
+                          int /*device_id*/) {
     throw std::runtime_error("Tensor::from_cuda: CUDA support not compiled in");
 }
 #endif
@@ -75,6 +187,16 @@ Tensor::Tensor(Shape shape, std::vector<double> data)
     if (m_data.size() != total)
         throw std::invalid_argument("Tensor: data size does not match shape");
     computeStrides();
+}
+
+Tensor::Tensor(Shape shape, std::vector<double> data, TensorDType dtype)
+    : Tensor(std::move(shape), std::move(data))
+{
+    m_dtype = dtype;
+    if (m_dtype == TensorDType::Float32) {
+        for (double& v : m_data)
+            v = static_cast<double>(static_cast<float>(v));
+    }
 }
 
 // ─── static factories ─────────────────────────────────────────────────────────
@@ -109,6 +231,40 @@ Tensor Tensor::linspace(double start, double stop, size_t num) {
     return Tensor({num}, std::move(v));
 }
 
+Tensor Tensor::uniform(Shape shape, double low, double high, std::uint64_t seed) {
+    if (low > high)
+        throw std::invalid_argument("Tensor::uniform: low must be <= high");
+    std::vector<double> values(shapeSize(shape));
+    auto gen = makeGenerator(seed);
+    std::uniform_real_distribution<double> dist(low, high);
+    for (double& v : values) v = dist(gen);
+    return Tensor(std::move(shape), std::move(values));
+}
+
+Tensor Tensor::normal(Shape shape, double mean, double stddev, std::uint64_t seed) {
+    if (stddev < 0.0)
+        throw std::invalid_argument("Tensor::normal: stddev must be non-negative");
+    std::vector<double> values(shapeSize(shape));
+    auto gen = makeGenerator(seed);
+    std::normal_distribution<double> dist(mean, stddev);
+    for (double& v : values) v = dist(gen);
+    return Tensor(std::move(shape), std::move(values));
+}
+
+Tensor Tensor::randn(Shape shape, std::uint64_t seed) {
+    return normal(std::move(shape), 0.0, 1.0, seed);
+}
+
+Tensor Tensor::bernoulli(Shape shape, double p, std::uint64_t seed) {
+    if (p < 0.0 || p > 1.0)
+        throw std::invalid_argument("Tensor::bernoulli: p must be in [0, 1]");
+    std::vector<double> values(shapeSize(shape));
+    auto gen = makeGenerator(seed);
+    std::bernoulli_distribution dist(p);
+    for (double& v : values) v = dist(gen) ? 1.0 : 0.0;
+    return Tensor(std::move(shape), std::move(values));
+}
+
 Tensor Tensor::from_vector(const std::vector<double>& v) {
     return Tensor({v.size()}, v);
 }
@@ -118,6 +274,76 @@ Tensor Tensor::from_matrix(size_t rows, size_t cols,
     if (flat.size() != rows * cols)
         throw std::invalid_argument("Tensor::from_matrix: flat size != rows*cols");
     return Tensor({rows, cols}, flat);
+}
+
+Tensor Tensor::concat(const std::vector<Tensor>& tensors, size_t axis) {
+    if (tensors.empty())
+        throw std::invalid_argument("Tensor::concat: no tensors");
+    const Tensor& first = tensors.front();
+    if (axis >= first.ndim())
+        throw std::out_of_range("Tensor::concat: axis out of range");
+
+    Shape out_shape = first.shape();
+    out_shape[axis] = 0;
+    for (const Tensor& t : tensors) {
+        if (t.ndim() != first.ndim())
+            throw std::invalid_argument("Tensor::concat: ranks differ");
+        for (size_t i = 0; i < first.ndim(); ++i) {
+            if (i != axis && t.dim(i) != first.dim(i))
+                throw std::invalid_argument("Tensor::concat: non-concat dimensions differ");
+        }
+        out_shape[axis] += t.dim(axis);
+    }
+
+    Tensor out(out_shape);
+    size_t axis_offset = 0;
+    for (const Tensor& t : tensors) {
+        for (size_t flat = 0; flat < t.size(); ++flat) {
+            auto idx = t.unravel(flat);
+            auto out_idx = idx;
+            out_idx[axis] += axis_offset;
+            out.at(out_idx) = t.flat(flat);
+        }
+        axis_offset += t.dim(axis);
+    }
+    return out;
+}
+
+Tensor Tensor::stack(const std::vector<Tensor>& tensors, size_t axis) {
+    if (tensors.empty())
+        throw std::invalid_argument("Tensor::stack: no tensors");
+    const Shape& base_shape = tensors.front().shape();
+    if (axis > base_shape.size())
+        throw std::out_of_range("Tensor::stack: axis out of range");
+    for (const Tensor& t : tensors) {
+        if (t.shape() != base_shape)
+            throw std::invalid_argument("Tensor::stack: all shapes must match");
+    }
+
+    Shape out_shape = base_shape;
+    out_shape.insert(out_shape.begin() + static_cast<std::ptrdiff_t>(axis),
+                     tensors.size());
+    Tensor out(out_shape);
+    for (size_t n = 0; n < tensors.size(); ++n) {
+        const Tensor& t = tensors[n];
+        for (size_t flat = 0; flat < t.size(); ++flat) {
+            auto idx = t.unravel(flat);
+            idx.insert(idx.begin() + static_cast<std::ptrdiff_t>(axis), n);
+            out.at(idx) = t.flat(flat);
+        }
+    }
+    return out;
+}
+
+Tensor Tensor::where(const Tensor& condition, const Tensor& x, const Tensor& y) {
+    Shape out_shape = broadcastShape(broadcastShape(condition.shape(), x.shape()), y.shape());
+    Tensor c = condition.broadcast_to(out_shape);
+    Tensor xb = x.broadcast_to(out_shape);
+    Tensor yb = y.broadcast_to(out_shape);
+    Tensor out(out_shape);
+    for (size_t i = 0; i < out.size(); ++i)
+        out.flat(i) = c.flat(i) != 0.0 ? xb.flat(i) : yb.flat(i);
+    return out;
 }
 
 // ─── stride helpers ───────────────────────────────────────────────────────────
@@ -176,12 +402,24 @@ double  Tensor::at(const std::vector<size_t>& idx) const  { return m_data[flatIn
 Tensor Tensor::reshape(Shape new_shape) const {
     size_t total = 1;
     for (size_t d : new_shape) total *= d;
-    if (total != m_data.size())
+    if (total != size())
         throw std::invalid_argument("Tensor::reshape: size mismatch");
+#ifdef SHAREDMATH_CUDA
+    if (m_device == Device::CUDA)
+        return from_cuda(std::move(new_shape), m_cuda_buf, m_device_id);
+#endif
     return Tensor(std::move(new_shape), m_data);
 }
 
+Tensor Tensor::view(Shape new_shape) const {
+    return reshape(std::move(new_shape));
+}
+
 Tensor Tensor::flatten() const {
+#ifdef SHAREDMATH_CUDA
+    if (m_device == Device::CUDA)
+        return from_cuda({size()}, m_cuda_buf, m_device_id);
+#endif
     return Tensor({m_data.size()}, m_data);
 }
 
@@ -192,12 +430,27 @@ Tensor Tensor::squeeze() const {
     return Tensor(std::move(s), m_data);
 }
 
+Tensor Tensor::squeeze(size_t axis) const {
+    if (axis >= ndim())
+        throw std::out_of_range("Tensor::squeeze: axis out of range");
+    if (m_shape[axis] != 1)
+        throw std::invalid_argument("Tensor::squeeze: selected axis is not size 1");
+    Shape s = m_shape;
+    s.erase(s.begin() + static_cast<std::ptrdiff_t>(axis));
+    if (s.empty()) s.push_back(1);
+    return Tensor(std::move(s), m_data);
+}
+
 Tensor Tensor::expand_dims(size_t axis) const {
     if (axis > m_shape.size())
         throw std::out_of_range("Tensor::expand_dims: axis out of range");
     Shape s = m_shape;
     s.insert(s.begin() + axis, 1);
     return Tensor(std::move(s), m_data);
+}
+
+Tensor Tensor::unsqueeze(size_t axis) const {
+    return expand_dims(axis);
 }
 
 Tensor Tensor::transpose(std::vector<size_t> axes) const {
@@ -220,6 +473,10 @@ Tensor Tensor::transpose(std::vector<size_t> axes) const {
         result.at(dst) = m_data[flat];
     }
     return result;
+}
+
+Tensor Tensor::permute(std::vector<size_t> axes) const {
+    return transpose(std::move(axes));
 }
 
 Tensor Tensor::transpose() const {
@@ -245,6 +502,85 @@ Tensor Tensor::slice(size_t axis, size_t start, size_t end) const {
         result.m_data[flat] = at(src);
     }
     return result;
+}
+
+TensorView Tensor::slice_view(size_t axis, size_t start, size_t end) {
+    if (m_device != Device::CPU)
+        throw std::runtime_error("Tensor::slice_view: only CPU tensors can be viewed");
+    if (axis >= ndim())
+        throw std::out_of_range("Tensor::slice_view: axis out of range");
+    if (start >= end || end > m_shape[axis])
+        throw std::invalid_argument("Tensor::slice_view: invalid range");
+    Shape view_shape = m_shape;
+    view_shape[axis] = end - start;
+    size_t offset = start * m_strides[axis];
+    return TensorView(this, std::move(view_shape), m_strides, offset);
+}
+
+Tensor Tensor::broadcast_to(Shape target_shape) const {
+#ifdef SHAREDMATH_CUDA
+    if (m_device == Device::CUDA) return cpu().broadcast_to(std::move(target_shape));
+#endif
+    Shape actual = broadcastShape(m_shape, target_shape);
+    if (actual != target_shape)
+        throw std::invalid_argument("Tensor::broadcast_to: target shape is not compatible");
+
+    Tensor result(target_shape);
+    const size_t nr = target_shape.size();
+    const size_t ns = ndim();
+    for (size_t flat = 0; flat < result.size(); ++flat) {
+        auto ridx = result.unravel(flat);
+        std::vector<size_t> sidx(ns);
+        for (size_t i = 0; i < ns; ++i) {
+            size_t ri = ridx[nr - ns + i];
+            sidx[i] = (m_shape[i] == 1) ? 0 : ri;
+        }
+        result.flat(flat) = at(sidx);
+    }
+    return result;
+}
+
+std::vector<Tensor> Tensor::split(size_t axis, const std::vector<size_t>& sections) const {
+    if (axis >= ndim())
+        throw std::out_of_range("Tensor::split: axis out of range");
+    size_t total = std::accumulate(sections.begin(), sections.end(), size_t{0});
+    if (total != m_shape[axis])
+        throw std::invalid_argument("Tensor::split: sections do not sum to axis length");
+
+    std::vector<Tensor> parts;
+    parts.reserve(sections.size());
+    size_t start = 0;
+    for (size_t len : sections) {
+        parts.push_back(slice(axis, start, start + len));
+        start += len;
+    }
+    return parts;
+}
+
+std::vector<Tensor> Tensor::split(size_t axis, size_t chunk_size) const {
+    if (axis >= ndim())
+        throw std::out_of_range("Tensor::split: axis out of range");
+    if (chunk_size == 0)
+        throw std::invalid_argument("Tensor::split: chunk_size must be positive");
+    std::vector<Tensor> parts;
+    for (size_t start = 0; start < m_shape[axis]; start += chunk_size) {
+        size_t end = std::min(start + chunk_size, m_shape[axis]);
+        parts.push_back(slice(axis, start, end));
+    }
+    return parts;
+}
+
+Tensor Tensor::astype(TensorDType dtype) const {
+#ifdef SHAREDMATH_CUDA
+    if (m_device == Device::CUDA) return cpu().astype(dtype);
+#endif
+    Tensor out = *this;
+    out.m_dtype = dtype;
+    if (dtype == TensorDType::Float32) {
+        for (double& v : out.m_data)
+            v = static_cast<double>(static_cast<float>(v));
+    }
+    return out;
 }
 
 // ─── broadcasting ────────────────────────────────────────────────────────────
@@ -298,6 +634,9 @@ Tensor Tensor::broadcastOp(const Tensor& other,
     if (m_device != o.m_device)                                             \
         throw std::runtime_error(                                           \
             "Tensor: binary op between tensors on different devices");      \
+    if (m_device == Device::CUDA && m_device_id != o.m_device_id)           \
+        throw std::runtime_error(                                           \
+            "Tensor: binary op between tensors on different CUDA devices"); \
     if (m_device == Device::CUDA) {                                         \
         if (m_shape == o.m_shape)                                           \
             return detail::cuda_binary(*this, o, detail::BinaryOp::OP_ENUM);\
@@ -327,16 +666,42 @@ Tensor Tensor::operator/(const Tensor& o) const {
 
 #undef CUDA_BINARY_DISPATCH
 
-Tensor Tensor::operator+(double s) const { return apply([s](double x){ return x + s; }); }
-Tensor Tensor::operator-(double s) const { return apply([s](double x){ return x - s; }); }
-Tensor Tensor::operator*(double s) const { return apply([s](double x){ return x * s; }); }
-Tensor Tensor::operator/(double s) const { return apply([s](double x){ return x / s; }); }
-Tensor Tensor::operator-()         const { return apply([](double x){ return -x;     }); }
+#ifdef SHAREDMATH_CUDA
+#define CUDA_SCALAR_DISPATCH(OP_ENUM, CPU_EXPR)                             \
+    if (m_device == Device::CUDA)                                           \
+        return detail::cuda_scalar(*this, s, detail::ScalarOp::OP_ENUM);    \
+    return CPU_EXPR;
+#else
+#define CUDA_SCALAR_DISPATCH(OP_ENUM, CPU_EXPR) return CPU_EXPR;
+#endif
+
+Tensor Tensor::operator+(double s) const {
+    CUDA_SCALAR_DISPATCH(Add, apply([s](double x){ return x + s; }))
+}
+Tensor Tensor::operator-(double s) const {
+    CUDA_SCALAR_DISPATCH(Sub, apply([s](double x){ return x - s; }))
+}
+Tensor Tensor::operator*(double s) const {
+    CUDA_SCALAR_DISPATCH(Mul, apply([s](double x){ return x * s; }))
+}
+Tensor Tensor::operator/(double s) const {
+    CUDA_SCALAR_DISPATCH(Div, apply([s](double x){ return x / s; }))
+}
+
+#undef CUDA_SCALAR_DISPATCH
+
+Tensor Tensor::operator-() const {
+#ifdef SHAREDMATH_CUDA
+    if (m_device == Device::CUDA)
+        return detail::cuda_unary(*this, detail::UnaryOp::Neg);
+#endif
+    return apply([](double x){ return -x; });
+}
 
 Tensor& Tensor::operator+=(const Tensor& o) { *this = *this + o; return *this; }
 Tensor& Tensor::operator-=(const Tensor& o) { *this = *this - o; return *this; }
-Tensor& Tensor::operator*=(double s) { for (auto& v : m_data) v *= s; return *this; }
-Tensor& Tensor::operator/=(double s) { for (auto& v : m_data) v /= s; return *this; }
+Tensor& Tensor::operator*=(double s) { *this = *this * s; return *this; }
+Tensor& Tensor::operator/=(double s) { *this = *this / s; return *this; }
 
 bool Tensor::operator==(const Tensor& o) const {
     return m_shape == o.m_shape && m_data == o.m_data;
@@ -424,6 +789,72 @@ Tensor Tensor::mean(size_t axis) const {
     return s;
 }
 
+Tensor Tensor::var(int axis, bool ddof) const {
+    if (axis < 0)
+        throw std::out_of_range("Tensor::var: axis out of range");
+    return var(static_cast<size_t>(axis), ddof);
+}
+
+Tensor Tensor::var(size_t axis, bool ddof) const {
+    if (axis >= ndim()) throw std::out_of_range("Tensor::var: axis out of range");
+    size_t axis_len = m_shape[axis];
+    size_t correction = ddof ? 1 : 0;
+    if (axis_len <= correction)
+        throw std::runtime_error("Tensor::var: not enough elements");
+
+    Shape rshape = shapeWithoutAxis(m_shape, axis);
+    Tensor means = mean(axis);
+    Tensor out(rshape, 0.0);
+    for (size_t flat = 0; flat < size(); ++flat) {
+        auto idx = unravel(flat);
+        auto ridx = idx;
+        ridx.erase(ridx.begin() + static_cast<std::ptrdiff_t>(axis));
+        if (ridx.empty()) ridx.push_back(0);
+        double diff = m_data[flat] - means.at(ridx);
+        out.at(ridx) += diff * diff;
+    }
+    out /= static_cast<double>(axis_len - correction);
+    return out;
+}
+
+Tensor Tensor::argmin(size_t axis) const {
+    if (axis >= ndim()) throw std::out_of_range("Tensor::argmin: axis out of range");
+    Shape rshape = shapeWithoutAxis(m_shape, axis);
+    Tensor values(rshape, std::numeric_limits<double>::infinity());
+    Tensor indices(rshape, 0.0);
+    for (size_t flat = 0; flat < size(); ++flat) {
+        auto idx = unravel(flat);
+        auto ridx = idx;
+        size_t axis_idx = idx[axis];
+        ridx.erase(ridx.begin() + static_cast<std::ptrdiff_t>(axis));
+        if (ridx.empty()) ridx.push_back(0);
+        if (m_data[flat] < values.at(ridx)) {
+            values.at(ridx) = m_data[flat];
+            indices.at(ridx) = static_cast<double>(axis_idx);
+        }
+    }
+    return indices;
+}
+
+Tensor Tensor::argmax(size_t axis) const {
+    if (axis >= ndim()) throw std::out_of_range("Tensor::argmax: axis out of range");
+    Shape rshape = shapeWithoutAxis(m_shape, axis);
+    Tensor values(rshape, -std::numeric_limits<double>::infinity());
+    Tensor indices(rshape, 0.0);
+    for (size_t flat = 0; flat < size(); ++flat) {
+        auto idx = unravel(flat);
+        auto ridx = idx;
+        size_t axis_idx = idx[axis];
+        ridx.erase(ridx.begin() + static_cast<std::ptrdiff_t>(axis));
+        if (ridx.empty()) ridx.push_back(0);
+        if (m_data[flat] > values.at(ridx)) {
+            values.at(ridx) = m_data[flat];
+            indices.at(ridx) = static_cast<double>(axis_idx);
+        }
+    }
+    return indices;
+}
+
 // ─── element-wise math ────────────────────────────────────────────────────────
 
 // apply(f) is CPU-only (std::function can't be passed to a CUDA kernel).
@@ -456,6 +887,15 @@ Tensor Tensor::log10() const { CUDA_UNARY(Log10, apply([](double x){ return std:
 Tensor Tensor::sin()   const { CUDA_UNARY(Sin,   apply([](double x){ return std::sin(x);   })) }
 Tensor Tensor::cos()   const { CUDA_UNARY(Cos,   apply([](double x){ return std::cos(x);   })) }
 Tensor Tensor::tanh()  const { CUDA_UNARY(Tanh,  apply([](double x){ return std::tanh(x);  })) }
+Tensor Tensor::relu()  const { CUDA_UNARY(Relu,  apply([](double x){ return x > 0.0 ? x : 0.0; })) }
+Tensor Tensor::sigmoid() const {
+    CUDA_UNARY(Sigmoid, apply([](double x){ return 1.0 / (1.0 + std::exp(-x)); }))
+}
+Tensor Tensor::gelu() const {
+    CUDA_UNARY(Gelu, apply([](double x){
+        return x * 0.5 * (1.0 + std::erf(x / std::sqrt(2.0)));
+    }))
+}
 Tensor Tensor::floor() const { CUDA_UNARY(Floor, apply([](double x){ return std::floor(x); })) }
 Tensor Tensor::ceil()  const { CUDA_UNARY(Ceil,  apply([](double x){ return std::ceil(x);  })) }
 Tensor Tensor::round() const { CUDA_UNARY(Round, apply([](double x){ return std::round(x); })) }
@@ -478,6 +918,43 @@ Tensor Tensor::clip(double lo, double hi) const {
     return apply([lo, hi](double x){ return std::clamp(x, lo, hi); });
 }
 
+Tensor Tensor::softmax(size_t axis) const {
+#ifdef SHAREDMATH_CUDA
+    if (m_device == Device::CUDA) return detail::cuda_softmax(*this, axis);
+#endif
+    if (axis >= ndim())
+        throw std::out_of_range("Tensor::softmax: axis out of range");
+    Shape rshape = shapeWithoutAxis(m_shape, axis);
+    Tensor maxes(rshape, -std::numeric_limits<double>::infinity());
+    for (size_t flat = 0; flat < size(); ++flat) {
+        auto idx = unravel(flat);
+        auto ridx = idx;
+        ridx.erase(ridx.begin() + static_cast<std::ptrdiff_t>(axis));
+        if (ridx.empty()) ridx.push_back(0);
+        maxes.at(ridx) = std::max(maxes.at(ridx), m_data[flat]);
+    }
+
+    Tensor sums(rshape, 0.0);
+    Tensor out(m_shape);
+    for (size_t flat = 0; flat < size(); ++flat) {
+        auto idx = unravel(flat);
+        auto ridx = idx;
+        ridx.erase(ridx.begin() + static_cast<std::ptrdiff_t>(axis));
+        if (ridx.empty()) ridx.push_back(0);
+        double e = std::exp(m_data[flat] - maxes.at(ridx));
+        out.flat(flat) = e;
+        sums.at(ridx) += e;
+    }
+    for (size_t flat = 0; flat < out.size(); ++flat) {
+        auto idx = out.unravel(flat);
+        auto ridx = idx;
+        ridx.erase(ridx.begin() + static_cast<std::ptrdiff_t>(axis));
+        if (ridx.empty()) ridx.push_back(0);
+        out.flat(flat) /= sums.at(ridx);
+    }
+    return out;
+}
+
 // ─── linear algebra ──────────────────────────────────────────────────────────
 
 Tensor Tensor::matmul(const Tensor& other) const {
@@ -492,6 +969,8 @@ Tensor Tensor::matmul(const Tensor& other) const {
 #ifdef SHAREDMATH_CUDA
     if (m_device != other.m_device)
         throw std::runtime_error("Tensor::matmul: tensors must be on the same device");
+    if (m_device == Device::CUDA && m_device_id != other.m_device_id)
+        throw std::runtime_error("Tensor::matmul: tensors must be on the same CUDA device");
     if (m_device == Device::CUDA)
         return detail::cuda_matmul(*this, other);
 #endif
@@ -505,6 +984,304 @@ Tensor Tensor::matmul(const Tensor& other) const {
                 result(i, j) += a * other(l, j);
         }
     return result;
+}
+
+Tensor Tensor::conv2d(const Tensor& weight, const Tensor* bias,
+                      size_t stride, size_t padding) const {
+    if (ndim() != 4 || weight.ndim() != 4)
+        throw std::invalid_argument("Tensor::conv2d: input and weight must be 4-D");
+    if (dim(1) != weight.dim(1))
+        throw std::invalid_argument("Tensor::conv2d: input channel mismatch");
+    if (bias && (bias->ndim() != 1 || bias->dim(0) != weight.dim(0)))
+        throw std::invalid_argument("Tensor::conv2d: bias must have shape [out_channels]");
+    if (stride == 0)
+        throw std::invalid_argument("Tensor::conv2d: stride must be > 0");
+
+#ifdef SHAREDMATH_CUDA
+    if (m_device != weight.m_device || (bias && bias->m_device != m_device))
+        throw std::runtime_error("Tensor::conv2d: tensors must be on the same device");
+    if (m_device == Device::CUDA &&
+        (m_device_id != weight.m_device_id || (bias && bias->m_device_id != m_device_id)))
+        throw std::runtime_error("Tensor::conv2d: tensors must be on the same CUDA device");
+    if (m_device == Device::CUDA)
+        return detail::cuda_conv2d(*this, weight, bias, stride, padding);
+#endif
+
+    const size_t N = dim(0), C = dim(1), H = dim(2), W = dim(3);
+    const size_t OC = weight.dim(0), K = weight.dim(2);
+    if (weight.dim(3) != K)
+        throw std::invalid_argument("Tensor::conv2d: only square kernels are supported");
+    const size_t OH = mlOutDim(H, K, stride, padding, "Tensor::conv2d");
+    const size_t OW = mlOutDim(W, K, stride, padding, "Tensor::conv2d");
+
+    Tensor out({N, OC, OH, OW}, 0.0);
+    for (size_t n = 0; n < N; ++n)
+        for (size_t oc = 0; oc < OC; ++oc)
+            for (size_t oh = 0; oh < OH; ++oh)
+                for (size_t ow = 0; ow < OW; ++ow) {
+                    double sum = bias ? bias->flat(oc) : 0.0;
+                    for (size_t ic = 0; ic < C; ++ic)
+                        for (size_t kh = 0; kh < K; ++kh) {
+                            long ih = static_cast<long>(oh * stride + kh) -
+                                      static_cast<long>(padding);
+                            if (ih < 0 || ih >= static_cast<long>(H)) continue;
+                            for (size_t kw = 0; kw < K; ++kw) {
+                                long iw = static_cast<long>(ow * stride + kw) -
+                                          static_cast<long>(padding);
+                                if (iw < 0 || iw >= static_cast<long>(W)) continue;
+                                sum += (*this)(n, ic, static_cast<size_t>(ih),
+                                               static_cast<size_t>(iw)) *
+                                       weight(oc, ic, kh, kw);
+                            }
+                        }
+                    out(n, oc, oh, ow) = sum;
+                }
+    return out;
+}
+
+Tensor Tensor::conv2d_backward_input(const Tensor& grad_out,
+                                     const Tensor& weight,
+                                     Shape input_shape,
+                                     size_t stride,
+                                     size_t padding) {
+    if (grad_out.ndim() != 4 || weight.ndim() != 4 || input_shape.size() != 4)
+        throw std::invalid_argument("Tensor::conv2d_backward_input: invalid ranks");
+    if (stride == 0)
+        throw std::invalid_argument("Tensor::conv2d_backward_input: stride must be > 0");
+
+#ifdef SHAREDMATH_CUDA
+    if (grad_out.m_device != weight.m_device)
+        throw std::runtime_error("Tensor::conv2d_backward_input: tensors must be on the same device");
+    if (grad_out.m_device == Device::CUDA && grad_out.m_device_id != weight.m_device_id)
+        throw std::runtime_error("Tensor::conv2d_backward_input: tensors must be on the same CUDA device");
+    if (grad_out.m_device == Device::CUDA)
+        return detail::cuda_conv2d_backward_input(grad_out, weight, std::move(input_shape), stride, padding);
+#endif
+
+    const size_t N = input_shape[0], C = input_shape[1], H = input_shape[2], W = input_shape[3];
+    const size_t OC = weight.dim(0), K = weight.dim(2);
+    const size_t OH = grad_out.dim(2), OW = grad_out.dim(3);
+    Tensor dx(input_shape, 0.0);
+    for (size_t n = 0; n < N; ++n)
+        for (size_t oc = 0; oc < OC; ++oc)
+            for (size_t oh = 0; oh < OH; ++oh)
+                for (size_t ow = 0; ow < OW; ++ow) {
+                    double g = grad_out(n, oc, oh, ow);
+                    for (size_t ic = 0; ic < C; ++ic)
+                        for (size_t kh = 0; kh < K; ++kh) {
+                            long ih = static_cast<long>(oh * stride + kh) -
+                                      static_cast<long>(padding);
+                            if (ih < 0 || ih >= static_cast<long>(H)) continue;
+                            for (size_t kw = 0; kw < K; ++kw) {
+                                long iw = static_cast<long>(ow * stride + kw) -
+                                          static_cast<long>(padding);
+                                if (iw < 0 || iw >= static_cast<long>(W)) continue;
+                                dx(n, ic, static_cast<size_t>(ih), static_cast<size_t>(iw)) +=
+                                    g * weight(oc, ic, kh, kw);
+                            }
+                        }
+                }
+    return dx;
+}
+
+Tensor Tensor::conv2d_backward_weight(const Tensor& input,
+                                      Shape weight_shape,
+                                      size_t stride,
+                                      size_t padding) const {
+    if (ndim() != 4 || input.ndim() != 4 || weight_shape.size() != 4)
+        throw std::invalid_argument("Tensor::conv2d_backward_weight: invalid ranks");
+    if (stride == 0)
+        throw std::invalid_argument("Tensor::conv2d_backward_weight: stride must be > 0");
+
+#ifdef SHAREDMATH_CUDA
+    if (m_device != input.m_device)
+        throw std::runtime_error("Tensor::conv2d_backward_weight: tensors must be on the same device");
+    if (m_device == Device::CUDA && m_device_id != input.m_device_id)
+        throw std::runtime_error("Tensor::conv2d_backward_weight: tensors must be on the same CUDA device");
+    if (m_device == Device::CUDA)
+        return detail::cuda_conv2d_backward_weight(*this, input, std::move(weight_shape), stride, padding);
+#endif
+
+    const size_t N = input.dim(0), C = input.dim(1), H = input.dim(2), W = input.dim(3);
+    const size_t OC = weight_shape[0], K = weight_shape[2];
+    const size_t OH = dim(2), OW = dim(3);
+    Tensor dw(weight_shape, 0.0);
+    for (size_t n = 0; n < N; ++n)
+        for (size_t oc = 0; oc < OC; ++oc)
+            for (size_t oh = 0; oh < OH; ++oh)
+                for (size_t ow = 0; ow < OW; ++ow) {
+                    double g = (*this)(n, oc, oh, ow);
+                    for (size_t ic = 0; ic < C; ++ic)
+                        for (size_t kh = 0; kh < K; ++kh) {
+                            long ih = static_cast<long>(oh * stride + kh) -
+                                      static_cast<long>(padding);
+                            if (ih < 0 || ih >= static_cast<long>(H)) continue;
+                            for (size_t kw = 0; kw < K; ++kw) {
+                                long iw = static_cast<long>(ow * stride + kw) -
+                                          static_cast<long>(padding);
+                                if (iw < 0 || iw >= static_cast<long>(W)) continue;
+                                dw(oc, ic, kh, kw) += g * input(n, ic, static_cast<size_t>(ih),
+                                                               static_cast<size_t>(iw));
+                            }
+                        }
+                }
+    return dw;
+}
+
+Tensor Tensor::conv2d_backward_bias() const {
+    if (ndim() != 4)
+        throw std::invalid_argument("Tensor::conv2d_backward_bias: grad_out must be 4-D");
+#ifdef SHAREDMATH_CUDA
+    if (m_device == Device::CUDA)
+        return detail::cuda_conv2d_backward_bias(*this);
+#endif
+    Tensor db({dim(1)}, 0.0);
+    for (size_t n = 0; n < dim(0); ++n)
+        for (size_t oc = 0; oc < dim(1); ++oc)
+            for (size_t oh = 0; oh < dim(2); ++oh)
+                for (size_t ow = 0; ow < dim(3); ++ow)
+                    db.flat(oc) += (*this)(n, oc, oh, ow);
+    return db;
+}
+
+Tensor Tensor::max_pool2d(size_t kernel_size, size_t stride, size_t padding) const {
+    if (ndim() != 4)
+        throw std::invalid_argument("Tensor::max_pool2d: input must be 4-D NCHW");
+    if (stride == 0) stride = kernel_size;
+#ifdef SHAREDMATH_CUDA
+    if (m_device == Device::CUDA)
+        return detail::cuda_max_pool2d(*this, kernel_size, stride, padding);
+#endif
+    const size_t N = dim(0), C = dim(1), H = dim(2), W = dim(3);
+    const size_t OH = mlOutDim(H, kernel_size, stride, padding, "Tensor::max_pool2d");
+    const size_t OW = mlOutDim(W, kernel_size, stride, padding, "Tensor::max_pool2d");
+    Tensor out({N, C, OH, OW}, 0.0);
+    for (size_t n = 0; n < N; ++n)
+        for (size_t c = 0; c < C; ++c)
+            for (size_t oh = 0; oh < OH; ++oh)
+                for (size_t ow = 0; ow < OW; ++ow) {
+                    double best = -std::numeric_limits<double>::infinity();
+                    for (size_t kh = 0; kh < kernel_size; ++kh) {
+                        long ih = static_cast<long>(oh * stride + kh) - static_cast<long>(padding);
+                        if (ih < 0 || ih >= static_cast<long>(H)) continue;
+                        for (size_t kw = 0; kw < kernel_size; ++kw) {
+                            long iw = static_cast<long>(ow * stride + kw) - static_cast<long>(padding);
+                            if (iw < 0 || iw >= static_cast<long>(W)) continue;
+                            best = std::max(best, (*this)(n, c, static_cast<size_t>(ih), static_cast<size_t>(iw)));
+                        }
+                    }
+                    out(n, c, oh, ow) = best;
+                }
+    return out;
+}
+
+Tensor Tensor::max_pool2d_backward(const Tensor& input, size_t kernel_size,
+                                   size_t stride, size_t padding) const {
+    if (ndim() != 4 || input.ndim() != 4)
+        throw std::invalid_argument("Tensor::max_pool2d_backward: tensors must be 4-D");
+    if (stride == 0) stride = kernel_size;
+#ifdef SHAREDMATH_CUDA
+    if (m_device != input.m_device)
+        throw std::runtime_error("Tensor::max_pool2d_backward: tensors must be on the same device");
+    if (m_device == Device::CUDA && m_device_id != input.m_device_id)
+        throw std::runtime_error("Tensor::max_pool2d_backward: tensors must be on the same CUDA device");
+    if (m_device == Device::CUDA)
+        return detail::cuda_max_pool2d_backward(*this, input, kernel_size, stride, padding);
+#endif
+    const size_t N = input.dim(0), C = input.dim(1), H = input.dim(2), W = input.dim(3);
+    const size_t OH = dim(2), OW = dim(3);
+    Tensor dx(input.shape(), 0.0);
+    for (size_t n = 0; n < N; ++n)
+        for (size_t c = 0; c < C; ++c)
+            for (size_t oh = 0; oh < OH; ++oh)
+                for (size_t ow = 0; ow < OW; ++ow) {
+                    double best = -std::numeric_limits<double>::infinity();
+                    size_t bi = 0, bj = 0;
+                    for (size_t kh = 0; kh < kernel_size; ++kh) {
+                        long ih = static_cast<long>(oh * stride + kh) - static_cast<long>(padding);
+                        if (ih < 0 || ih >= static_cast<long>(H)) continue;
+                        for (size_t kw = 0; kw < kernel_size; ++kw) {
+                            long iw = static_cast<long>(ow * stride + kw) - static_cast<long>(padding);
+                            if (iw < 0 || iw >= static_cast<long>(W)) continue;
+                            double v = input(n, c, static_cast<size_t>(ih), static_cast<size_t>(iw));
+                            if (v > best) { best = v; bi = static_cast<size_t>(ih); bj = static_cast<size_t>(iw); }
+                        }
+                    }
+                    dx(n, c, bi, bj) += (*this)(n, c, oh, ow);
+                }
+    return dx;
+}
+
+Tensor Tensor::avg_pool2d(size_t kernel_size, size_t stride, size_t padding) const {
+    if (ndim() != 4)
+        throw std::invalid_argument("Tensor::avg_pool2d: input must be 4-D NCHW");
+    if (stride == 0) stride = kernel_size;
+#ifdef SHAREDMATH_CUDA
+    if (m_device == Device::CUDA)
+        return detail::cuda_avg_pool2d(*this, kernel_size, stride, padding);
+#endif
+    const size_t N = dim(0), C = dim(1), H = dim(2), W = dim(3);
+    const size_t OH = mlOutDim(H, kernel_size, stride, padding, "Tensor::avg_pool2d");
+    const size_t OW = mlOutDim(W, kernel_size, stride, padding, "Tensor::avg_pool2d");
+    Tensor out({N, C, OH, OW}, 0.0);
+    for (size_t n = 0; n < N; ++n)
+        for (size_t c = 0; c < C; ++c)
+            for (size_t oh = 0; oh < OH; ++oh)
+                for (size_t ow = 0; ow < OW; ++ow) {
+                    double sum = 0.0, count = 0.0;
+                    for (size_t kh = 0; kh < kernel_size; ++kh) {
+                        long ih = static_cast<long>(oh * stride + kh) - static_cast<long>(padding);
+                        if (ih < 0 || ih >= static_cast<long>(H)) continue;
+                        for (size_t kw = 0; kw < kernel_size; ++kw) {
+                            long iw = static_cast<long>(ow * stride + kw) - static_cast<long>(padding);
+                            if (iw < 0 || iw >= static_cast<long>(W)) continue;
+                            sum += (*this)(n, c, static_cast<size_t>(ih), static_cast<size_t>(iw));
+                            count += 1.0;
+                        }
+                    }
+                    out(n, c, oh, ow) = count > 0.0 ? sum / count : 0.0;
+                }
+    return out;
+}
+
+Tensor Tensor::avg_pool2d_backward(Shape input_shape, size_t kernel_size,
+                                   size_t stride, size_t padding) const {
+    if (ndim() != 4 || input_shape.size() != 4)
+        throw std::invalid_argument("Tensor::avg_pool2d_backward: invalid ranks");
+    if (stride == 0) stride = kernel_size;
+#ifdef SHAREDMATH_CUDA
+    if (m_device == Device::CUDA)
+        return detail::cuda_avg_pool2d_backward(*this, std::move(input_shape), kernel_size, stride, padding);
+#endif
+    const size_t N = input_shape[0], C = input_shape[1], H = input_shape[2], W = input_shape[3];
+    const size_t OH = dim(2), OW = dim(3);
+    Tensor dx(input_shape, 0.0);
+    for (size_t n = 0; n < N; ++n)
+        for (size_t c = 0; c < C; ++c)
+            for (size_t oh = 0; oh < OH; ++oh)
+                for (size_t ow = 0; ow < OW; ++ow) {
+                    double count = 0.0;
+                    for (size_t kh = 0; kh < kernel_size; ++kh) {
+                        long ih = static_cast<long>(oh * stride + kh) - static_cast<long>(padding);
+                        if (ih < 0 || ih >= static_cast<long>(H)) continue;
+                        for (size_t kw = 0; kw < kernel_size; ++kw) {
+                            long iw = static_cast<long>(ow * stride + kw) - static_cast<long>(padding);
+                            if (iw < 0 || iw >= static_cast<long>(W)) continue;
+                            count += 1.0;
+                        }
+                    }
+                    double share = count > 0.0 ? (*this)(n, c, oh, ow) / count : 0.0;
+                    for (size_t kh = 0; kh < kernel_size; ++kh) {
+                        long ih = static_cast<long>(oh * stride + kh) - static_cast<long>(padding);
+                        if (ih < 0 || ih >= static_cast<long>(H)) continue;
+                        for (size_t kw = 0; kw < kernel_size; ++kw) {
+                            long iw = static_cast<long>(ow * stride + kw) - static_cast<long>(padding);
+                            if (iw < 0 || iw >= static_cast<long>(W)) continue;
+                            dx(n, c, static_cast<size_t>(ih), static_cast<size_t>(iw)) += share;
+                        }
+                    }
+                }
+    return dx;
 }
 
 double Tensor::trace() const {
@@ -585,6 +1362,10 @@ Tensor operator+(double s, const Tensor& t) { return t + s; }
 Tensor operator-(double s, const Tensor& t) { return (-t) + s; }
 Tensor operator*(double s, const Tensor& t) { return t * s; }
 Tensor operator/(double s, const Tensor& t) {
+#ifdef SHAREDMATH_CUDA
+    if (t.device() == Device::CUDA)
+        return detail::cuda_scalar(t, s, detail::ScalarOp::RDiv);
+#endif
     return t.apply([s](double x){ return s / x; });
 }
 

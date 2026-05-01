@@ -116,6 +116,28 @@ TEST(TensorFactories, FromMatrix) {
     EXPECT_DOUBLE_EQ(t(1, 2), 6.0);
 }
 
+TEST(TensorFactories, RandomGeneratorsAreDeterministicWithSeed) {
+    Tensor a = Tensor::uniform({2, 3}, -1.0, 1.0, 42);
+    Tensor b = Tensor::uniform({2, 3}, -1.0, 1.0, 42);
+    expectNear(a, b);
+
+    Tensor n = Tensor::randn({4}, 7);
+    ASSERT_EQ(n.shape(), (Tensor::Shape{4}));
+
+    Tensor mask = Tensor::bernoulli({16}, 0.25, 9);
+    for (size_t i = 0; i < mask.size(); ++i)
+        EXPECT_TRUE(mask.flat(i) == 0.0 || mask.flat(i) == 1.0);
+}
+
+TEST(TensorFactories, DTypeRoadmapSupportsFloat32Tag) {
+    Tensor t({1}, {1.0 / 3.0}, TensorDType::Float32);
+    EXPECT_EQ(t.dtype(), TensorDType::Float32);
+    EXPECT_DOUBLE_EQ(t(0), static_cast<double>(static_cast<float>(1.0 / 3.0)));
+
+    Tensor f64 = t.astype(TensorDType::Float64);
+    EXPECT_EQ(f64.dtype(), TensorDType::Float64);
+}
+
 // ════════════════════════════════════════════════════════════════════════════
 // Element access
 // ════════════════════════════════════════════════════════════════════════════
@@ -184,10 +206,23 @@ TEST(TensorShape, Squeeze) {
     ASSERT_EQ(s.shape(), (Tensor::Shape{3, 2}));
 }
 
+TEST(TensorShape, SqueezeAxis) {
+    Tensor t({2, 1, 3});
+    Tensor s = t.squeeze(1);
+    ASSERT_EQ(s.shape(), (Tensor::Shape{2, 3}));
+    EXPECT_THROW(t.squeeze(0), std::invalid_argument);
+}
+
 TEST(TensorShape, ExpandDims) {
     Tensor t({3, 4});
     Tensor e = t.expand_dims(1);
     ASSERT_EQ(e.shape(), (Tensor::Shape{3, 1, 4}));
+}
+
+TEST(TensorShape, UnsqueezeAlias) {
+    Tensor t({3, 4});
+    Tensor e = t.unsqueeze(0);
+    ASSERT_EQ(e.shape(), (Tensor::Shape{1, 3, 4}));
 }
 
 TEST(TensorShape, Transpose2D) {
@@ -205,12 +240,52 @@ TEST(TensorShape, TransposeCustomAxes) {
     ASSERT_EQ(tr.shape(), (Tensor::Shape{3, 2, 4}));
 }
 
+TEST(TensorShape, PermuteAliasPreservesValues) {
+    Tensor t = Tensor::arange(0.0, 24.0).reshape({2, 3, 4});
+    Tensor p = t.permute({2, 0, 1});
+    ASSERT_EQ(p.shape(), (Tensor::Shape{4, 2, 3}));
+    EXPECT_DOUBLE_EQ(p(3, 1, 2), t(1, 2, 3));
+}
+
 TEST(TensorShape, Slice) {
     Tensor t = Tensor::arange(0.0, 12.0).reshape({3, 4});
     Tensor s = t.slice(0, 1, 3);   // rows 1 and 2
     ASSERT_EQ(s.shape(), (Tensor::Shape{2, 4}));
     EXPECT_DOUBLE_EQ(s(0, 0), 4.0);
     EXPECT_DOUBLE_EQ(s(1, 3), 11.0);
+}
+
+TEST(TensorShape, SliceViewMutatesBaseWithoutCopy) {
+    Tensor t = Tensor::arange(0.0, 12.0).reshape({3, 4});
+    TensorView v = t.slice_view(0, 1, 3);
+    ASSERT_EQ(v.shape(), (Tensor::Shape{2, 4}));
+    v.at({0, 2}) = 99.0;
+    EXPECT_DOUBLE_EQ(t(1, 2), 99.0);
+    Tensor copied = v.to_tensor();
+    EXPECT_DOUBLE_EQ(copied(0, 2), 99.0);
+}
+
+TEST(TensorShape, BroadcastTo) {
+    Tensor row({1, 3}, {1, 2, 3});
+    Tensor b = row.broadcast_to({2, 3});
+    ASSERT_EQ(b.shape(), (Tensor::Shape{2, 3}));
+    EXPECT_DOUBLE_EQ(b(1, 2), 3.0);
+}
+
+TEST(TensorShape, ConcatStackSplit) {
+    Tensor a({1, 3}, {1, 2, 3});
+    Tensor b({1, 3}, {4, 5, 6});
+    Tensor c = Tensor::concat({a, b}, 0);
+    ASSERT_EQ(c.shape(), (Tensor::Shape{2, 3}));
+    EXPECT_DOUBLE_EQ(c(1, 2), 6.0);
+
+    Tensor st = Tensor::stack({a, b}, 0);
+    ASSERT_EQ(st.shape(), (Tensor::Shape{2, 1, 3}));
+    EXPECT_DOUBLE_EQ(st(1, 0, 1), 5.0);
+
+    auto parts = c.split(0, std::vector<size_t>{1, 1});
+    ASSERT_EQ(parts.size(), 2u);
+    EXPECT_DOUBLE_EQ(parts[1](0, 0), 4.0);
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -308,6 +383,16 @@ TEST(TensorArithmetic, Equality) {
     EXPECT_TRUE(a != c);
 }
 
+TEST(TensorArithmetic, WhereBroadcastsInputs) {
+    Tensor cond({2, 1}, {1, 0});
+    Tensor x({1, 3}, {10, 20, 30});
+    Tensor y({2, 3}, {1, 2, 3, 4, 5, 6});
+    Tensor r = Tensor::where(cond, x, y);
+    ASSERT_EQ(r.shape(), (Tensor::Shape{2, 3}));
+    EXPECT_DOUBLE_EQ(r(0, 2), 30.0);
+    EXPECT_DOUBLE_EQ(r(1, 2), 6.0);
+}
+
 // ════════════════════════════════════════════════════════════════════════════
 // Global reductions
 // ════════════════════════════════════════════════════════════════════════════
@@ -398,6 +483,22 @@ TEST(TensorAxisReductions, MeanAxis1) {
     EXPECT_NEAR(m(1), 4.0, kEps);
 }
 
+TEST(TensorAxisReductions, VarAxis1) {
+    Tensor t({2, 4}, {0, 2, 4, 6,  1, 3, 5, 7});
+    Tensor v = t.var(1);
+    ASSERT_EQ(v.shape(), (Tensor::Shape{2}));
+    EXPECT_NEAR(v(0), 5.0, kEps);
+    EXPECT_NEAR(v(1), 5.0, kEps);
+}
+
+TEST(TensorAxisReductions, ArgmaxAxis) {
+    Tensor t({2, 3}, {1, 9, 3, 8, 2, 7});
+    Tensor idx = t.argmax(1);
+    ASSERT_EQ(idx.shape(), (Tensor::Shape{2}));
+    EXPECT_DOUBLE_EQ(idx(0), 1.0);
+    EXPECT_DOUBLE_EQ(idx(1), 0.0);
+}
+
 // ════════════════════════════════════════════════════════════════════════════
 // Element-wise math
 // ════════════════════════════════════════════════════════════════════════════
@@ -476,6 +577,15 @@ TEST(TensorElemMath, Apply) {
     EXPECT_DOUBLE_EQ(r(2), 10.0);
 }
 
+TEST(TensorElemMath, SoftmaxAxis) {
+    Tensor t({2, 3}, {1, 2, 3, 1, 1, 1});
+    Tensor s = t.softmax(1);
+    ASSERT_EQ(s.shape(), (Tensor::Shape{2, 3}));
+    EXPECT_NEAR(s(0, 0) + s(0, 1) + s(0, 2), 1.0, kEps);
+    EXPECT_NEAR(s(1, 0), 1.0 / 3.0, kEps);
+    EXPECT_NEAR(s(1, 2), 1.0 / 3.0, kEps);
+}
+
 // ════════════════════════════════════════════════════════════════════════════
 // Linear algebra
 // ════════════════════════════════════════════════════════════════════════════
@@ -548,4 +658,67 @@ TEST(TensorOutput, StreamOperator) {
     oss << t;
     EXPECT_FALSE(oss.str().empty());
     EXPECT_NE(oss.str().find("Tensor"), std::string::npos);
+}
+
+TEST(TensorMLPrimitives, ActivationsAndSoftmax) {
+    Tensor x = Tensor::from_vector({-1.0, 0.0, 1.0});
+
+    auto relu = x.relu();
+    EXPECT_DOUBLE_EQ(relu.flat(0), 0.0);
+    EXPECT_DOUBLE_EQ(relu.flat(1), 0.0);
+    EXPECT_DOUBLE_EQ(relu.flat(2), 1.0);
+
+    auto sigmoid = x.sigmoid();
+    EXPECT_NEAR(sigmoid.flat(1), 0.5, 1e-12);
+
+    auto gelu = x.gelu();
+    EXPECT_NEAR(gelu.flat(1), 0.0, 1e-12);
+
+    auto sm = Tensor({2, 3}, {1, 2, 3, 1, 1, 1}).softmax(1);
+    EXPECT_NEAR(sm(0, 0) + sm(0, 1) + sm(0, 2), 1.0, 1e-12);
+    EXPECT_NEAR(sm(1, 0), 1.0 / 3.0, 1e-12);
+}
+
+TEST(TensorMLPrimitives, Conv2dForwardAndBackward) {
+    Tensor x({1, 1, 3, 3}, {
+        1, 2, 3,
+        4, 5, 6,
+        7, 8, 9
+    });
+    Tensor w({1, 1, 2, 2}, {1, 1, 1, 1});
+
+    auto y = x.conv2d(w, nullptr, 1, 0);
+    ASSERT_EQ(y.shape(), (Tensor::Shape{1, 1, 2, 2}));
+    EXPECT_DOUBLE_EQ(y(0, 0, 0, 0), 12.0);
+    EXPECT_DOUBLE_EQ(y(0, 0, 1, 1), 28.0);
+
+    Tensor go = Tensor::ones({1, 1, 2, 2});
+    auto dx = Tensor::conv2d_backward_input(go, w, x.shape(), 1, 0);
+    EXPECT_DOUBLE_EQ(dx(0, 0, 0, 0), 1.0);
+    EXPECT_DOUBLE_EQ(dx(0, 0, 1, 1), 4.0);
+    EXPECT_DOUBLE_EQ(dx(0, 0, 2, 2), 1.0);
+
+    auto dw = go.conv2d_backward_weight(x, w.shape(), 1, 0);
+    EXPECT_DOUBLE_EQ(dw(0, 0, 0, 0), 12.0);
+    EXPECT_DOUBLE_EQ(dw(0, 0, 1, 1), 28.0);
+
+    auto db = go.conv2d_backward_bias();
+    EXPECT_DOUBLE_EQ(db.flat(0), 4.0);
+}
+
+TEST(TensorMLPrimitives, Pool2dForwardAndBackward) {
+    Tensor x({1, 1, 2, 2}, {1, 5, 2, 4});
+
+    auto maxp = x.max_pool2d(2);
+    ASSERT_EQ(maxp.shape(), (Tensor::Shape{1, 1, 1, 1}));
+    EXPECT_DOUBLE_EQ(maxp.flat(0), 5.0);
+    auto max_dx = Tensor::ones({1, 1, 1, 1}).max_pool2d_backward(x, 2);
+    EXPECT_DOUBLE_EQ(max_dx.flat(0), 0.0);
+    EXPECT_DOUBLE_EQ(max_dx.flat(1), 1.0);
+
+    auto avgp = x.avg_pool2d(2);
+    EXPECT_DOUBLE_EQ(avgp.flat(0), 3.0);
+    auto avg_dx = Tensor::ones({1, 1, 1, 1}).avg_pool2d_backward(x.shape(), 2);
+    for (size_t i = 0; i < avg_dx.size(); ++i)
+        EXPECT_DOUBLE_EQ(avg_dx.flat(i), 0.25);
 }

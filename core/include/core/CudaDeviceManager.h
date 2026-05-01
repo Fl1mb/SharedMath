@@ -3,6 +3,7 @@
 #include "CudaDeviceInfo.h"
 #include <vector>
 #include <atomic>
+#include <memory>
 #include <stdexcept>
 
 namespace SharedMath::Core {
@@ -57,7 +58,7 @@ private:
     // One atomic counter per device; value = #tasks in-flight.
     // std::vector<std::atomic> is non-copyable, so we store by value and
     // never copy the vector after construction.
-    std::vector<std::atomic<int>> activeTasks_;
+    std::vector<std::unique_ptr<std::atomic<int>>> activeTasks_;
 };
 
 } // namespace SharedMath::Core
