@@ -1,9 +1,9 @@
 #pragma once
 
-// SharedMath::ML — Dataset and DataLoader
-//
-// TensorDataset  — pairs of (X, y) tensors split into individual samples
-// DataLoader     — iterates over a TensorDataset in (optionally shuffled) batches
+/// SharedMath::ML — Dataset and DataLoader
+///
+/// TensorDataset  — pairs of (X, y) tensors split into individual samples
+/// DataLoader     — iterates over a TensorDataset in (optionally shuffled) batches
 
 #include <sharedmath_ml_export.h>
 

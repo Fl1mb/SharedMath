@@ -8,22 +8,22 @@
 
 namespace SharedMath::Core {
 
-// ─────────────────────────────────────────────────────────────────────────────
-// CudaDeviceManager  —  singleton
-//
-// Enumerates all available CUDA GPUs at first use and keeps an atomic
-// per-device "active task" counter that the dispatcher uses for load
-// balancing.  Works at compile time without CUDA — reports 0 devices.
-// ─────────────────────────────────────────────────────────────────────────────
+/// ─────────────────────────────────────────────────────────────────────────────
+/// CudaDeviceManager  —  singleton
+///
+/// Enumerates all available CUDA GPUs at first use and keeps an atomic
+/// per-device "active task" counter that the dispatcher uses for load
+/// balancing.  Works at compile time without CUDA — reports 0 devices.
+/// ─────────────────────────────────────────────────────────────────────────────
 class CudaDeviceManager {
 public:
-    // ── Singleton access ─────────────────────────────────────────────────────
+    /// ── Singleton access ─────────────────────────────────────────────────────
     static CudaDeviceManager& instance();
 
     CudaDeviceManager(const CudaDeviceManager&)            = delete;
     CudaDeviceManager& operator=(const CudaDeviceManager&) = delete;
 
-    // ── Device enumeration ───────────────────────────────────────────────────
+    /// ── Device enumeration ───────────────────────────────────────────────────
 
     /// Number of CUDA-capable devices found at startup.
     int deviceCount() const noexcept;
@@ -38,7 +38,7 @@ public:
     /// Reference to the full device list (read-only).
     const std::vector<CudaDeviceInfo>& devices() const noexcept;
 
-    // ── Load balancing ───────────────────────────────────────────────────────
+    /// ── Load balancing ───────────────────────────────────────────────────────
 
     /// Index of the GPU with the fewest currently active tasks.
     /// Returns -1 when no devices are available.
@@ -47,7 +47,7 @@ public:
     /// Number of tasks currently executing (or queued) on a device.
     int activeTaskCount(int deviceId) const noexcept;
 
-    // Called internally by CudaDispatcher — not intended for direct use.
+    /// Called internally by CudaDispatcher — not intended for direct use.
     void incrementLoad(int deviceId) noexcept;
     void decrementLoad(int deviceId) noexcept;
 

@@ -12,20 +12,20 @@
 
 namespace SharedMath::LinearAlgebra {
 
-// Forward-declare the CUDA accessor so DynamicMatrix can grant it friendship.
-// The struct is fully defined in DynamicMatrixCUDA.h (internal, never installed).
+/// Forward-declare the CUDA accessor so DynamicMatrix can grant it friendship.
+/// The struct is fully defined in DynamicMatrixCUDA.h (internal, never installed).
 namespace detail { struct DynamicMatrixCUDAImpl; }
 
-// Row-major dense matrix backed by a single contiguous heap allocation.
-//
-// Layout: element (r, c) lives at data_[r * cols_ + c].
-//
-// GPU acceleration (Variant A — transparent dispatch):
-//   Call .cuda() to move a matrix to the GPU, .cpu() to bring it back.
-//   When CUDA is not compiled in, both calls are no-ops.
-//   Operations between two GPU matrices are dispatched to cuBLAS / custom
-//   CUDA kernels automatically; no user-visible API changes required.
-//
+/// Row-major dense matrix backed by a single contiguous heap allocation.
+///
+/// Layout: element (r, c) lives at data_[r * cols_ + c].
+///
+/// GPU acceleration (Variant A — transparent dispatch):
+///   Call .cuda() to move a matrix to the GPU, .cpu() to bring it back.
+///   When CUDA is not compiled in, both calls are no-ops.
+///   Operations between two GPU matrices are dispatched to cuBLAS / custom
+///   CUDA kernels automatically; no user-visible API changes required.
+///
 class SHAREDMATH_LINEARALGEBRA_EXPORT DynamicMatrix : public AbstractMatrix {
 public:
     // ── Construction ──────────────────────────────────────────────────────
@@ -57,7 +57,7 @@ public:
     explicit DynamicMatrix(std::shared_ptr<AbstractMatrix> src)
         : DynamicMatrix(*src) {}
 
-    // Construct from 2-D CPU Tensor (zero-copy move)
+    /// Construct from 2-D CPU Tensor (zero-copy move)
     explicit DynamicMatrix(Tensor t) {
         if (t.ndim() != 2)
             throw std::invalid_argument(
@@ -78,11 +78,11 @@ public:
     // CUDA calls needed here, and CUDABuffer can remain an incomplete type.
     ~DynamicMatrix() override = default;
 
-    // ── AbstractMatrix interface ──────────────────────────────────────────
+    /// ── AbstractMatrix interface ──────────────────────────────────────────
     size_t rows() const noexcept override { return rows_; }
     size_t cols() const noexcept override { return cols_; }
 
-    // Element access is only valid for CPU matrices.
+    /// Element access is only valid for CPU matrices.
     double get(size_t r, size_t c) const override {
         requireCPU("get");
         return at_unsafe(r, c);
@@ -96,17 +96,17 @@ public:
         at_unsafe(r, c) = v;
     }
 
-    // toPtr() returns the host data pointer; null / dangling for GPU matrices.
+    /// toPtr() returns the host data pointer; null / dangling for GPU matrices.
     double*       toPtr()       noexcept override { return data_.data(); }
     const double* toPtr() const noexcept override { return data_.data(); }
 
-    // ── Element access ────────────────────────────────────────────────────
+    /// ── Element access ────────────────────────────────────────────────────
 
-    // Unchecked (r, c) syntax — only safe on CPU matrices
+    /// Unchecked (r, c) syntax — only safe on CPU matrices
     double& operator()(size_t r, size_t c)       noexcept { return at_unsafe(r, c); }
     double  operator()(size_t r, size_t c) const noexcept { return at_unsafe(r, c); }
 
-    // Bounds-checked access — CPU only
+    /// Bounds-checked access — CPU only
     double& at(size_t r, size_t c) {
         requireCPU("at");
         checkBounds(r, c);
@@ -118,34 +118,34 @@ public:
         return at_unsafe(r, c);
     }
 
-    // Pointer to the first element of row r — CPU only
+    /// Pointer to the first element of row r — CPU only
     double*       row_ptr(size_t r)       noexcept { return data_.data() + r * cols_; }
     const double* row_ptr(size_t r) const noexcept { return data_.data() + r * cols_; }
 
-    // Flat (linearised row-major) access — CPU only, no bounds check
+    /// Flat (linearised row-major) access — CPU only, no bounds check
     double& flat(size_t i)       noexcept { return data_[i]; }
     double  flat(size_t i) const noexcept { return data_[i]; }
 
     const std::vector<double>& data()  const noexcept { return data_; }
     std::vector<double>&       data()        noexcept { return data_; }
 
-    // ── Metadata ──────────────────────────────────────────────────────────
+    /// ── Metadata ──────────────────────────────────────────────────────────
 
-    // size() is computed from shape so it is correct for both CPU and GPU matrices.
+    /// size() is computed from shape so it is correct for both CPU and GPU matrices.
     size_t size()     const noexcept { return rows_ * cols_; }
     bool   empty()    const noexcept { return rows_ * cols_ == 0; }
     bool   isSquare() const noexcept { return rows_ == cols_; }
 
-    // ── Device management ─────────────────────────────────────────────────
+    /// ── Device management ─────────────────────────────────────────────────
 
     Device device() const noexcept { return m_device; }
 
-    // Move data to GPU (host → device copy).  Returns *this if already on GPU
-    // or if no CUDA-capable device is present (graceful CPU fallback).
-    // On CPU-only builds this is always a no-op.
+    /// Move data to GPU (host → device copy).  Returns *this if already on GPU
+    /// or if no CUDA-capable device is present (graceful CPU fallback).
+    /// On CPU-only builds this is always a no-op.
     DynamicMatrix cuda() const;
 
-    // Move data back to CPU (device → host copy).  No-op if already on CPU.
+    /// Move data back to CPU (device → host copy).  No-op if already on CPU.
     DynamicMatrix cpu() const;
 
     // ── Comparison ────────────────────────────────────────────────────────
@@ -171,7 +171,7 @@ public:
     // Matrix multiply — dispatches to cuBLAS when both operands are on GPU
     DynamicMatrix  operator* (const DynamicMatrix& B) const;
 
-    // ── Transpose ─────────────────────────────────────────────────────────
+    /// ── Transpose ─────────────────────────────────────────────────────────
     DynamicMatrix transposed() const {
         requireCPU("transposed");
         DynamicMatrix T(cols_, rows_);
@@ -183,11 +183,11 @@ public:
         return T;
     }
 
-    // ── Utilities ─────────────────────────────────────────────────────────
+    /// ── Utilities ─────────────────────────────────────────────────────────
     void clear()        noexcept { std::fill(data_.begin(), data_.end(), 0.0); }
     void fill(double v) noexcept { std::fill(data_.begin(), data_.end(), v); }
 
-    // ── Named constructors ────────────────────────────────────────────────
+    /// ── Named constructors ────────────────────────────────────────────────
     static DynamicMatrix zeros(size_t r, size_t c) { return DynamicMatrix(r, c, 0.0); }
     static DynamicMatrix ones (size_t r, size_t c) { return DynamicMatrix(r, c, 1.0); }
     static DynamicMatrix eye  (size_t n) {
@@ -196,10 +196,10 @@ public:
         return M;
     }
 
-    // ── Tensor interop — CPU matrices only ───────────────────────────────
+    /// ── Tensor interop — CPU matrices only ───────────────────────────────
 
-    // Copy data into a 2-D CPU Tensor.
-    // For GPU matrices call .cpu().toTensor().
+    /// Copy data into a 2-D CPU Tensor.
+    /// For GPU matrices call .cpu().toTensor().
     Tensor toTensor() const {
         requireCPU("toTensor");
         return Tensor({rows_, cols_}, data_);
@@ -212,9 +212,9 @@ public:
         return DynamicMatrix(t.dim(0), t.dim(1), t.data());
     }
 
-    // ── GPU buffer type ───────────────────────────────────────────────── //
-    // Forward-declared public so that DynamicMatrixCUDA.cu free functions
-    // can use std::make_shared<CUDABuffer>.  Completed only in the .cu file.
+    /// ── GPU buffer type ───────────────────────────────────────────────── //
+    /// Forward-declared public so that DynamicMatrixCUDA.cu free functions
+    /// can use std::make_shared<CUDABuffer>.  Completed only in the .cu file.
     struct CUDABuffer;
 
 private:
@@ -236,7 +236,7 @@ private:
     // exposing raw pointers in the public header.
     friend struct detail::DynamicMatrixCUDAImpl;
 
-    // ── Private helpers ───────────────────────────────────────────────────
+    /// ── Private helpers ───────────────────────────────────────────────────
 
     double& at_unsafe(size_t r, size_t c) noexcept {
         return data_[r * cols_ + c];

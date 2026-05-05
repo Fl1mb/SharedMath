@@ -17,8 +17,8 @@
 
 namespace SharedMath::LinearAlgebra {
 
-// Compute device. CUDA is only functional when the library is built with
-// -DSHAREDMATH_ENABLE_CUDA=ON. On CPU-only builds, .cuda() is a no-op.
+/// Compute device. CUDA is only functional when the library is built with
+/// -DSHAREDMATH_ENABLE_CUDA=ON. On CPU-only builds, .cuda() is a no-op.
 enum class SHAREDMATH_LINEARALGEBRA_EXPORT Device { CPU, CUDA };
 
 enum class SHAREDMATH_LINEARALGEBRA_EXPORT TensorDType {
@@ -30,8 +30,8 @@ namespace detail { struct TensorCUDAImpl; }   // forward-declared CUDA accessor
 
 class Tensor;
 
-// Lightweight non-owning view into a CPU Tensor. It keeps the original storage
-// and uses shape/stride metadata, so writing through the view updates the base.
+/// Lightweight non-owning view into a CPU Tensor. It keeps the original storage
+/// and uses shape/stride metadata, so writing through the view updates the base.
 class SHAREDMATH_LINEARALGEBRA_EXPORT TensorView {
 public:
     using Shape = std::vector<size_t>;
@@ -62,11 +62,11 @@ private:
     friend class Tensor;
 };
 
-// N-dimensional dense tensor with row-major (C-contiguous) storage.
-// Supports NumPy-style broadcasting, axis reductions, and element-wise math.
-// When built with CUDA support, tensors can be moved to GPU with .cuda() and
-// back with .cpu(). Operations between two GPU tensors are dispatched to cuBLAS
-// / custom CUDA kernels automatically.
+/// N-dimensional dense tensor with row-major (C-contiguous) storage.
+/// Supports NumPy-style broadcasting, axis reductions, and element-wise math.
+/// When built with CUDA support, tensors can be moved to GPU with .cuda() and
+/// back with .cpu(). Operations between two GPU tensors are dispatched to cuBLAS
+/// / custom CUDA kernels automatically.
 class SHAREDMATH_LINEARALGEBRA_EXPORT Tensor {
 public:
     using Shape = std::vector<size_t>;
@@ -80,7 +80,7 @@ public:
     Tensor(Shape shape, std::vector<double> data);
     Tensor(Shape shape, std::vector<double> data, TensorDType dtype);
 
-    // Static factories
+    /// Static factories
     static Tensor zeros(Shape shape);
     static Tensor ones(Shape shape);
     static Tensor eye(size_t n);
@@ -99,35 +99,35 @@ public:
     static Tensor stack(const std::vector<Tensor>& tensors, size_t axis = 0);
     static Tensor where(const Tensor& condition, const Tensor& x, const Tensor& y);
 
-    // ------------------------------------------------------------------ //
-    // Shape & metadata
-    // ------------------------------------------------------------------ //
+    /// ------------------------------------------------------------------ //
+    /// Shape & metadata
+    /// ------------------------------------------------------------------ //
 
     const Shape& shape()           const noexcept { return m_shape; }
     size_t        ndim()           const noexcept { return m_shape.size(); }
-    // Total element count — valid for both CPU and GPU tensors.
+    /// Total element count — valid for both CPU and GPU tensors.
     size_t        size()           const noexcept;
     size_t        dim(size_t axis) const;
     bool          empty()          const noexcept { return size() == 0; }
     TensorDType   dtype()          const noexcept { return m_dtype; }
 
-    // ── Device management ─────────────────────────────────────────────── //
+    /// ── Device management ─────────────────────────────────────────────── //
 
     Device device() const noexcept { return m_device; }
 
-    // Transfer to GPU (copy host→device). No-op if already on GPU.
-    // When built without CUDA support, returns *this unchanged.
+    /// Transfer to GPU (copy host→device). No-op if already on GPU.
+    /// When built without CUDA support, returns *this unchanged.
     Tensor cuda() const;
     Tensor cuda(int device_id) const;
     Tensor cuda_auto() const;
 
-    // Transfer to CPU (copy device→host). No-op if already on CPU.
+    /// Transfer to CPU (copy device→host). No-op if already on CPU.
     Tensor cpu()  const;
     Tensor to(Device device, int device_id = -1) const;
 
     int device_id() const noexcept { return m_device_id; }
 
-    // Convert flat index to multi-index (row-major)
+    /// Convert flat index to multi-index (row-major)
     std::vector<size_t> unravel(size_t flat_idx) const;
 
     // ------------------------------------------------------------------ //
@@ -147,17 +147,17 @@ public:
     double& at(const std::vector<size_t>& idx);
     double  at(const std::vector<size_t>& idx) const;
 
-    // Raw flat access — only valid for CPU tensors; throws for GPU tensors.
+    /// Raw flat access — only valid for CPU tensors; throws for GPU tensors.
     double& flat(size_t i);
     double  flat(size_t i) const;
 
-    // Host data vector (empty for GPU tensors — use .cpu().data() to fetch).
+    /// Host data vector (empty for GPU tensors — use .cpu().data() to fetch).
     const std::vector<double>& data()  const noexcept { return m_data; }
     std::vector<double>&       data()        noexcept { return m_data; }
 
-    // ------------------------------------------------------------------ //
-    // Shape operations
-    // ------------------------------------------------------------------ //
+    /// ------------------------------------------------------------------ //
+    /// Shape operations
+    /// ------------------------------------------------------------------ //
 
     Tensor reshape(Shape new_shape)            const;
     Tensor view(Shape new_shape)               const;
@@ -199,9 +199,9 @@ public:
     bool operator==(const Tensor& o) const;
     bool operator!=(const Tensor& o) const;
 
-    // ------------------------------------------------------------------ //
-    // Global reductions
-    // ------------------------------------------------------------------ //
+    /// ------------------------------------------------------------------ //
+    /// Global reductions
+    /// ------------------------------------------------------------------ //
 
     double sum()                    const;
     double product()                const;
@@ -213,7 +213,7 @@ public:
     size_t argmin()                 const;
     size_t argmax()                 const;
 
-    // Reductions along one axis (output rank = ndim - 1)
+    /// Reductions along one axis (output rank = ndim - 1)
     Tensor sum(size_t axis)  const;
     Tensor min(size_t axis)  const;
     Tensor max(size_t axis)  const;
@@ -223,9 +223,9 @@ public:
     Tensor argmin(size_t axis) const;
     Tensor argmax(size_t axis) const;
 
-    // ------------------------------------------------------------------ //
-    // Element-wise math
-    // ------------------------------------------------------------------ //
+    /// ------------------------------------------------------------------ //
+    /// Element-wise math
+    /// ------------------------------------------------------------------ //
 
     Tensor apply(std::function<double(double)> f) const;
     Tensor abs()                      const;
@@ -248,11 +248,11 @@ public:
     Tensor cos()                      const;
     Tensor tanh()                     const;
 
-    // ------------------------------------------------------------------ //
-    // Linear algebra (primarily for 2-D tensors)
-    // ------------------------------------------------------------------ //
+    /// ------------------------------------------------------------------ //
+    /// Linear algebra (primarily for 2-D tensors)
+    /// ------------------------------------------------------------------ //
 
-    // Matrix multiply (both must be 2-D)
+    /// Matrix multiply (both must be 2-D)
     Tensor matmul(const Tensor& other) const;
 
     // ML-oriented dense NCHW kernels. These are intentionally exposed at the
@@ -284,22 +284,22 @@ public:
                                size_t stride = 0,
                                size_t padding = 0) const;
 
-    // Sum of main-diagonal elements (square 2-D tensor)
+    /// Sum of main-diagonal elements (square 2-D tensor)
     double trace() const;
 
-    // 1-D → diagonal matrix; 2-D → extract main diagonal as 1-D tensor
+    /// 1-D → diagonal matrix; 2-D → extract main diagonal as 1-D tensor
     Tensor diag() const;
 
-    // ------------------------------------------------------------------ //
-    // Display
-    // ------------------------------------------------------------------ //
+    /// ------------------------------------------------------------------ //
+    /// Display
+    /// ------------------------------------------------------------------ //
 
     std::string str() const;
 
-    // ── GPU buffer type ───────────────────────────────────────────────── //
-    // Forward-declared public so that TensorCUDA.cu free functions can use
-    // std::make_shared<CUDABuffer>.  The struct itself is completed only in
-    // TensorCUDA.cu — no CUDA headers are needed here.
+    /// ── GPU buffer type ───────────────────────────────────────────────── //
+    /// Forward-declared public so that TensorCUDA.cu free functions can use
+    /// std::make_shared<CUDABuffer>.  The struct itself is completed only in
+    /// TensorCUDA.cu — no CUDA headers are needed here.
     struct CUDABuffer;
 
 private:
@@ -314,7 +314,7 @@ private:
     Device m_device = Device::CPU;
     int m_device_id = -1;                       // CUDA ordinal, -1 on CPU
 
-    // ── Helpers ───────────────────────────────────────────────────────── //
+    /// ── Helpers ───────────────────────────────────────────────────────── //
     void   computeStrides();
     size_t flatIndex(const std::vector<size_t>& idx) const;
 

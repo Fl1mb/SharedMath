@@ -1,18 +1,18 @@
 #pragma once
 
-// SharedMath::DSP — Practical signal-processing helpers
-//
-// Statistics:
-//   mean, rms, peakAbs
-//
-// DC / normalization:
-//   removeDC, normalizePeak, normalizeRMS
-//
-// Smoothing / filtering:
-//   movingAverage, exponentialSmoothing, medianFilter
-//
-// Trend removal:
-//   detrendLinear
+/// SharedMath::DSP — Practical signal-processing helpers
+///
+/// Statistics:
+///   mean, rms, peakAbs
+///
+/// DC / normalization:
+///   removeDC, normalizePeak, normalizeRMS
+///
+/// Smoothing / filtering:
+///   movingAverage, exponentialSmoothing, medianFilter
+///
+/// Trend removal:
+///   detrendLinear
 
 #include <vector>
 #include <cmath>
@@ -23,18 +23,18 @@
 
 namespace SharedMath::DSP {
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Statistics
-// ─────────────────────────────────────────────────────────────────────────────
+/// ─────────────────────────────────────────────────────────────────────────────
+/// Statistics
+/// ─────────────────────────────────────────────────────────────────────────────
 
-// Arithmetic mean.  Returns 0 for empty signal.
+/// Arithmetic mean.  Returns 0 for empty signal.
 inline double mean(const std::vector<double>& x) {
     if (x.empty()) return 0.0;
     return std::accumulate(x.begin(), x.end(), 0.0) /
            static_cast<double>(x.size());
 }
 
-// Root-mean-square.  Returns 0 for empty signal.
+/// Root-mean-square.  Returns 0 for empty signal.
 inline double rms(const std::vector<double>& x) {
     if (x.empty()) return 0.0;
     double sum = 0.0;
@@ -42,7 +42,7 @@ inline double rms(const std::vector<double>& x) {
     return std::sqrt(sum / static_cast<double>(x.size()));
 }
 
-// Maximum absolute value.  Returns 0 for empty signal.
+/// Maximum absolute value.  Returns 0 for empty signal.
 inline double peakAbs(const std::vector<double>& x) {
     if (x.empty()) return 0.0;
     double pk = 0.0;
@@ -50,11 +50,11 @@ inline double peakAbs(const std::vector<double>& x) {
     return pk;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// DC / normalization
-// ─────────────────────────────────────────────────────────────────────────────
+/// ─────────────────────────────────────────────────────────────────────────────
+/// DC / normalization
+/// ─────────────────────────────────────────────────────────────────────────────
 
-// Subtract the signal mean (remove DC offset).
+/// Subtract the signal mean (remove DC offset).
 inline std::vector<double> removeDC(const std::vector<double>& x) {
     if (x.empty()) return {};
     const double mu = mean(x);
@@ -182,13 +182,13 @@ inline std::vector<double> medianFilter(
     return out;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Trend removal
-// ─────────────────────────────────────────────────────────────────────────────
+/// ─────────────────────────────────────────────────────────────────────────────
+/// Trend removal
+/// ─────────────────────────────────────────────────────────────────────────────
 
-// Subtract the best-fit straight line (least-squares) from the signal.
-// Uses time index t[n] = n (0, 1, ..., N-1) as the independent variable.
-// A signal with a single sample is returned as-is (trend is undefined).
+/// Subtract the best-fit straight line (least-squares) from the signal.
+/// Uses time index t[n] = n (0, 1, ..., N-1) as the independent variable.
+/// A signal with a single sample is returned as-is (trend is undefined).
 inline std::vector<double> detrendLinear(const std::vector<double>& x) {
     if (x.size() < 2) return x;
 

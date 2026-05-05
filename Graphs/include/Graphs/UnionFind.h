@@ -20,7 +20,7 @@ namespace SharedMath::Graphs {
 template<typename T>
 class UnionFind {
 public:
-    // Register x as a new singleton set. Idempotent: safe to call multiple times.
+    /// Register x as a new singleton set. Idempotent: safe to call multiple times.
     void makeSet(const T& x) {
         if (!parent_.count(x)) {
             parent_.emplace(x, x);
@@ -29,8 +29,8 @@ public:
         }
     }
 
-    // Find the representative (root) of x's set. Applies path compression.
-    // Throws std::out_of_range if x was never registered via makeSet().
+    /// Find the representative (root) of x's set. Applies path compression.
+    /// Throws std::out_of_range if x was never registered via makeSet().
     T find(const T& x) {
         auto it = parent_.find(x);
         if (it == parent_.end())
@@ -40,8 +40,8 @@ public:
         return it->second;
     }
 
-    // Merge the sets containing x and y.
-    // Returns true if they were in different sets (a merge actually happened).
+    /// Merge the sets containing x and y.
+    /// Returns true if they were in different sets (a merge actually happened).
     bool unite(const T& x, const T& y) {
         T rx = find(x), ry = find(y);
         if (rx == ry) return false;
@@ -55,18 +55,18 @@ public:
         return true;
     }
 
-    // Returns true if x and y belong to the same set.
+    /// Returns true if x and y belong to the same set.
     bool connected(const T& x, const T& y) { return find(x) == find(y); }
 
-    // Number of distinct sets currently tracked.
+    /// Number of distinct sets currently tracked.
     size_t numSets()  const noexcept { return numSets_; }
 
-    // Total number of registered elements.
+    /// Total number of registered elements.
     size_t size()     const noexcept { return parent_.size(); }
 
     bool   contains(const T& x) const noexcept { return parent_.count(x) > 0; }
 
-    // Reset to empty state.
+    /// Reset to empty state.
     void clear() { parent_.clear(); rank_.clear(); numSets_ = 0; }
 
 private:

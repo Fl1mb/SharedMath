@@ -25,7 +25,7 @@ namespace SharedMath
 
             const Point3D& getVertex(size_t i) const;
 
-            // Volume = |det(v1-v0, v2-v0, v3-v0)| / 6
+            /// Volume = |det(v1-v0, v2-v0, v3-v0)| / 6
             double volume() const;
 
             double surfaceArea() const;

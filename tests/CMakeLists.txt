@@ -72,6 +72,13 @@ add_executable(${PROJECT_NAME}Tests
     test_ml_forest_models.cpp
     test_ml_regularized_models.cpp
     test_ml_model_selection.cpp
+    test_dsp_signal_detection.cpp
+    test_dsp_signal_estimation.cpp
+    test_dsp_frequency_correction.cpp
+    test_dsp_channelization.cpp
+    test_dsp_burst_detection.cpp
+    test_dsp_signal_metrics.cpp
+    test_dsp_waterfall.cpp
 )
 
 if(SHAREDMATH_ENABLE_CUDA)

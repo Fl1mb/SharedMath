@@ -14,7 +14,7 @@ namespace SharedMath
 {
     namespace Geometry
     {
-        // Cartesian (Decart) coordinate system with optional rotation
+        /// Cartesian (Decart) coordinate system with optional rotation
         class CartesianCoordinateSystem {
         public:
             CartesianCoordinateSystem()
@@ -33,7 +33,7 @@ namespace SharedMath
             void setOrigin(const Point2D& origin) { origin_ = origin; }
             void setAngle(double angle) { angle_ = angle; }
 
-            // Transform a local point to global coordinates
+            /// Transform a local point to global coordinates
             Point2D toGlobal(const Point2D& local) const {
                 double cosA = std::cos(angle_);
                 double sinA = std::sin(angle_);
@@ -43,7 +43,7 @@ namespace SharedMath
                 );
             }
 
-            // Transform a global point to local coordinates
+            /// Transform a global point to local coordinates
             Point2D toLocal(const Point2D& global) const {
                 double dx = global.x() - origin_.x();
                 double dy = global.y() - origin_.y();
@@ -55,7 +55,7 @@ namespace SharedMath
                 );
             }
 
-            // Convert polar coordinates to Cartesian Point2D
+            /// Convert polar coordinates to Cartesian Point2D
             static Point2D fromPolar(double r, double theta) {
                 return Point2D(r * std::cos(theta), r * std::sin(theta));
             }
@@ -65,10 +65,10 @@ namespace SharedMath
             double angle_;
         };
 
-        // Keep old name for backward compatibility
+        /// Keep old name for backward compatibility
         using DecartCoordinateSystem = CartesianCoordinateSystem;
 
-        // Polar coordinate system
+        /// Polar coordinate system
         class PolarCoordinateSystem {
         public:
             PolarCoordinateSystem() : origin_(0.0, 0.0) {}
@@ -88,7 +88,7 @@ namespace SharedMath
                 return { r, theta };
             }
 
-            // Convert polar to Cartesian
+            /// Convert polar to Cartesian
             static Point2D toCartesian(double r, double theta) {
                 return Point2D(r * std::cos(theta), r * std::sin(theta));
             }
@@ -100,7 +100,7 @@ namespace SharedMath
                 return toPolar(rel);
             }
 
-            // Convert local polar coords to global Cartesian point
+            /// Convert local polar coords to global Cartesian point
             Point2D toGlobal(double r, double theta) const {
                 return Point2D(origin_.x() + r * std::cos(theta),
                                origin_.y() + r * std::sin(theta));
@@ -110,7 +110,7 @@ namespace SharedMath
             Point2D origin_;
         };
 
-        // Cylindrical coordinate system (r, theta, z)
+        /// Cylindrical coordinate system (r, theta, z)
         class CylyndricalCoordinateSystem {
         public:
             CylyndricalCoordinateSystem() = default;
@@ -129,8 +129,8 @@ namespace SharedMath
             }
         };
 
-        // Spherical coordinate system (r, theta, phi) — physics convention:
-        //   theta = polar angle from +Z, phi = azimuthal angle in XY from +X
+        /// Spherical coordinate system (r, theta, phi) — physics convention:
+        ///   theta = polar angle from +Z, phi = azimuthal angle in XY from +X
         class SphericalCoordinateSystem {
         public:
             SphericalCoordinateSystem() = default;

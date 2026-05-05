@@ -1,12 +1,12 @@
 #pragma once
-// Internal header — NOT included by LinearAlgebra.h.
-// Only included by Tensor.cpp (behind #ifdef SHAREDMATH_CUDA) and TensorCUDA.cu.
+/// Internal header — NOT included by LinearAlgebra.h.
+/// Only included by Tensor.cpp (behind the SHAREDMATH_CUDA guard) and TensorCUDA.cu.
 
 #include "Tensor.h"
 
 namespace SharedMath::LinearAlgebra::detail {
 
-// ── Op codes ──────────────────────────────────────────────────────────────────
+/// ── Op codes ──────────────────────────────────────────────────────────────────
 
 enum class UnaryOp {
     Abs, Sqrt, Exp, Log, Log2, Log10,
@@ -18,28 +18,28 @@ enum class UnaryOp {
 enum class BinaryOp { Add, Sub, Mul, Div };
 enum class ScalarOp { Add, Sub, Mul, Div, RSub, RDiv };
 
-// ── CUDA dispatch functions ───────────────────────────────────────────────────
-// All functions assume their Tensor arguments are already on GPU (Device::CUDA).
+/// ── CUDA dispatch functions ───────────────────────────────────────────────────
+/// All functions assume their Tensor arguments are already on GPU (Device::CUDA).
 
-// Matrix multiply via cuBLAS (both tensors must be 2-D).
+/// Matrix multiply via cuBLAS (both tensors must be 2-D).
 Tensor cuda_matmul(const Tensor& a, const Tensor& b);
 
-// Element-wise binary op — a and b must have identical shapes.
+/// Element-wise binary op — a and b must have identical shapes.
 Tensor cuda_binary(const Tensor& a, const Tensor& b, BinaryOp op);
 
-// Element-wise tensor/scalar op.
+/// Element-wise tensor/scalar op.
 Tensor cuda_scalar(const Tensor& a, double scalar, ScalarOp op);
 
-// Element-wise unary op.
+/// Element-wise unary op.
 Tensor cuda_unary(const Tensor& a, UnaryOp op);
 
-// pow(a, exponent) element-wise.
+/// pow(a, exponent) element-wise.
 Tensor cuda_pow(const Tensor& a, double exponent);
 
-// clip(a, lo, hi) element-wise.
+/// clip(a, lo, hi) element-wise.
 Tensor cuda_clip(const Tensor& a, double lo, double hi);
 
-// Softmax along an arbitrary axis.
+/// Softmax along an arbitrary axis.
 Tensor cuda_softmax(const Tensor& a, size_t axis);
 
 // ML-oriented NCHW kernels.
@@ -64,10 +64,10 @@ Tensor cuda_avg_pool2d_backward(const Tensor& grad_out,
                                 size_t kernel_size, size_t stride,
                                 size_t padding);
 
-// ── CUDA accessor (friend of Tensor) ─────────────────────────────────────────
-// Provides controlled access to Tensor private members for TensorCUDA.cu.
+/// ── CUDA accessor (friend of Tensor) ─────────────────────────────────────────
+/// Provides controlled access to Tensor private members for TensorCUDA.cu.
 struct TensorCUDAImpl {
-    // Raw pointer to GPU buffer (nullptr if on CPU or CUDA disabled).
+    /// Raw pointer to GPU buffer (nullptr if on CPU or CUDA disabled).
     static double* cuda_ptr(const Tensor& t);
     static double* buffer_ptr(const std::shared_ptr<Tensor::CUDABuffer>& buf);
     static int buffer_device_id(const std::shared_ptr<Tensor::CUDABuffer>& buf);
@@ -87,12 +87,12 @@ struct TensorCUDAImpl {
         return Tensor::from_cuda(std::move(shape), std::move(buf), dev);
     }
 
-    // Host data vector (empty for GPU tensors).
+    /// Host data vector (empty for GPU tensors).
     static const std::vector<double>& host_data(const Tensor& t) {
         return t.m_data;
     }
 
-    // Shape accessor (same as t.shape(), just here for symmetry).
+    /// Shape accessor (same as t.shape(), just here for symmetry).
     static const Tensor::Shape& shape(const Tensor& t) {
         return t.m_shape;
     }

@@ -1,21 +1,21 @@
 #pragma once
 
-// SharedMath::Functions — Special Mathematical Functions
-//
-// Categories:
-//   • Gamma family      — Γ, lnΓ, ψ (digamma), ψ' (trigamma), B, I_x(a,b), P(a,x)
-//   • Error functions   — erf, erfc, erfinv
-//   • Bessel (1st kind) — J₀, J₁, Jₙ
-//   • Bessel (2nd kind) — Y₀, Y₁, Yₙ
-//   • Modified Bessel   — I₀, I₁, Iₙ, K₀, K₁, Kₙ
-//   • Orthogonal polynomials — Legendre Pₙ, Pₙᵐ;
-//                              Chebyshev Tₙ, Uₙ;
-//                              Hermite Hₙ, Heₙ; Laguerre Lₙ
-//   • Elliptic integrals — K(k), E(k)
-//   • Other             — sinc, Lambert W, Riemann ζ
-//
-// All implementations are header-only (inline).
-// Algorithms: Abramowitz & Stegun, Numerical Recipes, DLMF.
+/// SharedMath::Functions — Special Mathematical Functions
+///
+/// Categories:
+///   • Gamma family      — Γ, lnΓ, ψ (digamma), ψ' (trigamma), B, I_x(a,b), P(a,x)
+///   • Error functions   — erf, erfc, erfinv
+///   • Bessel (1st kind) — J₀, J₁, Jₙ
+///   • Bessel (2nd kind) — Y₀, Y₁, Yₙ
+///   • Modified Bessel   — I₀, I₁, Iₙ, K₀, K₁, Kₙ
+///   • Orthogonal polynomials — Legendre Pₙ, Pₙᵐ;
+///                              Chebyshev Tₙ, Uₙ;
+///                              Hermite Hₙ, Heₙ; Laguerre Lₙ
+///   • Elliptic integrals — K(k), E(k)
+///   • Other             — sinc, Lambert W, Riemann ζ
+///
+/// All implementations are header-only (inline).
+/// Algorithms: Abramowitz & Stegun, Numerical Recipes, DLMF.
 
 #include <cmath>
 #include <cstddef>
@@ -31,20 +31,20 @@ namespace detail {
     static constexpr double SF_LN2   = 0.69314718055994530942;
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
-// GAMMA FAMILY
-// ═════════════════════════════════════════════════════════════════════════════
+/// ═════════════════════════════════════════════════════════════════════════════
+/// GAMMA FAMILY
+/// ═════════════════════════════════════════════════════════════════════════════
 
-// Γ(x) and ln|Γ(x)| are available as std::tgamma / std::lgamma from <cmath>.
-// We do not re-declare them here to avoid clashes with POSIX identifiers
-// (gamma, lgamma) that some platforms expose at global scope.
+/// Γ(x) and ln|Γ(x)| are available as std::tgamma / std::lgamma from cmath.
+/// We do not re-declare them here to avoid clashes with POSIX identifiers
+/// (gamma, lgamma) that some platforms expose at global scope.
 
-// ── Digamma (Psi) function: ψ(x) = d/dx ln Γ(x) ────────────────────────────
-//
-// Uses:
-//   • Reflection formula  ψ(x) = ψ(1−x) − π cot(πx)      for x < 0.5
-//   • Recurrence          ψ(x+1) = ψ(x) + 1/x             to bring x ≥ 6
-//   • Asymptotic series   ψ(x) ~ ln x − Σ B_{2k}/(2k x^{2k})
+/// ── Digamma (Psi) function: ψ(x) = d/dx ln Γ(x) ────────────────────────────
+///
+/// Uses:
+///   • Reflection formula  ψ(x) = ψ(1−x) − π cot(πx)      for x < 0.5
+///   • Recurrence          ψ(x+1) = ψ(x) + 1/x             to bring x ≥ 6
+///   • Asymptotic series   ψ(x) ~ ln x − Σ B_{2k}/(2k x^{2k})
 inline double digamma(double x) {
     if (x <= 0.0 && x == std::floor(x))
         throw std::domain_error("digamma: argument is a non-positive integer");
@@ -66,10 +66,10 @@ inline double digamma(double x) {
     return result;
 }
 
-// ── Trigamma function: ψ'(x) = d/dx ψ(x) = d²/dx² ln Γ(x) ─────────────────
-//
-// Reflection: ψ'(x) + ψ'(1−x) = π² / sin²(πx)
-// Asymptotic:  ψ'(x) ~ 1/x + 1/(2x²) + 1/(6x³) − 1/(30x⁵) + …
+/// ── Trigamma function: ψ'(x) = d/dx ψ(x) = d²/dx² ln Γ(x) ─────────────────
+///
+/// Reflection: ψ'(x) + ψ'(1−x) = π² / sin²(πx)
+/// Asymptotic:  ψ'(x) ~ 1/x + 1/(2x²) + 1/(6x³) − 1/(30x⁵) + …
 inline double trigamma(double x) {
     if (x <= 0.0 && x == std::floor(x))
         throw std::domain_error("trigamma: argument is a non-positive integer");
@@ -91,22 +91,22 @@ inline double trigamma(double x) {
     return result;
 }
 
-// ── Beta function B(a, b) = Γ(a)Γ(b)/Γ(a+b) ────────────────────────────────
+/// ── Beta function B(a, b) = Γ(a)Γ(b)/Γ(a+b) ────────────────────────────────
 inline double beta(double a, double b) {
     if (a <= 0.0 || b <= 0.0)
         throw std::domain_error("beta: arguments must be positive");
     return std::exp(std::lgamma(a) + std::lgamma(b) - std::lgamma(a + b));
 }
 
-// Natural log of B(a, b)
+/// Natural log of B(a, b)
 inline double lbeta(double a, double b) {
     if (a <= 0.0 || b <= 0.0)
         throw std::domain_error("lbeta: arguments must be positive");
     return std::lgamma(a) + std::lgamma(b) - std::lgamma(a + b);
 }
 
-// ── Regularized incomplete beta I_x(a, b) ∈ [0, 1] ──────────────────────────
-// Computed via continued fraction (Lentz algorithm, Numerical Recipes §6.4).
+/// ── Regularized incomplete beta I_x(a, b) ∈ [0, 1] ──────────────────────────
+/// Computed via continued fraction (Lentz algorithm, Numerical Recipes §6.4).
 namespace detail {
 inline double betacf(double a, double b, double x) {
     constexpr int    MAXIT = 300;
@@ -138,7 +138,7 @@ inline double betacf(double a, double b, double x) {
 }
 } // namespace detail
 
-// Regularized incomplete beta: I_x(a, b) = B_x(a,b) / B(a,b)
+/// Regularized incomplete beta: I_x(a, b) = B_x(a,b) / B(a,b)
 inline double betainc(double x, double a, double b) {
     if (x < 0.0 || x > 1.0) throw std::domain_error("betainc: x must be in [0,1]");
     if (a <= 0.0 || b <= 0.0) throw std::domain_error("betainc: a,b must be positive");
@@ -151,8 +151,8 @@ inline double betainc(double x, double a, double b) {
     return 1.0 - bt * detail::betacf(b, a, 1.0 - x) / b;
 }
 
-// ── Regularized lower incomplete gamma P(a, x) ───────────────────────────────
-// Series expansion for x < a+1; continued fraction for x ≥ a+1.
+/// ── Regularized lower incomplete gamma P(a, x) ───────────────────────────────
+/// Series expansion for x < a+1; continued fraction for x ≥ a+1.
 namespace detail {
 inline double gammap_series(double a, double x) {
     double ap = a, del = 1.0 / a, sum = del;
@@ -179,8 +179,8 @@ inline double gammaq_cf(double a, double x) {
 }
 } // namespace detail
 
-// P(a, x) = γ(a,x)/Γ(a)  ∈ [0,1].  Returns probability that a Gamma-distributed
-// variable with shape a is ≤ x.
+/// P(a, x) = γ(a,x)/Γ(a)  ∈ [0,1].  Returns probability that a Gamma-distributed
+/// variable with shape a is ≤ x.
 inline double gammainc(double a, double x) {
     if (a <= 0.0) throw std::domain_error("gammainc: a must be positive");
     if (x < 0.0)  throw std::domain_error("gammainc: x must be non-negative");
@@ -190,15 +190,15 @@ inline double gammainc(double a, double x) {
 }
 
 
-// ═════════════════════════════════════════════════════════════════════════════
-// ERROR FUNCTIONS
-// ═════════════════════════════════════════════════════════════════════════════
+/// ═════════════════════════════════════════════════════════════════════════════
+/// ERROR FUNCTIONS
+/// ═════════════════════════════════════════════════════════════════════════════
 
-// erf and erfc are available as std::erf / std::erfc from <cmath>.
-// Not re-declared here to avoid POSIX name collision at global scope.
+/// erf and erfc are available as std::erf / std::erfc from cmath.
+/// Not re-declared here to avoid POSIX name collision at global scope.
 
-// ── Inverse error function: erfinv(y) such that erf(erfinv(y)) = y ───────────
-// Uses Winitzki's rational approximation, then two Newton refinements.
+/// ── Inverse error function: erfinv(y) such that erf(erfinv(y)) = y ───────────
+/// Uses Winitzki's rational approximation, then two Newton refinements.
 inline double erfinv(double y) {
     if (y <= -1.0 || y >= 1.0) {
         if (y == -1.0) return -std::numeric_limits<double>::infinity();
@@ -237,13 +237,13 @@ inline double erfinv(double y) {
 }
 
 
-// ═════════════════════════════════════════════════════════════════════════════
-// BESSEL FUNCTIONS OF THE FIRST KIND  J₀, J₁, Jₙ
-//
-// Polynomial approximations from Abramowitz & Stegun / Numerical Recipes.
-// ═════════════════════════════════════════════════════════════════════════════
+/// ═════════════════════════════════════════════════════════════════════════════
+/// BESSEL FUNCTIONS OF THE FIRST KIND  J₀, J₁, Jₙ
+///
+/// Polynomial approximations from Abramowitz & Stegun / Numerical Recipes.
+/// ═════════════════════════════════════════════════════════════════════════════
 
-// J₀(x) — maximum error < 1.6e-8
+/// J₀(x) — maximum error < 1.6e-8
 inline double besselJ0(double x) {
     double ax = std::abs(x);
     if (ax < 8.0) {
@@ -263,7 +263,7 @@ inline double besselJ0(double x) {
     return std::sqrt(0.636619772338 / ax) * (std::cos(xx) * p - z * std::sin(xx) * q);
 }
 
-// J₁(x) — maximum error < 1.3e-8
+/// J₁(x) — maximum error < 1.3e-8
 inline double besselJ1(double x) {
     double ax = std::abs(x);
     double ans;
@@ -293,14 +293,14 @@ inline double besselJ1(double x) {
     return ans;  
 }
 
-// Jₙ(x) for integer n — forward recurrence from J₀, J₁
+/// Jₙ(x) for integer n — forward recurrence from J₀, J₁
 inline double besselJn(int n, double x) {
     if (n < 0) return (n % 2 == 0) ? besselJn(-n, x) : -besselJn(-n, x);
     if (n == 0) return besselJ0(x);
     if (n == 1) return besselJ1(x);
     if (x == 0.0) return 0.0;
     
-    // Для x >= n прямая рекурсия стабильна
+    /// Для x >= n прямая рекурсия стабильна
     if (x >= n) {
         double j0 = besselJ0(x);
         double j1 = besselJ1(x);
@@ -349,11 +349,11 @@ inline double besselJn(int n, double x) {
 }
 
 
-// ═════════════════════════════════════════════════════════════════════════════
-// BESSEL FUNCTIONS OF THE SECOND KIND  Y₀, Y₁, Yₙ
-// ═════════════════════════════════════════════════════════════════════════════
+/// ═════════════════════════════════════════════════════════════════════════════
+/// BESSEL FUNCTIONS OF THE SECOND KIND  Y₀, Y₁, Yₙ
+/// ═════════════════════════════════════════════════════════════════════════════
 
-// Y₀(x) — maximum error < 1.4e-8; requires x > 0
+/// Y₀(x) — maximum error < 1.4e-8; requires x > 0
 inline double besselY0(double x) {
     if (x <= 0.0) throw std::domain_error("besselY0: x must be positive");
     if (x < 8.0) {
@@ -374,7 +374,7 @@ inline double besselY0(double x) {
     return std::sqrt(0.636619772338 / x) * (std::sin(xx) * p + z * std::cos(xx) * q);
 }
 
-// Y₁(x) — maximum error < 1.9e-8; requires x > 0
+/// Y₁(x) — maximum error < 1.9e-8; requires x > 0
 inline double besselY1(double x) {
     if (x <= 0.0) throw std::domain_error("besselY1: x must be positive");
     if (x < 8.0) {
@@ -397,7 +397,7 @@ inline double besselY1(double x) {
     return std::sqrt(0.636619772338 / x) * (std::sin(xx) * p + z * std::cos(xx) * q);
 }
 
-// Yₙ(x) — forward recurrence from Y₀, Y₁
+/// Yₙ(x) — forward recurrence from Y₀, Y₁
 inline double besselYn(int n, double x) {
     if (x <= 0.0) throw std::domain_error("besselYn: x must be positive");
     if (n < 0)  return (n % 2 == 0) ? besselYn(-n, x) : -besselYn(-n, x);
@@ -412,11 +412,11 @@ inline double besselYn(int n, double x) {
 }
 
 
-// ═════════════════════════════════════════════════════════════════════════════
-// MODIFIED BESSEL FUNCTIONS  I₀, I₁, K₀, K₁  (A&S 9.8)
-// ═════════════════════════════════════════════════════════════════════════════
+/// ═════════════════════════════════════════════════════════════════════════════
+/// MODIFIED BESSEL FUNCTIONS  I₀, I₁, K₀, K₁  (A&S 9.8)
+/// ═════════════════════════════════════════════════════════════════════════════
 
-// I₀(x) — modified Bessel of the first kind, order 0
+/// I₀(x) — modified Bessel of the first kind, order 0
 inline double besselI0(double x) {
     double ax = std::abs(x);
     if (ax <= 3.75) {
@@ -431,7 +431,7 @@ inline double besselI0(double x) {
          + t * (-0.01647633 + t * 0.00392377))))))));
 }
 
-// I₁(x) — modified Bessel of the first kind, order 1
+/// I₁(x) — modified Bessel of the first kind, order 1
 inline double besselI1(double x) {
     double ax = std::abs(x);
     double ans;
@@ -449,7 +449,7 @@ inline double besselI1(double x) {
     return (x < 0.0) ? -ans : ans;
 }
 
-// K₀(x) — modified Bessel of the second kind, order 0; x > 0
+/// K₀(x) — modified Bessel of the second kind, order 0; x > 0
 inline double besselK0(double x) {
     if (x <= 0.0) throw std::domain_error("besselK0: x must be positive");
     if (x <= 2.0) {
@@ -464,7 +464,7 @@ inline double besselK0(double x) {
          + t * (0.00587872 + t * (-0.00251540 + t * 0.00053208))))));
 }
 
-// K₁(x) — modified Bessel of the second kind, order 1; x > 0
+/// K₁(x) — modified Bessel of the second kind, order 1; x > 0
 inline double besselK1(double x) {
     if (x <= 0.0) throw std::domain_error("besselK1: x must be positive");
     if (x <= 2.0) {
@@ -479,7 +479,7 @@ inline double besselK1(double x) {
          + t * (-0.00780353 + t * (0.00325614 - t * 0.00068245))))));
 }
 
-// Iₙ(x) — forward recurrence (stable for all x)
+/// Iₙ(x) — forward recurrence (stable for all x)
 inline double besselIn(int n, double x) {
     if (n < 0)  return besselIn(-n, x);
     if (n == 0) return besselI0(x);
@@ -493,7 +493,7 @@ inline double besselIn(int n, double x) {
     return i1;
 }
 
-// Kₙ(x) — forward recurrence (stable, x > 0)
+/// Kₙ(x) — forward recurrence (stable, x > 0)
 inline double besselKn(int n, double x) {
     if (x <= 0.0) throw std::domain_error("besselKn: x must be positive");
     if (n < 0)  return besselKn(-n, x);
@@ -508,12 +508,12 @@ inline double besselKn(int n, double x) {
 }
 
 
-// ═════════════════════════════════════════════════════════════════════════════
-// ORTHOGONAL POLYNOMIALS  (all via 3-term recurrence)
-// ═════════════════════════════════════════════════════════════════════════════
+/// ═════════════════════════════════════════════════════════════════════════════
+/// ORTHOGONAL POLYNOMIALS  (all via 3-term recurrence)
+/// ═════════════════════════════════════════════════════════════════════════════
 
-// ── Legendre polynomials Pₙ(x),  x ∈ [−1, 1] ────────────────────────────────
-// Recurrence: (n+1)P_{n+1}(x) = (2n+1)x P_n(x) − n P_{n-1}(x)
+/// ── Legendre polynomials Pₙ(x),  x ∈ [−1, 1] ────────────────────────────────
+/// Recurrence: (n+1)P_{n+1}(x) = (2n+1)x P_n(x) − n P_{n-1}(x)
 inline double legendreP(int n, double x) {
     if (n < 0) throw std::domain_error("legendreP: n must be non-negative");
     if (n == 0) return 1.0;
@@ -526,8 +526,8 @@ inline double legendreP(int n, double x) {
     return p;
 }
 
-// Associated Legendre polynomial Pₙᵐ(x),  0 ≤ m ≤ n
-// Uses Schmidt semi-normalised form (no Condon-Shortley phase).
+/// Associated Legendre polynomial Pₙᵐ(x),  0 ≤ m ≤ n
+/// Uses Schmidt semi-normalised form (no Condon-Shortley phase).
 inline double legendreP(int n, int m, double x) {
     if (m < 0 || m > n) throw std::domain_error("legendreP: require 0 <= m <= n");
     if (std::abs(x) > 1.0) throw std::domain_error("legendreP: x must be in [-1,1]");
@@ -547,8 +547,8 @@ inline double legendreP(int n, int m, double x) {
     return pnm;
 }
 
-// ── Chebyshev polynomials of the first kind Tₙ(x) ──────────────────────────
-// Recurrence: T_{n+1}(x) = 2x T_n(x) − T_{n-1}(x)
+/// ── Chebyshev polynomials of the first kind Tₙ(x) ──────────────────────────
+/// Recurrence: T_{n+1}(x) = 2x T_n(x) − T_{n-1}(x)
 inline double chebyshevT(int n, double x) {
     if (n < 0)  throw std::domain_error("chebyshevT: n must be non-negative");
     if (n == 0) return 1.0;
@@ -558,8 +558,8 @@ inline double chebyshevT(int n, double x) {
     return t;
 }
 
-// ── Chebyshev polynomials of the second kind Uₙ(x) ─────────────────────────
-// Recurrence: U_{n+1}(x) = 2x U_n(x) − U_{n-1}(x); U₀=1, U₁=2x
+/// ── Chebyshev polynomials of the second kind Uₙ(x) ─────────────────────────
+/// Recurrence: U_{n+1}(x) = 2x U_n(x) − U_{n-1}(x); U₀=1, U₁=2x
 inline double chebyshevU(int n, double x) {
     if (n < 0)  throw std::domain_error("chebyshevU: n must be non-negative");
     if (n == 0) return 1.0;
@@ -569,8 +569,8 @@ inline double chebyshevU(int n, double x) {
     return u;
 }
 
-// ── Physicists' Hermite polynomials Hₙ(x) ───────────────────────────────────
-// Recurrence: H_{n+1}(x) = 2x H_n(x) − 2n H_{n-1}(x)
+/// ── Physicists' Hermite polynomials Hₙ(x) ───────────────────────────────────
+/// Recurrence: H_{n+1}(x) = 2x H_n(x) − 2n H_{n-1}(x)
 inline double hermiteH(int n, double x) {
     if (n < 0)  throw std::domain_error("hermiteH: n must be non-negative");
     if (n == 0) return 1.0;
@@ -580,8 +580,8 @@ inline double hermiteH(int n, double x) {
     return h;
 }
 
-// ── Probabilists' Hermite polynomials Heₙ(x) ────────────────────────────────
-// Recurrence: He_{n+1}(x) = x He_n(x) − n He_{n-1}(x)
+/// ── Probabilists' Hermite polynomials Heₙ(x) ────────────────────────────────
+/// Recurrence: He_{n+1}(x) = x He_n(x) − n He_{n-1}(x)
 inline double hermiteHe(int n, double x) {
     if (n < 0)  throw std::domain_error("hermiteHe: n must be non-negative");
     if (n == 0) return 1.0;
@@ -591,8 +591,8 @@ inline double hermiteHe(int n, double x) {
     return h;
 }
 
-// ── Laguerre polynomials Lₙ(x) ──────────────────────────────────────────────
-// Recurrence: (n+1)L_{n+1}(x) = (2n+1−x)L_n(x) − n L_{n-1}(x)
+/// ── Laguerre polynomials Lₙ(x) ──────────────────────────────────────────────
+/// Recurrence: (n+1)L_{n+1}(x) = (2n+1−x)L_n(x) − n L_{n-1}(x)
 inline double laguerreL(int n, double x) {
     if (n < 0) throw std::domain_error("laguerreL: n must be non-negative");
     if (n == 0) return 1.0;
@@ -605,8 +605,8 @@ inline double laguerreL(int n, double x) {
     return l;
 }
 
-// ── Generalised Laguerre Lₙ^α(x) ────────────────────────────────────────────
-// Recurrence: (n+1)L_{n+1}^α = (2n+1+α−x)L_n^α − (n+α)L_{n-1}^α
+/// ── Generalised Laguerre Lₙ^α(x) ────────────────────────────────────────────
+/// Recurrence: (n+1)L_{n+1}^α = (2n+1+α−x)L_n^α − (n+α)L_{n-1}^α
 inline double laguerreL(int n, double alpha, double x) {
     if (n < 0) throw std::domain_error("laguerreL: n must be non-negative");
     if (n == 0) return 1.0;
@@ -620,11 +620,11 @@ inline double laguerreL(int n, double alpha, double x) {
 }
 
 
-// ═════════════════════════════════════════════════════════════════════════════
-// COMPLETE ELLIPTIC INTEGRALS  (AGM algorithm — converges quadratically)
-// ═════════════════════════════════════════════════════════════════════════════
+/// ═════════════════════════════════════════════════════════════════════════════
+/// COMPLETE ELLIPTIC INTEGRALS  (AGM algorithm — converges quadratically)
+/// ═════════════════════════════════════════════════════════════════════════════
 
-// K(k) = ∫₀^{π/2} dθ / √(1 − k²sin²θ),   k ∈ [0, 1)
+/// K(k) = ∫₀^{π/2} dθ / √(1 − k²sin²θ),   k ∈ [0, 1)
 inline double ellipticK(double k) {
     if (k < 0.0 || k >= 1.0)
         throw std::domain_error("ellipticK: k must be in [0, 1)");
@@ -637,8 +637,8 @@ inline double ellipticK(double k) {
     return detail::SF_PI / (2.0 * a);
 }
 
-// E(k) = ∫₀^{π/2} √(1 − k²sin²θ) dθ,   k ∈ [0, 1]
-// Uses the complementary AGM algorithm with accumulated power-of-two sum.
+/// E(k) = ∫₀^{π/2} √(1 − k²sin²θ) dθ,   k ∈ [0, 1]
+/// Uses the complementary AGM algorithm with accumulated power-of-two sum.
 inline double ellipticE(double k) {
     if (k < 0.0 || k > 1.0)
         throw std::domain_error("ellipticE: k must be in [0, 1]");
@@ -674,25 +674,25 @@ inline double ellipticE(double k) {
 }
 
 
-// ═════════════════════════════════════════════════════════════════════════════
-// OTHER USEFUL FUNCTIONS
-// ═════════════════════════════════════════════════════════════════════════════
+/// ═════════════════════════════════════════════════════════════════════════════
+/// OTHER USEFUL FUNCTIONS
+/// ═════════════════════════════════════════════════════════════════════════════
 
-// ── Normalised sinc: sinc(x) = sin(πx) / (πx),  sinc(0) = 1 ────────────────
+/// ── Normalised sinc: sinc(x) = sin(πx) / (πx),  sinc(0) = 1 ────────────────
 inline double sinc(double x) {
     if (x == 0.0) return 1.0;
     double px = detail::SF_PI * x;
     return std::sin(px) / px;
 }
 
-// Unnormalised sinc: sincu(x) = sin(x) / x
+/// Unnormalised sinc: sincu(x) = sin(x) / x
 inline double sincu(double x) {
     if (x == 0.0) return 1.0;
     return std::sin(x) / x;
 }
 
-// ── Lambert W function W₀(x) — principal branch, x ≥ −1/e ──────────────────
-// Iterative solution using Halley's method (≈ 4 iterations for 1e-15 accuracy).
+/// ── Lambert W function W₀(x) — principal branch, x ≥ −1/e ──────────────────
+/// Iterative solution using Halley's method (≈ 4 iterations for 1e-15 accuracy).
 inline double lambertW(double x) {
     const double e = 2.718281828459045;
     if (x < -1.0 / e)
@@ -721,8 +721,8 @@ inline double lambertW(double x) {
     return w;
 }
 
-// ── Riemann zeta function ζ(s) for real s > 1 ────────────────────────────────
-// Uses Euler–Maclaurin summation with 20 correction terms; accurate to ~1e-12.
+/// ── Riemann zeta function ζ(s) for real s > 1 ────────────────────────────────
+/// Uses Euler–Maclaurin summation with 20 correction terms; accurate to ~1e-12.
 inline double riemannZeta(double s) {
     if (s <= 1.0) throw std::domain_error("riemannZeta: s must be > 1");
     
@@ -754,7 +754,7 @@ inline double riemannZeta(double s) {
     return sum;
 }
 
-// Convenience: ζ(s) for integer argument
+/// Convenience: ζ(s) for integer argument
 inline double riemannZeta(int s) { return riemannZeta(static_cast<double>(s)); }
 
 } // namespace SharedMath::Functions

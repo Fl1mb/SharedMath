@@ -1,0 +1,308 @@
+/**
+ * @mainpage SharedMath API Documentation
+ *
+ * @section intro_sec Overview
+ *
+ * SharedMath is a C++17 mathematics library split into focused modules:
+ * Core, LinearAlgebra, Geometry, Functions, Graphs, NumericalMethods, DSP,
+ * and ML. Each module has its own namespace and public headers.
+ *
+ * @section modules_sec Modules
+ *
+ * | Module | Namespace | Main purpose |
+ * |--------|-----------|--------------|
+ * | Core | `SharedMath`, `SharedMath::Core` | Shared constants, CUDA device helpers, dispatcher utilities |
+ * | LinearAlgebra | `SharedMath::LinearAlgebra` | Matrices, vectors, tensors, decompositions, solvers, PCA |
+ * | Geometry | `SharedMath::Geometry` | Points, vectors, curves, 2-D shapes, 3-D solids, intersections |
+ * | Functions | `SharedMath::Functions` | Activation functions, loss functions, special mathematical functions |
+ * | Graphs | `SharedMath::Graphs` | Trees, adjacency-list graphs, graph traversal and path algorithms |
+ * | NumericalMethods | `SharedMath::NumericalMethods` | Differentiation, integration, ODEs, integral equations, SLAE solvers |
+ * | DSP | `SharedMath::DSP` | FFT, windows, FIR/IIR filters, convolution, resampling, spectral analysis |
+ * | ML | `SharedMath::ML` | Autograd, neural-network layers, optimizers, metrics, classical models |
+ *
+ * @section core_sec Core Module
+ *
+ * Core provides shared definitions used by the rest of the library.
+ *
+ * @subsection core_types_sec Main Types
+ *
+ * | Type or API | Input / state | Result |
+ * |-------------|---------------|--------|
+ * | `SharedMath::Pi`, `SharedMath::E` | No input | Mathematical constants used across modules |
+ * | `CudaDeviceInfo` | CUDA device index and runtime query result | Device properties such as name, memory size, compute capability |
+ * | `CudaDeviceManager` | Requested CUDA device or automatic device selection | Centralized CUDA availability and device management |
+ * | `CudaDispatcher` | CPU callback, CUDA callback, dispatch policy | Runs the CUDA path when available, otherwise falls back to CPU |
+ *
+ * @section linalg_sec LinearAlgebra Module
+ *
+ * LinearAlgebra contains fixed-size and dynamic matrices, dense tensors,
+ * vector utilities, decompositions, matrix functions, and CPU/CUDA-aware
+ * storage where supported by the build.
+ *
+ * @subsection linalg_types_sec Main Types
+ *
+ * | Type | Constructor / input | Output / behavior |
+ * |------|---------------------|-------------------|
+ * | `Vector<N>` | `Vector<N>{v0, v1, ...}` | Fixed-size vector with arithmetic, dot product, norm, and contiguous storage |
+ * | `Matrix<Rows, Cols>` | Nested initializer list, `Rows * Cols` values | Fixed-size row-major matrix implementing `AbstractMatrix` |
+ * | `DynamicVector` | Size or `std::vector<double>` | Heap-backed vector with arithmetic and norm operations |
+ * | `DynamicMatrix` | `(rows, cols)`, flat row-major data, or another `AbstractMatrix` | Dense row-major matrix; can move to CUDA with `.cuda()` when enabled |
+ * | `Tensor` | Shape vector and optional data/fill value | N-dimensional dense tensor with broadcasting, reductions, and element-wise math |
+ * | `SparseMatrix` | Shape and sparse triplets/entries | Sparse matrix operations for mostly-zero matrices |
+ * | `PCA` | Number of components and fitting data | Principal components and transformed data |
+ *
+ * @subsection linalg_api_sec Common API
+ *
+ * | Signature | Input | Result |
+ * |-----------|-------|--------|
+ * | `double norm(const AbstractMatrix& A, NormType type)` | Matrix and norm type (`Frobenius`, `One`, `Inf`, `Max`) | Selected matrix norm |
+ * | `double norm(const std::vector<double>& v, double p)` | Vector and p value (`2`, `inf`, etc.) | Vector p-norm |
+ * | `DynamicMatrix eye(size_t n)` | Matrix size `n` | `n x n` identity matrix |
+ * | `DynamicMatrix zeros(size_t rows, size_t cols)` | Matrix shape | Matrix filled with zeroes |
+ * | `DynamicMatrix ones(size_t rows, size_t cols)` | Matrix shape | Matrix filled with ones |
+ * | `DynamicMatrix diag(const std::vector<double>& v)` | Diagonal values | Square diagonal matrix |
+ * | `std::vector<double> diag(const AbstractMatrix& A)` | Matrix | Main diagonal as a vector |
+ * | `std::vector<double> solve(const AbstractMatrix& A, const std::vector<double>& b)` | Square non-singular matrix `A`, right-hand side `b` | Solution vector `x` for `Ax = b` |
+ * | `DynamicMatrix inv(const AbstractMatrix& A)` | Square non-singular matrix | Matrix inverse |
+ * | `DynamicMatrix pinv(const AbstractMatrix& A, double tol)` | Any matrix and tolerance | Moore-Penrose pseudoinverse |
+ * | `std::vector<double> lstsq(const AbstractMatrix& A, const std::vector<double>& b)` | Linear system, including over/under-determined cases | Least-squares solution |
+ * | `size_t rank(const AbstractMatrix& A, double tol)` | Matrix and tolerance | Numerical rank |
+ * | `double det(const AbstractMatrix& A)` | Square matrix | Determinant |
+ * | `double trace(const AbstractMatrix& A)` | Matrix | Sum of diagonal elements |
+ * | `double cond(const AbstractMatrix& A, double tol)` | Matrix and singular-value tolerance | Condition number |
+ * | `DynamicMatrix kron(const AbstractMatrix& A, const AbstractMatrix& B)` | Two matrices | Kronecker product |
+ * | `DynamicMatrix expm(const AbstractMatrix& A)` | Square matrix | Matrix exponential |
+ * | `DynamicMatrix sqrtm(const AbstractMatrix& A)` | Symmetric positive semidefinite matrix | Matrix square root |
+ * | `DynamicMatrix logm(const AbstractMatrix& A)` | Symmetric positive definite matrix | Matrix logarithm |
+ * | `std::vector<double> eigvals(const AbstractMatrix& A, size_t max_iter)` | Real symmetric matrix | Eigenvalues |
+ * | `Tensor Tensor::matmul(const Tensor& other) const` | Two 2-D tensors with compatible matrix dimensions | Matrix product tensor |
+ * | `Tensor einsum(const std::string& subscripts, const Tensor& a, const Tensor& b)` | Einstein notation pattern and operands | Contracted / transformed tensor |
+ *
+ * @section geometry_sec Geometry Module
+ *
+ * Geometry contains primitives, transformations, curves, planimetry shapes,
+ * stereometry solids, and intersection helpers.
+ *
+ * @subsection geometry_types_sec Main Types
+ *
+ * | Type | Constructor / input | Output / behavior |
+ * |------|---------------------|-------------------|
+ * | `Point<N>`, `Point2D`, `Point3D` | Coordinates | N-dimensional point with indexed access |
+ * | `Vector2D`, `Vector3D` | Coordinates or points | Vector arithmetic, length, dot/cross operations |
+ * | `Line`, `Line2D`, `Line3D` | Points or direction data | Infinite line representation |
+ * | `Angle` | Radians or degrees | Angle conversion and trigonometric helper type |
+ * | `Transform2D`, `Transform3D` | Translation, rotation, scaling parameters | Transformation object applied to points/vectors |
+ * | `Polygon`, `Triangle`, `Rectangle`, `Circle`, `Ellipse` | Shape-specific points or dimensions | Area, perimeter, containment, and shape-specific metrics |
+ * | `Sphere`, `Box`, `Cylinder`, `Cone`, `Tetrahedron`, `Plane3D` | 3-D dimensions and positions | Volume, surface area, containment, and geometric properties |
+ * | `BezierCurve`, `CatmullRomSpline` | Control points and interpolation parameter | Evaluated curve points |
+ *
+ * @subsection geometry_api_sec Common API
+ *
+ * | Signature | Input | Result |
+ * |-----------|-------|--------|
+ * | `double Line<N>::getLength() const` | Line segment endpoints | Euclidean segment length |
+ * | `double Vector2D::dot(const Vector2D& other) const` | Two 2-D vectors | Dot product |
+ * | `double Vector2D::cross(const Vector2D& other) const` | Two 2-D vectors | Signed 2-D cross product |
+ * | `Vector3D Vector3D::cross(const Vector3D& other) const` | Two 3-D vectors | Cross-product vector |
+ * | `bool Vector2D::isParallel(const Vector2D& other) const` | Two 2-D vectors | Whether directions are parallel |
+ * | `bool Vector2D::isPerpendicular(const Vector2D& other) const` | Two 2-D vectors | Whether directions are perpendicular |
+ * | `Intersection::Result2D Intersection::lineLine(const Line2D& a, const Line2D& b)` | Two 2-D lines | Intersection status and point when it exists |
+ * | `Intersection::Result3D Intersection::linePlane(const Line3D& line, const Plane3D& plane)` | 3-D line and plane | Intersection status and point when it exists |
+ * | `Point2D Transform2D::operator*(const Point2D& p) const` | 2-D point | Transformed point |
+ * | `Point3D Transform3D::operator*(const Point3D& p) const` | 3-D point | Transformed point |
+ * | `bool Algorithms::pointInPolygon(const Point2D& p, const std::vector<Point2D>& polygon)` | Point and polygon vertices | Whether the point lies inside the polygon |
+ * | `double Algorithms::distancePointSegment(const Point2D& p, const Point2D& a, const Point2D& b)` | Point and segment endpoints | Shortest distance from point to segment |
+ * | `double area() const` | 2-D shape instance | Shape area |
+ * | `double volume() const` | 3-D solid instance | Solid volume |
+ * | `bool contains(const Point2D& p) const` | Shape and point | Whether the point lies inside/on the shape |
+ *
+ * @section functions_sec Functions Module
+ *
+ * Functions provides header-only mathematical helpers used by ML and numerical
+ * code: activation functions, loss functions, and special functions.
+ *
+ * @subsection functions_api_sec Common API
+ *
+ * | Signature | Input | Result |
+ * |-----------|-------|--------|
+ * | `T sigmoid(T x)` | Scalar value | Logistic activation `1 / (1 + exp(-x))` |
+ * | `T sigmoidPrime(T x)` | Scalar value | Derivative of sigmoid at `x` |
+ * | `T relu(T x)` | Scalar value | `max(0, x)` |
+ * | `T reluPrime(T x)` | Scalar value | ReLU derivative/subgradient |
+ * | `T gelu(T x)` | Scalar value | Exact GELU activation |
+ * | `T geluApprox(T x)` | Scalar value | Fast approximate GELU |
+ * | `std::vector<T> softmax(const std::vector<T>& x)` | Scores/logits | Probability-like normalized vector |
+ * | `std::vector<T> logSoftmax(const std::vector<T>& x)` | Scores/logits | Log-normalized scores |
+ * | `double beta(double a, double b)` | Positive parameters `a`, `b` | Beta function value |
+ * | `double betainc(double x, double a, double b)` | `x in [0,1]`, positive `a`, `b` | Regularized incomplete beta |
+ * | `double gammainc(double a, double x)` | Positive `a`, non-negative `x` | Regularized lower incomplete gamma |
+ * | `double besselJn(int n, double x)` | Order and argument | Bessel function of the first kind |
+ * | `double sinc(double x)` | Scalar value | Normalized sinc-style helper |
+ *
+ * @section graphs_sec Graphs Module
+ *
+ * Graphs contains tree containers, disjoint-set union, adjacency-list graph
+ * storage, traversal algorithms, shortest paths, MST algorithms, topological
+ * sorting, and strongly connected components.
+ *
+ * @subsection graphs_types_sec Main Types
+ *
+ * | Type | Constructor / input | Output / behavior |
+ * |------|---------------------|-------------------|
+ * | `BaseGraph<T>` | Root value and child nodes | Generic tree structure |
+ * | `BinaryTree<T>` | Inserted values | Binary search tree with search/remove/traversal operations |
+ * | `AVLTree<T, Compare>` | Inserted values and comparator | Self-balancing binary search tree |
+ * | `AdjacencyListGraph<V, W>` | Vertices, weighted edges, directed flag | Weighted graph backed by adjacency lists |
+ * | `UnionFind<T>` | Elements | Disjoint-set union with path compression and rank |
+ * | `ShortestPathResult<V, W>` | Produced by shortest-path algorithms | Distance and predecessor maps |
+ * | `MSTResult<V, W>` | Produced by MST algorithms | Edges and total weight |
+ *
+ * @subsection graphs_api_sec Common API
+ *
+ * | Signature | Input | Result |
+ * |-----------|-------|--------|
+ * | `void addVertex(const V& v)` | Vertex value | Adds vertex if absent |
+ * | `void addEdge(const V& from, const V& to, W weight)` | Endpoints and weight | Adds a weighted edge |
+ * | `std::vector<V> bfsTraversal(const AdjacencyListGraph<V,W>& g, const V& start)` | Graph and start vertex | Breadth-first visit order |
+ * | `void dfsTraversal(const AdjacencyListGraph<V,W>& g, const V& start, Callback onVisit)` | Graph, start vertex, callback | Calls callback for DFS visit order |
+ * | `std::unordered_map<V, size_t> bfsDistances(const AdjacencyListGraph<V,W>& g, const V& src)` | Graph and source | Hop-count distances |
+ * | `ShortestPathResult<V,W> dijkstra(const AdjacencyListGraph<V,W>& g, const V& src)` | Graph with non-negative weights and source | Single-source shortest paths |
+ * | `ShortestPathResult<V,W> bellmanFord(const AdjacencyListGraph<V,W>& g, const V& src)` | Weighted graph and source | Shortest paths with support for negative edges |
+ * | `AllPairsResult<V,W> floydWarshall(const AdjacencyListGraph<V,W>& g)` | Weighted graph | All-pairs shortest paths |
+ * | `MSTResult<V,W> prim(const AdjacencyListGraph<V,W>& g, const V& start)` | Undirected weighted graph and start | Minimum spanning tree |
+ * | `MSTResult<V,W> kruskal(const AdjacencyListGraph<V,W>& g)` | Undirected weighted graph | Minimum spanning tree |
+ * | `std::vector<V> topologicalSort(const AdjacencyListGraph<V,W>& g)` | Directed acyclic graph | Topological order |
+ * | `bool hasCycle(const AdjacencyListGraph<V,W>& g)` | Graph | Whether a cycle exists |
+ * | `std::vector<std::vector<V>> connectedComponents(const AdjacencyListGraph<V,W>& g)` | Undirected graph | Connected components |
+ * | `std::vector<std::vector<V>> tarjanSCC(const AdjacencyListGraph<V,W>& g)` | Directed graph | Strongly connected components |
+ *
+ * @section numerical_sec NumericalMethods Module
+ *
+ * NumericalMethods contains finite differences, quadrature, ODE solvers,
+ * integral-equation solvers, and iterative linear-system methods.
+ *
+ * @subsection numerical_api_sec Common API
+ *
+ * | Signature | Input | Result |
+ * |-----------|-------|--------|
+ * | `double derivative(std::function<double(double)> f, double x, double h)` | Scalar function, point, step | First derivative approximation |
+ * | `double derivative2(std::function<double(double)> f, double x, double h)` | Scalar function, point, step | Second derivative approximation |
+ * | `double derivativeN(std::function<double(double)> f, double x, int n, double h)` | Scalar function, point, derivative order, step | N-th derivative approximation |
+ * | `double partial(std::function<double(const std::vector<double>&)> f, const std::vector<double>& x, size_t idx, double h)` | Multivariate function, point, coordinate index, step | Partial derivative |
+ * | `std::vector<double> gradient(function, x, h)` | Scalar multivariate function and point | Gradient vector |
+ * | `DynamicMatrix jacobian(function, x, h)` | Vector-valued function and point | Jacobian matrix |
+ * | `DynamicMatrix hessian(function, x, h)` | Scalar multivariate function and point | Hessian matrix |
+ * | `double integrate_rect(f, a, b, n)` | Function, interval, subdivisions | Midpoint-rule integral |
+ * | `double integrate_trap(f, a, b, n)` | Function, interval, subdivisions | Trapezoidal-rule integral |
+ * | `double integrate_simpson(f, a, b, n)` | Function, interval, subdivisions | Simpson-rule integral |
+ * | `double integrate_gauss(f, a, b, order)` | Function, interval, quadrature order | Gauss-Legendre integral |
+ * | `double integrate_adaptive(f, a, b, tol, max_depth)` | Function, interval, tolerance, recursion limit | Adaptive Simpson integral |
+ * | `ScalarODESolution rk4(ScalarODE f, double y0, double t0, double t1, double h)` | ODE right-hand side, initial value, time interval, step | Time samples and scalar solution values |
+ * | `SystemODESolution rk4_system(SystemODE f, std::vector<double> y0, double t0, double t1, double h)` | System right-hand side, initial vector, time interval, step | Time samples and vector solution values |
+ * | `std::pair<std::vector<double>, std::vector<double>> fredholm2(f, K, a, b, lambda, n)` | Right-hand side, kernel, interval, lambda, grid size | Nodes and Fredholm solution values |
+ * | `IterResult conjugate_gradient(const AbstractMatrix& A, const std::vector<double>& b, x0, tol, max_iter)` | SPD matrix, RHS, optional initial guess and tolerance | Solution, iteration count, residual, convergence flag |
+ * | `IterResult gmres(const AbstractMatrix& A, const std::vector<double>& b, restart, x0, tol, max_iter)` | Non-singular matrix, RHS, restart size, tolerance | GMRES solution metadata |
+ *
+ * @section dsp_sec Digital Signal Processing Module
+ *
+ * DSP provides signal-processing building blocks: FFT plans and backends,
+ * windows, convolution, FIR/IIR filter design and application, STFT, spectral
+ * features, Hilbert transforms, resampling, and streaming filters.
+ *
+ * @subsection dsp_types_sec Main Types
+ *
+ * | Type | Constructor / input | Output / behavior |
+ * |------|---------------------|-------------------|
+ * | `FFTConfig` | Transform size, direction, normalization, backend | FFT execution configuration |
+ * | `FFTPlan` | `FFTConfig` | Reusable FFT plan |
+ * | `IFFTBackend` | Backend implementation | Interface for CPU/CUDA FFT execution |
+ * | `WindowParams` | Window type and options | Window generation settings |
+ * | `FIRFilter` | FIR coefficients | Sample-by-sample FIR filtering state |
+ * | `IIRFilter`, `BiquadCascade` | Biquad coefficients | Recursive IIR filtering state |
+ * | `STFTResult` | Produced by STFT | Time-frequency matrix and metadata |
+ * | `SpectralResult`, `CrossSpectralResult` | Signal or signal pair | Spectrum and cross-spectrum analysis data |
+ *
+ * @subsection dsp_api_sec Common API
+ *
+ * | Signature | Input | Result |
+ * |-----------|-------|--------|
+ * | `void fft(std::vector<std::complex<double>>& x, FFTNorm norm)` | Complex signal buffer and normalization mode | Replaces `x` with its DFT spectrum |
+ * | `void ifft(std::vector<std::complex<double>>& X, FFTNorm norm)` | Complex spectrum buffer and normalization mode | Replaces `X` with the inverse DFT result |
+ * | `std::vector<std::complex<double>> rfft(const std::vector<double>& x, FFTNorm norm)` | Real signal | Non-redundant complex half-spectrum |
+ * | `std::vector<double> irfft(const std::vector<std::complex<double>>& X, size_t n, FFTNorm norm)` | Half-spectrum and original length | Reconstructed real signal |
+ * | `std::vector<double> windowHann(size_t n, bool symmetric)` | Window length and symmetry mode | Hann window samples |
+ * | `std::vector<double> windowHamming(size_t n, bool symmetric)` | Window length and symmetry mode | Hamming window samples |
+ * | `std::vector<double> windowBlackman(size_t n, bool symmetric)` | Window length and symmetry mode | Blackman window samples |
+ * | `std::vector<double> convolve(const std::vector<double>& a, const std::vector<double>& b)` | Two real sequences | Full linear convolution result |
+ * | `std::vector<double> convolveLinear(const std::vector<double>& a, const std::vector<double>& b, ConvolutionMode mode)` | Two real sequences and output mode | Full, same, or valid convolution result |
+ * | `std::vector<double> designFIRLowPass(size_t order, double fc, WindowParams wp)` | Filter order, normalized cutoff, window | Low-pass FIR coefficients |
+ * | `std::vector<double> designFIRHighPass(size_t order, double fc, WindowParams wp)` | Filter order, normalized cutoff, window | High-pass FIR coefficients |
+ * | `std::vector<double> designFIRBandPass(size_t order, double fcLow, double fcHigh, WindowParams wp)` | Filter order, normalized cutoffs, window | Band-pass FIR coefficients |
+ * | `std::vector<double> applyFIR(const std::vector<double>& x, const std::vector<double>& h)` | Signal and FIR coefficients | Filtered signal |
+ * | `std::vector<double> filtfilt(const std::vector<double>& x, const std::vector<double>& h)` | Signal and FIR coefficients | Zero-phase filtered signal |
+ * | `STFTResult stft(const std::vector<double>& x, size_t frame, size_t hop, WindowParams wp)` | Signal, frame size, hop size, window | Short-time Fourier transform |
+ * | `std::vector<double> istft(const STFTResult& result)` | STFT data | Reconstructed time-domain signal |
+ * | `std::vector<double> resamplePolyphase(const std::vector<double>& x, size_t up, size_t down)` | Signal and rational factor | Polyphase-resampled signal |
+ * | `std::vector<double> resampleTo(const std::vector<double>& x, size_t newLength)` | Signal and target length | Signal resampled to requested length |
+ * | `std::vector<double> hilbert(const std::vector<double>& x)` | Real signal | Hilbert transform samples |
+ *
+ * @section ml_sec Machine Learning Module
+ *
+ * ML exposes a sklearn-like API built on top of `Tensor` and the autograd-capable
+ * `AutoTensor` type.
+ *
+ * @subsection ml_types_sec Main Types
+ *
+ * | Type | Constructor / input | Output / behavior |
+ * |------|---------------------|-------------------|
+ * | `AutoTensor` | Tensor data and `requires_grad` flag | Tensor value with gradient tracking |
+ * | `Module` | Base class for neural layers/models | Defines `forward`, parameter access, train/eval mode |
+ * | `Linear`, `Conv2d`, `Sequential`, `Dropout`, `Flatten` | Layer-specific shapes and hyperparameters | Neural-network layers |
+ * | `Optimizer`, `SGD`, `Adam`, `AdamW`, `RMSProp`, `AdaGrad` | Parameter list and learning-rate options | Parameter update strategy |
+ * | `Loss`, `MSELoss`, `CrossEntropyLoss`, `BCELoss` | Predictions and targets | Scalar training objective |
+ * | `DataLoader`, `TensorDataset` | Dataset, batch size, shuffle flag | Mini-batch iteration |
+ * | `KFold`, `StratifiedKFold` | Split count, shuffle flag, seed | Train/validation index splits |
+ * | `LinearRegression`, `LogisticRegression`, `KNNClassifier`, `GaussianNB`, `LinearSVM` | Model hyperparameters | Classical ML estimators with `fit`/`predict` |
+ * | `DecisionTreeClassifier`, `RandomForestClassifier` | Tree/forest hyperparameters | Tree-based predictors |
+ *
+ * @subsection ml_api_sec Common API
+ *
+ * | Signature | Input | Result |
+ * |-----------|-------|--------|
+ * | `AutoTensor Module::forward(const AutoTensor& x)` | Input tensor | Layer/model output tensor |
+ * | `std::vector<AutoTensor*> Module::parameters()` | Module instance | Trainable parameter list |
+ * | `void Optimizer::step()` | Current parameter gradients | Updated parameters |
+ * | `void Optimizer::zero_grad()` | Parameter list | Clears accumulated gradients |
+ * | `AutoTensor Loss::forward(const AutoTensor& pred, const AutoTensor& target)` | Predictions and targets | Scalar loss tensor |
+ * | `TensorDataset(Tensor X, Tensor y)` | Feature and target tensors | Dataset object |
+ * | `DataLoader(dataset, batch_size, shuffle)` | Dataset and batching options | Iterable mini-batches |
+ * | `std::vector<Fold> KFold::split(size_t n_samples)` | Number of samples | Train/validation index folds |
+ * | `std::vector<double> cross_val_score(X, y, folds, train_fn, score_fn)` | Data, labels, folds, training callback, scoring callback | One score per fold |
+ * | `void model.fit(const Tensor& X, const Tensor& y)` | Training features and labels | Fitted model state |
+ * | `Tensor model.predict(const Tensor& X)` | Feature matrix | Predicted labels/values |
+ * | `double accuracy(const Tensor& y_pred, const Tensor& y_true)` | Predictions and labels | Classification accuracy |
+ * | `double precision(...)`, `double recall(...)`, `double f1_score(...)` | Predictions and labels | Classification metrics |
+ * | `double mean_squared_error(...)`, `double mean_absolute_error(...)`, `double r2_score(...)` | Predictions and targets | Regression metrics |
+ *
+ * @section build_sec Building Documentation
+ *
+ * Configure the documentation target and generate HTML:
+ *
+ * @code{.sh}
+ * cmake -S . -B build -DSharedMath_BUILD_DOCS=ON
+ * cmake --build build --target docs
+ * @endcode
+ *
+ * The generated documentation entry point is:
+ *
+ * @code
+ * build/docs/html/index.html
+ * @endcode
+ *
+ * @section license_sec License
+ *
+ * See the LICENSE file at the root of the repository.
+ *
+ * @author D. Rylov
+ * @version 1.0.0
+ */

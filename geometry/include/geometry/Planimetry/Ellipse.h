@@ -40,7 +40,7 @@ namespace SharedMath
                 return Pi * semiMajor * semiMinor;
             }
 
-            // Ramanujan approximation
+            /// Ramanujan approximation
             double perimeter() const {
                 double h = (semiMajor - semiMinor) * (semiMajor - semiMinor) /
                            ((semiMajor + semiMinor) * (semiMajor + semiMinor));

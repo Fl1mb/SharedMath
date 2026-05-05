@@ -1,11 +1,11 @@
 #pragma once
 
-// SharedMath::DSP — Power Spectral Density helpers
-//
-// periodogram            — single-segment windowed-FFT PSD estimate
-// welchPSD               — Welch's averaged periodogram method
-// powerSpectralDensityDB — convert linear PSD to dB
-// crossPowerSpectralDensity — cross-PSD via Welch averaging
+/// SharedMath::DSP — Power Spectral Density helpers
+///
+/// periodogram            — single-segment windowed-FFT PSD estimate
+/// welchPSD               — Welch's averaged periodogram method
+/// powerSpectralDensityDB — convert linear PSD to dB
+/// crossPowerSpectralDensity — cross-PSD via Welch averaging
 
 #include "FFT.h"    // rfftFrequencies, FFTPlan, FFTDirection, FFTNorm
 #include "Window.h" // makeWindow, WindowParams
@@ -19,13 +19,13 @@
 
 namespace SharedMath::DSP {
 
-// ── Scaling convention ────────────────────────────────────────────────────────
+/// ── Scaling convention ────────────────────────────────────────────────────────
 enum class PSDScaling {
     Density,   // V²/Hz — divide by (fs · Σw²)
     Spectrum   // V²    — divide by (Σw)²
 };
 
-// ── Return types ──────────────────────────────────────────────────────────────
+/// ── Return types ──────────────────────────────────────────────────────────────
 struct SpectralResult {
     std::vector<double> frequencies;  // Hz, one-sided (0..fs/2)
     std::vector<double> psd;          // power spectral density / spectrum

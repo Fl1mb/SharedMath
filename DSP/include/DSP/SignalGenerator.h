@@ -1,13 +1,13 @@
 #pragma once
 
-// SharedMath::DSP — Test signal generators
-//
-// sineWave    — A·sin(2π·f·t + φ)
-// chirp       — linear frequency sweep from f0 to f1
-// whiteNoise  — uniform white noise, reproducible via seed
-// impulse     — unit impulse at a given sample position
-// stepSignal  — unit step starting at a given sample position
-// squareWave  — square wave with configurable duty cycle
+/// SharedMath::DSP — Test signal generators
+///
+/// sineWave    — A·sin(2π·f·t + φ)
+/// chirp       — linear frequency sweep from f0 to f1
+/// whiteNoise  — uniform white noise, reproducible via seed
+/// impulse     — unit impulse at a given sample position
+/// stepSignal  — unit step starting at a given sample position
+/// squareWave  — square wave with configurable duty cycle
 
 #include <vector>
 #include <cmath>

@@ -23,7 +23,7 @@ namespace SharedMath
             Transform2D& operator=(Transform2D&&) noexcept = default;
             ~Transform2D() = default;
 
-            // Static factories
+            /// Static factories
             static Transform2D identity();
             static Transform2D translation(double dx, double dy);
             static Transform2D rotation(double angle);

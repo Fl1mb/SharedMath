@@ -1,0 +1,154 @@
+# ---------------------------------------------------------------------------
+# Doxygen configuration for @PROJECT_NAME@ @PROJECT_VERSION@
+# This file is processed by CMake — do not edit the generated Doxyfile directly.
+# ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# Project identity
+# ---------------------------------------------------------------------------
+PROJECT_NAME           = "@PROJECT_NAME@"
+PROJECT_NUMBER         = "@PROJECT_VERSION@"
+PROJECT_BRIEF          = "@PROJECT_DESCRIPTION@"
+PROJECT_LOGO           =
+
+OUTPUT_DIRECTORY       = "@DOXYGEN_OUTPUT_DIR@"
+
+# ---------------------------------------------------------------------------
+# Input sources
+# ---------------------------------------------------------------------------
+INPUT                  = @DOXYGEN_INPUT_DIRS@
+INPUT_ENCODING         = UTF-8
+RECURSIVE              = YES
+
+FILE_PATTERNS          = *.h *.hpp *.dox *.md
+EXCLUDE_PATTERNS       = */build/* */.git/* */tests/* */examples/*
+EXCLUDE_SYMLINKS       = NO
+
+EXTENSION_MAPPING      = dox=C++
+
+# Use the mainpage.dox as the index page
+USE_MDFILE_AS_MAINPAGE =
+
+# ---------------------------------------------------------------------------
+# Source browsing / extraction
+# ---------------------------------------------------------------------------
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = NO
+EXTRACT_STATIC         = YES
+EXTRACT_LOCAL_CLASSES  = YES
+EXTRACT_LOCAL_METHODS  = NO
+HIDE_UNDOC_MEMBERS     = NO
+HIDE_UNDOC_CLASSES     = NO
+BRIEF_MEMBER_DESC      = YES
+REPEAT_BRIEF           = YES
+ALWAYS_DETAILED_SEC    = NO
+INLINE_INHERITED_MEMB  = NO
+
+# ---------------------------------------------------------------------------
+# Build-related options
+# ---------------------------------------------------------------------------
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = YES
+EXPAND_ONLY_PREDEF     = YES
+PREDEFINED             = SHAREDMATH_ML_EXPORT= \
+                         SHAREDMATH_DSP_EXPORT= \
+                         SHAREDMATH_LINALG_EXPORT= \
+                         SHAREDMATH_LINEARALGEBRA_EXPORT= \
+                         SHAREDMATH_GEOMETRY_EXPORT= \
+                         SHAREDMATH_NUMERICALMETHODS_EXPORT= \
+                         SHAREDMATH_EXPORT=
+
+STRIP_FROM_PATH        = "@CMAKE_SOURCE_DIR@"
+STRIP_FROM_INC_PATH    = "@CMAKE_SOURCE_DIR@"
+
+# ---------------------------------------------------------------------------
+# Warnings
+# ---------------------------------------------------------------------------
+QUIET                  = NO
+WARNINGS               = YES
+WARN_IF_UNDOCUMENTED   = YES
+WARN_IF_DOC_ERROR      = YES
+WARN_NO_PARAMDOC       = NO
+WARN_AS_ERROR          = NO
+WARN_FORMAT            = "$file:$line: $text"
+WARN_LOGFILE           =
+
+# ---------------------------------------------------------------------------
+# HTML output
+# ---------------------------------------------------------------------------
+GENERATE_HTML          = YES
+HTML_OUTPUT            = html
+HTML_FILE_EXTENSION    = .html
+HTML_COLORSTYLE        = AUTO_LIGHT
+HTML_COLORSTYLE_HUE    = 220
+HTML_COLORSTYLE_SAT    = 100
+HTML_COLORSTYLE_GAMMA  = 80
+HTML_DYNAMIC_MENUS     = YES
+HTML_DYNAMIC_SECTIONS  = YES
+HTML_INDEX_NUM_ENTRIES = 100
+GENERATE_TREEVIEW      = YES
+TREEVIEW_WIDTH         = 250
+ENUM_VALUES_PER_LINE   = 4
+EXT_LINKS_IN_WINDOW    = NO
+FORMULA_FONTSIZE       = 10
+SEARCHENGINE           = YES
+SERVER_BASED_SEARCH    = NO
+USE_MATHJAX            = YES
+
+# ---------------------------------------------------------------------------
+# LaTeX output (disabled by default — enable for PDF generation)
+# ---------------------------------------------------------------------------
+GENERATE_LATEX         = NO
+LATEX_OUTPUT           = latex
+
+# ---------------------------------------------------------------------------
+# Graph / diagram generation (requires Graphviz / dot)
+# ---------------------------------------------------------------------------
+HAVE_DOT               = @DOXYGEN_HAVE_DOT@
+DOT_PATH               = "@DOXYGEN_DOT_PATH@"
+DOT_NUM_THREADS        = 0
+
+CLASS_GRAPH            = YES
+COLLABORATION_GRAPH    = YES
+GROUP_GRAPHS           = YES
+INCLUDE_GRAPH          = YES
+INCLUDED_BY_GRAPH      = YES
+CALL_GRAPH             = NO
+CALLER_GRAPH           = NO
+GRAPHICAL_HIERARCHY    = YES
+DIRECTORY_GRAPH        = YES
+
+DOT_IMAGE_FORMAT       = svg
+INTERACTIVE_SVG        = YES
+DOT_GRAPH_MAX_NODES    = 100
+MAX_DOT_GRAPH_DEPTH    = 0
+DOT_MULTI_TARGETS      = YES
+GENERATE_LEGEND        = YES
+DOT_CLEANUP            = YES
+
+# ---------------------------------------------------------------------------
+# Cross-referencing / linking
+# ---------------------------------------------------------------------------
+REFERENCES_LINK_SOURCE = YES
+SOURCE_BROWSER         = YES
+INLINE_SOURCES         = NO
+STRIP_CODE_COMMENTS    = YES
+REFERENCED_BY_RELATION = YES
+REFERENCES_RELATION    = YES
+VERBATIM_HEADERS       = YES
+
+ALPHABETICAL_INDEX     = YES
+# ---------------------------------------------------------------------------
+# Grouping
+# ---------------------------------------------------------------------------
+DISTRIBUTE_GROUP_DOC   = YES
+SUBGROUPING            = YES
+
+# ---------------------------------------------------------------------------
+# Miscellaneous
+# ---------------------------------------------------------------------------
+OPTIMIZE_OUTPUT_FOR_C  = NO
+TYPEDEF_HIDES_STRUCT   = NO
+LOOKUP_CACHE_SIZE      = 0
+NUM_PROC_THREADS       = 1
+TIMESTAMP              = YES

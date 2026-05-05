@@ -1,31 +1,31 @@
 #pragma once
 
-// SharedMath::DSP — Hz-first filter design API
-//
-// Convenient wrappers around the normalized-frequency FIR/IIR design functions.
-// All functions accept frequencies in Hz and the sampling rate, validate inputs,
-// and internally convert to the normalized-to-Nyquist convention used by the
-// underlying design functions.
-//
-// Normalization: normalized = hz / (sampleRate / 2)  ← Nyquist = 1
-//
-// FIR (windowed-sinc):
-//   designFIRLowPassHz  designFIRHighPassHz
-//   designFIRBandPassHz designFIRBandStopHz
-//
-// IIR (Butterworth biquad sections):
-//   designButterworthLowPassHz   designButterworthHighPassHz
-//   designButterworthBandPassHz  designButterworthBandStopHz
-//
-// Notch biquad (RBJ cookbook):
-//   designNotchHz
-//
-// RBJ audio-EQ cookbook biquads:
-//   designRBJLowPassHz    designRBJHighPassHz
-//   designRBJBandPassHz   designRBJNotchHz
-//   designRBJAllPassHz
-//   designRBJLowShelfHz   designRBJHighShelfHz
-//   designRBJPeakingEQHz
+/// SharedMath::DSP — Hz-first filter design API
+///
+/// Convenient wrappers around the normalized-frequency FIR/IIR design functions.
+/// All functions accept frequencies in Hz and the sampling rate, validate inputs,
+/// and internally convert to the normalized-to-Nyquist convention used by the
+/// underlying design functions.
+///
+/// Normalization: normalized = hz / (sampleRate / 2)  ← Nyquist = 1
+///
+/// FIR (windowed-sinc):
+///   designFIRLowPassHz  designFIRHighPassHz
+///   designFIRBandPassHz designFIRBandStopHz
+///
+/// IIR (Butterworth biquad sections):
+///   designButterworthLowPassHz   designButterworthHighPassHz
+///   designButterworthBandPassHz  designButterworthBandStopHz
+///
+/// Notch biquad (RBJ cookbook):
+///   designNotchHz
+///
+/// RBJ audio-EQ cookbook biquads:
+///   designRBJLowPassHz    designRBJHighPassHz
+///   designRBJBandPassHz   designRBJNotchHz
+///   designRBJAllPassHz
+///   designRBJLowShelfHz   designRBJHighShelfHz
+///   designRBJPeakingEQHz
 
 #include "FIR.h"
 #include "IIR.h"
@@ -36,9 +36,9 @@
 
 namespace SharedMath::DSP {
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Internal helpers (not part of the public API)
-// ─────────────────────────────────────────────────────────────────────────────
+/// ─────────────────────────────────────────────────────────────────────────────
+/// Internal helpers (not part of the public API)
+/// ─────────────────────────────────────────────────────────────────────────────
 namespace detail {
 
 inline double hzToNyquistNorm(double hz, double sampleRate) noexcept {

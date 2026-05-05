@@ -18,9 +18,9 @@
 
 namespace SharedMath::Graphs {
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Internal helpers
-// ─────────────────────────────────────────────────────────────────────────────
+/// ─────────────────────────────────────────────────────────────────────────────
+///  Internal helpers
+/// ─────────────────────────────────────────────────────────────────────────────
 namespace detail {
 
 template<typename W>
@@ -51,8 +51,8 @@ struct ShortestPathResult {
         return it != dist.end() && it->second < detail::graphInf<W>();
     }
 
-    // Reconstruct the path from source to target.
-    // Returns {} if target is unreachable.
+    /// Reconstruct the path from source to target.
+    /// Returns {} if target is unreachable.
     std::vector<V> pathTo(const V& target) const {
         if (!reachable(target)) return {};
         std::vector<V> path;
@@ -91,7 +91,7 @@ struct AllPairsResult {
         return dist[indexOf(from)][indexOf(to)] < detail::graphInf<W>();
     }
 
-    // Reconstruct path from 'from' to 'to'. Returns {} if unreachable.
+    /// Reconstruct path from 'from' to 'to'. Returns {} if unreachable.
     std::vector<V> path(const V& from, const V& to) const {
         size_t i = indexOf(from), j = indexOf(to);
         if (next[i][j] < 0) return {};
@@ -253,7 +253,7 @@ std::optional<ShortestPathResult<V,W>> bellmanFord(
         if (!updated) break;  // converged early
     }
 
-    // V-th relaxation pass: if any distance decreases, there is a negative cycle
+    /// V-th relaxation pass: if any distance decreases, there is a negative cycle
     for (const auto& u : g.vertices()) {
         if (res.dist[u] == INF) continue;
         for (const auto& e : g.neighbors(u))
@@ -366,7 +366,7 @@ MSTResult<V,W> kruskal(const AdjacencyListGraph<V,W>& g) {
     MSTResult<V,W> mst;
     UnionFind<V>   uf;
 
-    // Register all vertices
+    /// Register all vertices
     for (const auto& v : g.vertices()) uf.makeSet(v);
 
     // Collect edges (for undirected: use index comparison to avoid duplicates)

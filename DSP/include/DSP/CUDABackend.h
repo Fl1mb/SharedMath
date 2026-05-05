@@ -1,28 +1,28 @@
 #pragma once
 
-// SharedMath::DSP — CUDA acceleration stub
-//
-// When SHAREDMATH_CUDA_DSP is defined (set by CMake when CUDA is available
-// and the option SharedMath_ENABLE_CUDA_DSP is ON), this header exposes
-// GPU-accelerated DSP primitives backed by cuFFT / cuBLAS.
-//
-// Without CUDA the stubs below fall back to the CPU implementations so that
-// user code compiles unchanged on platforms without a GPU.
-//
-// Current GPU-accelerated routines (when SHAREDMATH_CUDA_DSP is defined):
-//   rfftCUDA(signal)       → same result as rfft(), computed on the GPU
-//   irfftCUDA(bins, n)     → same result as irfft()
-//
-// All other DSP functions remain CPU-only.
+/// SharedMath::DSP — CUDA acceleration stub
+///
+/// When SHAREDMATH_CUDA_DSP is defined (set by CMake when CUDA is available
+/// and the option SharedMath_ENABLE_CUDA_DSP is ON), this header exposes
+/// GPU-accelerated DSP primitives backed by cuFFT / cuBLAS.
+///
+/// Without CUDA the stubs below fall back to the CPU implementations so that
+/// user code compiles unchanged on platforms without a GPU.
+///
+/// Current GPU-accelerated routines (when SHAREDMATH_CUDA_DSP is defined):
+///   rfftCUDA(signal)       → same result as rfft(), computed on the GPU
+///   irfftCUDA(bins, n)     → same result as irfft()
+///
+/// All other DSP functions remain CPU-only.
 
 #include "FFT.h"
 
 #ifdef SHAREDMATH_CUDA_DSP
 
-// ── Forward declarations for the CUDA translation unit ────────────────────────
+/// ── Forward declarations for the CUDA translation unit ────────────────────────
 namespace SharedMath::DSP::CUDA {
 
-// GPU rfft:  transfers signal to device, runs cuFFT, transfers result back.
+/// GPU rfft:  transfers signal to device, runs cuFFT, transfers result back.
 std::vector<std::complex<double>> rfftCUDA(const std::vector<double>& signal);
 
 // GPU irfft: transfers bins to device, runs inverse cuFFT, transfers back.

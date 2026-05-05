@@ -11,21 +11,21 @@
 
 namespace SharedMath::LinearAlgebra {
 
-// Unified interface for solving linear systems and computing matrix properties.
-//
-// Usage (automatic method selection):
-//   LinearSolver sol(A);                      // detects SPD/symmetric/general
-//   DynamicVector x  = sol.solve(b);          // solve Ax = b
-//   DynamicMatrix X  = sol.solve(B);          // solve AX = B (multiple rhs)
-//   DynamicMatrix Ai = sol.inverse();         // A^{-1}
-//   double        d  = sol.determinant();     // det(A)
-//   size_t        r  = sol.rank();            // numerical rank
-//
-// Usage (explicit method):
-//   auto sol = LinearSolver::cholesky(A);     // A must be SPD
-//   auto sol = LinearSolver::qr(A);           // A may be rectangular (least-squares)
-//   auto sol = LinearSolver::lu(A);           // A must be square
-//
+/// Unified interface for solving linear systems and computing matrix properties.
+///
+/// Usage (automatic method selection):
+///   LinearSolver sol(A);                      // detects SPD/symmetric/general
+///   DynamicVector x  = sol.solve(b);          // solve Ax = b
+///   DynamicMatrix X  = sol.solve(B);          // solve AX = B (multiple rhs)
+///   DynamicMatrix Ai = sol.inverse();         // A^{-1}
+///   double        d  = sol.determinant();     // det(A)
+///   size_t        r  = sol.rank();            // numerical rank
+///
+/// Usage (explicit method):
+///   auto sol = LinearSolver::cholesky(A);     // A must be SPD
+///   auto sol = LinearSolver::qr(A);           // A may be rectangular (least-squares)
+///   auto sol = LinearSolver::lu(A);           // A must be square
+///
 class SHAREDMATH_LINEARALGEBRA_EXPORT LinearSolver {
 public:
     enum class Method {
@@ -35,31 +35,31 @@ public:
         Cholesky,   // LL^T (A must be symmetric positive-definite)
     };
 
-    // Factorize A using the chosen method.
-    // Throws std::invalid_argument if the matrix is incompatible with the method.
+    /// Factorize A using the chosen method.
+    /// Throws std::invalid_argument if the matrix is incompatible with the method.
     explicit LinearSolver(const AbstractMatrix& A, Method method = Method::Auto);
 
-    // ── Solve ─────────────────────────────────────────────────────────────
+    /// ── Solve ─────────────────────────────────────────────────────────────
 
-    // Solve Ax = b.  For QR and overdetermined systems returns least-squares solution.
+    /// Solve Ax = b.  For QR and overdetermined systems returns least-squares solution.
     DynamicVector solve(const DynamicVector& b) const;
     std::vector<double> solve(const std::vector<double>& b) const;
 
-    // Solve AX = B (multiple right-hand sides).
+    /// Solve AX = B (multiple right-hand sides).
     DynamicMatrix solve(const DynamicMatrix& B) const;
 
-    // ── Matrix properties from factorization ──────────────────────────────
+    /// ── Matrix properties from factorization ──────────────────────────────
 
-    // A^{-1} (square systems only; uses the stored factorization)
+    /// A^{-1} (square systems only; uses the stored factorization)
     DynamicMatrix inverse() const;
 
-    // det(A) from the factorization (sign tracking for LU/Cholesky)
+    /// det(A) from the factorization (sign tracking for LU/Cholesky)
     double determinant() const;
 
-    // Numerical rank via QR with column pivoting (independent of factorization method)
+    /// Numerical rank via QR with column pivoting (independent of factorization method)
     size_t rank(double tol = -1.0) const;
 
-    // ── Named constructors ────────────────────────────────────────────────
+    /// ── Named constructors ────────────────────────────────────────────────
     static LinearSolver lu       (const AbstractMatrix& A);
     static LinearSolver qr       (const AbstractMatrix& A);
     static LinearSolver cholesky (const AbstractMatrix& A);
@@ -83,12 +83,12 @@ private:
     // ── Cholesky factorization storage ────────────────────────────────────
     DynamicMatrix L_;            // lower-triangular factor, A = L*L^T
 
-    // ── Internal helpers ──────────────────────────────────────────────────
+    /// ── Internal helpers ──────────────────────────────────────────────────
     void factorize_lu      (const AbstractMatrix& A);
     void factorize_qr      (const AbstractMatrix& A);
     void factorize_cholesky(const AbstractMatrix& A);
 
-    // Back/forward substitution
+    /// Back/forward substitution
     std::vector<double> solve_lu (const std::vector<double>& b) const;
     std::vector<double> solve_qr (const std::vector<double>& b) const;
     std::vector<double> solve_cho(const std::vector<double>& b) const;

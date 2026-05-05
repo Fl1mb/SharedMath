@@ -14,17 +14,17 @@ namespace detail {
     constexpr double IIR_PI = 3.14159265358979323846;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// BiquadCoeffs — second-order section (SOS), Transposed Direct Form II
-// Difference equation:
-//   y[n] = b0*x[n] + b1*x[n-1] + b2*x[n-2] - a1*y[n-1] - a2*y[n-2]
-// (a0 is assumed normalized to 1)
-// ─────────────────────────────────────────────────────────────────────────────
+/// ─────────────────────────────────────────────────────────────────────────────
+/// BiquadCoeffs — second-order section (SOS), Transposed Direct Form II
+/// Difference equation:
+///   y[n] = b0*x[n] + b1*x[n-1] + b2*x[n-2] - a1*y[n-1] - a2*y[n-2]
+/// (a0 is assumed normalized to 1)
+/// ─────────────────────────────────────────────────────────────────────────────
 struct BiquadCoeffs {
     double b0 = 1.0, b1 = 0.0, b2 = 0.0;
     double a1 = 0.0, a2 = 0.0;
 
-    // Stability: poles are roots of z^2 + a1*z + a2 = 0; require |p| < 1.
+    /// Stability: poles are roots of z^2 + a1*z + a2 = 0; require |p| < 1.
     bool isStable() const {
         const double disc = a1 * a1 - 4.0 * a2;
         if (disc >= 0.0) {
@@ -37,7 +37,7 @@ struct BiquadCoeffs {
         return a2 < 1.0 && a2 >= 0.0;
     }
 
-    // Transposed Direct Form II single-sample processing.
+    /// Transposed Direct Form II single-sample processing.
     inline double process(double x, double& s1, double& s2) const {
         const double y = b0 * x + s1;
         s1 = b1 * x - a1 * y + s2;
@@ -46,11 +46,11 @@ struct BiquadCoeffs {
     }
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Internal helper: design analog-prototype Butterworth poles (normalized, ωc=1)
-// Returns pairs of complex-conjugate poles as (realPart, imagPart) with imag>0,
-// and a bool indicating whether there is a real pole at s = -1 (odd order).
-// ─────────────────────────────────────────────────────────────────────────────
+/// ─────────────────────────────────────────────────────────────────────────────
+/// Internal helper: design analog-prototype Butterworth poles (normalized, ωc=1)
+/// Returns pairs of complex-conjugate poles as (realPart, imagPart) with imag>0,
+/// and a bool indicating whether there is a real pole at s = -1 (odd order).
+/// ─────────────────────────────────────────────────────────────────────────────
 namespace detail {
     struct ButterPrototype {
         std::vector<std::pair<double, double>> cplxPairs; // (sigma, omega), omega > 0
@@ -72,9 +72,9 @@ namespace detail {
         return proto;
     }
 
-    // Bilinear transform of a single 2nd-order analog section
-    //   H(s) = 1 / (s^2 - 2σ s + (σ^2 + ω^2)),  pre-warped by K = tan(π fc / 2)
-    // into a digital biquad for LOW-PASS.
+    /// Bilinear transform of a single 2nd-order analog section
+    ///   H(s) = 1 / (s^2 - 2σ s + (σ^2 + ω^2)),  pre-warped by K = tan(π fc / 2)
+    /// into a digital biquad for LOW-PASS.
     inline BiquadCoeffs bilinearLP_pair(double sigma, double omega, double K) {
         const double K2    = K * K;
         const double polR2 = sigma * sigma + omega * omega; // |p|^2
@@ -94,9 +94,9 @@ namespace detail {
         return { b0 / a0, b1 / a0, b2 / a0, a1 / a0, a2 / a0 };
     }
 
-    // Bilinear transform for HIGH-PASS analog prototype 1/(s^2 - 2σs + polR2)
-    // with LP→HP substitution s → 1/s, then pre-warp and bilinear.
-    // Final digital biquad:
+    /// Bilinear transform for HIGH-PASS analog prototype 1/(s^2 - 2σs + polR2)
+    /// with LP→HP substitution s → 1/s, then pre-warp and bilinear.
+    /// Final digital biquad:
     inline BiquadCoeffs bilinearHP_pair(double sigma, double omega, double K) {
         const double K2    = K * K;
         const double polR2 = sigma * sigma + omega * omega;
@@ -125,7 +125,7 @@ namespace detail {
         return { b0 / a0, b1 / a0, b2 / a0, a1 / a0, a2 / a0 };
     }
 
-    // First-order LP section from analog pole at s = -1, pre-warped.
+    /// First-order LP section from analog pole at s = -1, pre-warped.
     inline BiquadCoeffs bilinearLP_real(double K) {
         // H(s) = 1/(s+1) → s = (1-z^-1)/(K(1+z^-1))
         // digital: (K + K z^-1) / ((1+K) + (K-1) z^-1)
@@ -136,8 +136,8 @@ namespace detail {
         return { b0 / a0, b1 / a0, 0.0, a1 / a0, 0.0 };
     }
 
-    // First-order HP section from analog pole at s = -1 after LP→HP (pole still at s = -1).
-    // H(s) = s/(s+1) → digital:
+    /// First-order HP section from analog pole at s = -1 after LP→HP (pole still at s = -1).
+    /// H(s) = s/(s+1) → digital:
     inline BiquadCoeffs bilinearHP_real(double K) {
         const double a0 =  1.0 + K;
         const double a1 =  K - 1.0;
@@ -286,8 +286,8 @@ inline std::vector<BiquadCoeffs> designButterworthBandPass(
     };
 
     for (const auto& pp : proto.cplxPairs) {
-        // Analog pole p0 (we take the one with positive ω; its conjugate is handled
-        // by producing a real biquad with the conjugate pole pair at the end).
+        /// Analog pole p0 (we take the one with positive ω; its conjugate is handled
+        /// by producing a real biquad with the conjugate pole pair at the end).
         const std::complex<double> p0(pp.first, pp.second);
         std::complex<double> pa, pb;
         transformPoleBP(p0, pa, pb);
@@ -296,8 +296,8 @@ inline std::vector<BiquadCoeffs> designButterworthBandPass(
         sections.push_back(bilinearBPBiquad(pb));
     }
     if (proto.hasRealPole) {
-        // Real pole at s = -1 becomes a complex-conjugate pair:
-        //   p^2 + BW p + w0^2 = 0 → one biquad.
+        /// Real pole at s = -1 becomes a complex-conjugate pair:
+        ///   p^2 + BW p + w0^2 = 0 → one biquad.
         const std::complex<double> p0(-1.0, 0.0);
         std::complex<double> pa, pb;
         transformPoleBP(p0, pa, pb);
@@ -483,9 +483,9 @@ inline BiquadCoeffs designHighShelf(
     return { b0 / a0, b1 / a0, b2 / a0, a1 / a0, a2 / a0 };
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// BiquadCascade — as before, with per-section state.
-// ─────────────────────────────────────────────────────────────────────────────
+/// ─────────────────────────────────────────────────────────────────────────────
+/// BiquadCascade — as before, with per-section state.
+/// ─────────────────────────────────────────────────────────────────────────────
 class BiquadCascade {
 public:
     BiquadCascade() = default;

@@ -5,10 +5,10 @@
 
 namespace SharedMath::Core {
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Snapshot of a single CUDA device's static properties.
-// Populated once at startup by CudaDeviceManager.
-// ─────────────────────────────────────────────────────────────────────────────
+/// ─────────────────────────────────────────────────────────────────────────────
+/// Snapshot of a single CUDA device's static properties.
+/// Populated once at startup by CudaDeviceManager.
+/// ─────────────────────────────────────────────────────────────────────────────
 struct CudaDeviceInfo {
     int         id                     = -1;
     std::string name;
@@ -28,7 +28,7 @@ struct CudaDeviceInfo {
     int         maxThreadsDim[3]       = {};
     int         maxGridSize[3]         = {};
 
-    // ── Convenience ──────────────────────────────────────────────────────────
+    /// ── Convenience ──────────────────────────────────────────────────────────
 
     double totalMemoryGB() const noexcept {
         return static_cast<double>(totalMemoryBytes) / (1024.0 * 1024.0 * 1024.0);
@@ -38,7 +38,7 @@ struct CudaDeviceInfo {
         return static_cast<double>(freeMemoryBytes) / (1024.0 * 1024.0 * 1024.0);
     }
 
-    // Returns "8.6", "9.0", etc.
+    /// Returns "8.6", "9.0", etc.
     std::string computeCapabilityStr() const {
         return std::to_string(computeCapabilityMajor) + "." +
                std::to_string(computeCapabilityMinor);

@@ -1,21 +1,32 @@
 #pragma once
 
-// SharedMath::ML — Module / Layer API
-//
-// Module       — abstract base class for all layers
-// Linear       — fully-connected layer  (y = x @ W + b)
-// Sequential   — ordered container of modules
-// Dropout      — training-time dropout with inverted scaling
-// Flatten      — flatten feature dimensions for Linear layers
-// ReLU/Sigmoid/Tanh/GELU/Softmax — activation layers
-// LayerNorm   — normalisation over the last dimension
-// Embedding   — lookup table for token ids
-// MultiHeadAttention — transformer-style self-attention
-// Conv2d       — NCHW 2-D convolution
-// BatchNorm1d  — feature-wise normalisation for [N, C]
-// BatchNorm2d  — channel-wise normalisation for [N, C, H, W]
-// MaxPool2d    — NCHW max pooling
-// AvgPool2d    — NCHW average pooling
+/**
+ * @file Module.h
+ * @brief Neural-network layer API.
+ *
+ * @defgroup ML_Layers Neural Network Layers
+ * @ingroup ML
+ * @{
+ *
+ * All layers inherit from @ref SharedMath::ML::Module.  The two key virtual
+ * methods are `forward()` and `parameters()`.  The base class provides
+ * `train()`, `eval()`, `zero_grad()`, `save()`, and `load()`.
+ *
+ * **Available layers**
+ * - Linear — fully-connected layer (y = x W + b)
+ * - Sequential — ordered container of modules
+ * - Dropout — inverted-scaling training dropout
+ * - Flatten — reshape feature dimensions for Linear
+ * - ReLU, LeakyReLU, ELU, SiLU, GELU, Sigmoid, Tanh, Softmax — activations
+ * - LayerNorm — normalisation over the last dimension
+ * - Embedding — lookup table for token IDs
+ * - MultiHeadAttention — scaled dot-product self-attention
+ * - Conv2d — NCHW 2-D convolution with backward pass
+ * - BatchNorm1d / BatchNorm2d — batch normalisation
+ * - MaxPool2d / AvgPool2d — spatial pooling
+ *
+ * @}
+ */
 
 #include <sharedmath_ml_export.h>
 

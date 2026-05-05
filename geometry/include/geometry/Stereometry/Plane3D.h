@@ -10,10 +10,10 @@ namespace SharedMath
 {
     namespace Geometry
     {
-        // Plane equation: ax + by + cz + d = 0
+        /// Plane equation: ax + by + cz + d = 0
         class SHAREDMATH_GEOMETRY_EXPORT Plane3D {
         public:
-            // Default: z = 0 plane (a=0, b=0, c=1, d=0)
+            /// Default: z = 0 plane (a=0, b=0, c=1, d=0)
             Plane3D();
 
             Plane3D(double a, double b, double c, double d);
@@ -40,13 +40,13 @@ namespace SharedMath
             bool isParallelTo(const Plane3D& other) const;
             bool isPerpendicularTo(const Plane3D& other) const;
 
-            // Make unit normal (normalize coefficients)
+            /// Make unit normal (normalize coefficients)
             Plane3D normalize() const;
 
-            // Project point onto plane
+            /// Project point onto plane
             Point3D project(const Point3D& p) const;
 
-            // Reflect point through plane
+            /// Reflect point through plane
             Point3D reflect(const Point3D& p) const;
 
             bool operator==(const Plane3D& other) const;

@@ -1,14 +1,14 @@
 #pragma once
 
-// SharedMath::Functions — Loss Functions for Machine Learning
-//
-// All functions operate on std::vector<T> (T = float or double).
-// Scalar variants are also provided for element-wise use.
-//
-// Conventions:
-//   y_pred — model output (raw scores or probabilities depending on loss)
-//   y_true — ground-truth labels or one-hot vectors
-//   All losses return the mean over the batch (reduction = "mean") unless noted.
+/// SharedMath::Functions — Loss Functions for Machine Learning
+///
+/// All functions operate on std::vector<T> (T = float or double).
+/// Scalar variants are also provided for element-wise use.
+///
+/// Conventions:
+///   y_pred — model output (raw scores or probabilities depending on loss)
+///   y_true — ground-truth labels or one-hot vectors
+///   All losses return the mean over the batch (reduction = "mean") unless noted.
 
 #include <cmath>
 #include <vector>

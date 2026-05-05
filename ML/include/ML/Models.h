@@ -1,11 +1,11 @@
 #pragma once
 
-// SharedMath::ML — Classical ML Models
-//
-// LinearRegression   — gradient-descent OLS
-// LogisticRegression — binary logistic regression via gradient descent
-// KMeans             — Lloyd's algorithm (random seed, configurable iters)
-// KNNClassifier      — k-nearest neighbours (brute force, L2 distance)
+/// SharedMath::ML — Classical ML Models
+///
+/// LinearRegression   — gradient-descent OLS
+/// LogisticRegression — binary logistic regression via gradient descent
+/// KMeans             — Lloyd's algorithm (random seed, configurable iters)
+/// KNNClassifier      — k-nearest neighbours (brute force, L2 distance)
 
 #include <sharedmath_ml_export.h>
 

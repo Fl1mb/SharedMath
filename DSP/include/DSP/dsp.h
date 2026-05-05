@@ -1,7 +1,7 @@
 #pragma once
 
-// SharedMath::DSP — Digital Signal Processing module
-// Umbrella header: #include <DSP/dsp.h>
+/// SharedMath::DSP — Digital Signal Processing module
+/// Umbrella header: #include <DSP/dsp.h>
 
 #include "FFTConfig.h"
 #include "FFTBackend.h"
@@ -21,4 +21,11 @@
 #include "SignalProcessing.h"
 #include "Streaming.h"
 #include "Resampling.h"
+#include "SignalDetection.h"
+#include "SignalEstimation.h"
+#include "FrequencyCorrection.h"
+#include "Channelization.h"
+#include "BurstDetection.h"
+#include "SignalMetrics.h"
+#include "Waterfall.h"
 #include "CUDABackend.h"

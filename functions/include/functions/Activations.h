@@ -1,15 +1,26 @@
-#pragma once
+/**
+ * @file Activations.h
+ * @brief ML activation functions (sigmoid, ReLU, GELU, Swish, softmax, …).
+ * @ingroup Functions_Activations
+ *
+ * All activations are templated on @p T (`float` or `double`).
+ * Each activation also provides a `*Prime` variant (analytical derivative).
+ * Vector versions of softmax and log-softmax operate on `std::vector<T>`.
+ *
+ * References:
+ *   - Agostinelli et al. (2014)
+ *   - Clevert et al. (2016) — ELU
+ *   - Hendrycks & Gimpel (2016) — GELU
+ *   - Ramachandran et al. (2017) — Swish / SiLU
+ *   - Misra (2019) — Mish
+ */
 
-// SharedMath::Functions — ML Activation Functions
-//
-// All activations are templated on T (float or double).
-// Each activation also provides a *Prime variant (analytical derivative).
-//
-// Vector versions of softmax and log-softmax operate on std::vector<T>.
-//
-// Reference: Agostinelli et al. (2014), Clevert et al. (2016),
-//            Hendrycks & Gimpel (2016), Ramachandran et al. (2017),
-//            Misra (2019).
+/**
+ * @defgroup Functions_Activations Activation Functions
+ * @ingroup Functions
+ * @brief Neural-network activation functions templated on `float` or `double`.
+ */
+#pragma once
 
 #include <cmath>
 #include <vector>
@@ -20,9 +31,9 @@
 
 namespace SharedMath::Functions {
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Helper constants
-// ─────────────────────────────────────────────────────────────────────────────
+/// ─────────────────────────────────────────────────────────────────────────────
+/// Helper constants
+/// ─────────────────────────────────────────────────────────────────────────────
 namespace detail {
 template<typename T> constexpr T ACT_PI   = static_cast<T>(3.14159265358979323846);
 template<typename T> constexpr T ACT_SQRT2 = static_cast<T>(1.41421356237309504880);
@@ -31,37 +42,37 @@ template<typename T> constexpr T SQRT2OPI = static_cast<T>(0.7978845608028653558
 } // namespace detail
 
 
-// ═════════════════════════════════════════════════════════════════════════════
-// SIGMOID  σ(x) = 1 / (1 + e^{−x})
-// ═════════════════════════════════════════════════════════════════════════════
+/// ═════════════════════════════════════════════════════════════════════════════
+/// SIGMOID  σ(x) = 1 / (1 + e^{−x})
+/// ═════════════════════════════════════════════════════════════════════════════
 
 template<typename T> inline T sigmoid(T x) {
     return T(1) / (T(1) + std::exp(-x));
 }
-// σ'(x) = σ(x)(1 − σ(x))
+/// σ'(x) = σ(x)(1 − σ(x))
 template<typename T> inline T sigmoidPrime(T x) {
     T s = sigmoid(x);
     return s * (T(1) - s);
 }
-// Numerically stable log-sigmoid: log(σ(x)) = −softplus(−x)
+/// Numerically stable log-sigmoid: log(σ(x)) = −softplus(−x)
 template<typename T> inline T logSigmoid(T x) {
     return (x >= T(0)) ? -std::log(T(1) + std::exp(-x))
                        :  x - std::log(T(1) + std::exp(x));
 }
 
 
-// ═════════════════════════════════════════════════════════════════════════════
-// ReLU  max(0, x)
-// ═════════════════════════════════════════════════════════════════════════════
+/// ═════════════════════════════════════════════════════════════════════════════
+/// ReLU  max(0, x)
+/// ═════════════════════════════════════════════════════════════════════════════
 
 template<typename T> inline T relu(T x) { return x > T(0) ? x : T(0); }
-// Subgradient at 0 → 0
+/// Subgradient at 0 → 0
 template<typename T> inline T reluPrime(T x) { return x > T(0) ? T(1) : T(0); }
 
 
-// ═════════════════════════════════════════════════════════════════════════════
-// Leaky ReLU  max(alpha·x, x)
-// ═════════════════════════════════════════════════════════════════════════════
+/// ═════════════════════════════════════════════════════════════════════════════
+/// Leaky ReLU  max(alpha·x, x)
+/// ═════════════════════════════════════════════════════════════════════════════
 
 template<typename T> inline T leakyRelu(T x, T alpha = T(0.01)) {
     return x > T(0) ? x : alpha * x;
@@ -71,11 +82,11 @@ template<typename T> inline T leakyReluPrime(T x, T alpha = T(0.01)) {
 }
 
 
-// ═════════════════════════════════════════════════════════════════════════════
-// ELU — Exponential Linear Unit
-// f(x) = x          if x > 0
-//       = α(e^x − 1) if x ≤ 0
-// ═════════════════════════════════════════════════════════════════════════════
+/// ═════════════════════════════════════════════════════════════════════════════
+/// ELU — Exponential Linear Unit
+/// f(x) = x          if x > 0
+///       = α(e^x − 1) if x ≤ 0
+/// ═════════════════════════════════════════════════════════════════════════════
 
 template<typename T> inline T elu(T x, T alpha = T(1)) {
     return x > T(0) ? x : alpha * (std::exp(x) - T(1));
@@ -85,10 +96,10 @@ template<typename T> inline T eluPrime(T x, T alpha = T(1)) {
 }
 
 
-// ═════════════════════════════════════════════════════════════════════════════
-// SELU — Scaled ELU  (Klambauer et al., 2017)
-// Self-normalising: preserves mean≈0, var≈1 for standard-normal inputs.
-// ═════════════════════════════════════════════════════════════════════════════
+/// ═════════════════════════════════════════════════════════════════════════════
+/// SELU — Scaled ELU  (Klambauer et al., 2017)
+/// Self-normalising: preserves mean≈0, var≈1 for standard-normal inputs.
+/// ═════════════════════════════════════════════════════════════════════════════
 
 namespace detail {
 constexpr double SELU_ALPHA  = 1.6732632423543772848170429916717;
@@ -107,22 +118,22 @@ template<typename T> inline T seluPrime(T x) {
 }
 
 
-// ═════════════════════════════════════════════════════════════════════════════
-// GELU — Gaussian Error Linear Unit  (Hendrycks & Gimpel, 2016)
-// Exact:          gelu(x) = x · Φ(x) = x/2 · (1 + erf(x/√2))
-// Fast approx:    gelu(x) ≈ x/2 · (1 + tanh(√(2/π) · (x + 0.044715·x³)))
-// ═════════════════════════════════════════════════════════════════════════════
+/// ═════════════════════════════════════════════════════════════════════════════
+/// GELU — Gaussian Error Linear Unit  (Hendrycks & Gimpel, 2016)
+/// Exact:          gelu(x) = x · Φ(x) = x/2 · (1 + erf(x/√2))
+/// Fast approx:    gelu(x) ≈ x/2 · (1 + tanh(√(2/π) · (x + 0.044715·x³)))
+/// ═════════════════════════════════════════════════════════════════════════════
 
 template<typename T> inline T gelu(T x) {
     return x * T(0.5) * (T(1) + std::erf(x / detail::ACT_SQRT2<T>));
 }
-// Approximation — slightly faster, avoids erf
+/// Approximation — slightly faster, avoids erf
 template<typename T> inline T geluApprox(T x) {
     constexpr T c = static_cast<T>(0.044715);
     T inner = detail::SQRT2OPI<T> * (x + c * x * x * x);
     return x * T(0.5) * (T(1) + std::tanh(inner));
 }
-// Derivative of exact GELU
+/// Derivative of exact GELU
 template<typename T> inline T geluPrime(T x) {
     constexpr T inv_sqrt2    = T(1) / detail::ACT_SQRT2<T>;
     constexpr T inv_sqrt2pi  = static_cast<T>(0.39894228040143267794);
@@ -132,9 +143,9 @@ template<typename T> inline T geluPrime(T x) {
 }
 
 
-// ═════════════════════════════════════════════════════════════════════════════
-// Swish / SiLU — x · σ(x)  (Ramachandran et al., 2017)
-// ═════════════════════════════════════════════════════════════════════════════
+/// ═════════════════════════════════════════════════════════════════════════════
+/// Swish / SiLU — x · σ(x)  (Ramachandran et al., 2017)
+/// ═════════════════════════════════════════════════════════════════════════════
 
 template<typename T> inline T swish(T x) { return x * sigmoid(x); }
 template<typename T> inline T swishPrime(T x) {
@@ -143,9 +154,9 @@ template<typename T> inline T swishPrime(T x) {
 }
 
 
-// ═════════════════════════════════════════════════════════════════════════════
-// Mish — x · tanh(softplus(x)) = x · tanh(ln(1 + e^x))  (Misra, 2019)
-// ═════════════════════════════════════════════════════════════════════════════
+/// ═════════════════════════════════════════════════════════════════════════════
+/// Mish — x · tanh(softplus(x)) = x · tanh(ln(1 + e^x))  (Misra, 2019)
+/// ═════════════════════════════════════════════════════════════════════════════
 
 template<typename T> inline T mish(T x) {
     T sp = (x > T(20)) ? x : std::log(T(1) + std::exp(x));  // stable softplus
@@ -162,10 +173,10 @@ template<typename T> inline T mishPrime(T x) {
 }
 
 
-// ═════════════════════════════════════════════════════════════════════════════
-// Hard Sigmoid — piecewise linear approximation to σ(x)
-// f(x) = clamp(x/6 + 0.5, 0, 1)
-// ═════════════════════════════════════════════════════════════════════════════
+/// ═════════════════════════════════════════════════════════════════════════════
+/// Hard Sigmoid — piecewise linear approximation to σ(x)
+/// f(x) = clamp(x/6 + 0.5, 0, 1)
+/// ═════════════════════════════════════════════════════════════════════════════
 
 template<typename T> inline T hardSigmoid(T x) {
     return std::max(T(0), std::min(T(1), x / T(6) + T(0.5)));
@@ -175,9 +186,9 @@ template<typename T> inline T hardSigmoidPrime(T x) {
 }
 
 
-// ═════════════════════════════════════════════════════════════════════════════
-// Hard Swish — x · hardSigmoid(x)  (Howard et al., MobileNetV3)
-// ═════════════════════════════════════════════════════════════════════════════
+/// ═════════════════════════════════════════════════════════════════════════════
+/// Hard Swish — x · hardSigmoid(x)  (Howard et al., MobileNetV3)
+/// ═════════════════════════════════════════════════════════════════════════════
 
 template<typename T> inline T hardSwish(T x) {
     return x * hardSigmoid(x);
@@ -189,20 +200,20 @@ template<typename T> inline T hardSwishPrime(T x) {
 }
 
 
-// ═════════════════════════════════════════════════════════════════════════════
-// Softplus — smooth approximation to ReLU: log(1 + e^x)
-// ═════════════════════════════════════════════════════════════════════════════
+/// ═════════════════════════════════════════════════════════════════════════════
+/// Softplus — smooth approximation to ReLU: log(1 + e^x)
+/// ═════════════════════════════════════════════════════════════════════════════
 
 template<typename T> inline T softplus(T x) {
-    // Numerically stable: for large x, log(1+e^x) ≈ x
+    /// Numerically stable: for large x, log(1+e^x) ≈ x
     return (x > T(20)) ? x : std::log(T(1) + std::exp(x));
 }
 template<typename T> inline T softplusPrime(T x) { return sigmoid(x); }
 
 
-// ═════════════════════════════════════════════════════════════════════════════
-// Softsign — x / (1 + |x|)
-// ═════════════════════════════════════════════════════════════════════════════
+/// ═════════════════════════════════════════════════════════════════════════════
+/// Softsign — x / (1 + |x|)
+/// ═════════════════════════════════════════════════════════════════════════════
 
 template<typename T> inline T softsign(T x) {
     return x / (T(1) + std::abs(x));
@@ -213,9 +224,9 @@ template<typename T> inline T softsignPrime(T x) {
 }
 
 
-// ═════════════════════════════════════════════════════════════════════════════
-// Bent Identity — (√(x²+1) − 1)/2 + x  (smooth, nearly-linear)
-// ═════════════════════════════════════════════════════════════════════════════
+/// ═════════════════════════════════════════════════════════════════════════════
+/// Bent Identity — (√(x²+1) − 1)/2 + x  (smooth, nearly-linear)
+/// ═════════════════════════════════════════════════════════════════════════════
 
 template<typename T> inline T bentIdentity(T x) {
     return (std::sqrt(x * x + T(1)) - T(1)) / T(2) + x;

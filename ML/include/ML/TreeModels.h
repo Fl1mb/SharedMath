@@ -1,11 +1,20 @@
 #pragma once
 
-// SharedMath::ML — Decision Trees and Random Forests
-//
-// DecisionTreeClassifier  — CART (gini / entropy) for multi-class problems
-// DecisionTreeRegressor   — CART (MSE) for continuous targets
-// RandomForestClassifier  — ensemble of DecisionTreeClassifiers
-// RandomForestRegressor   — ensemble of DecisionTreeRegressors
+/**
+ * @file TreeModels.h
+ * @brief Decision trees and random forest ensembles.
+ *
+ * @defgroup ML_Trees Tree Models
+ * @ingroup ML
+ * @{
+ */
+
+/// SharedMath::ML — Decision Trees and Random Forests
+///
+/// DecisionTreeClassifier  — CART (gini / entropy) for multi-class problems
+/// DecisionTreeRegressor   — CART (MSE) for continuous targets
+/// RandomForestClassifier  — ensemble of DecisionTreeClassifiers
+/// RandomForestRegressor   — ensemble of DecisionTreeRegressors
 
 #include <sharedmath_ml_export.h>
 
@@ -21,14 +30,14 @@ namespace SharedMath::ML {
 
 using Tensor = SharedMath::LinearAlgebra::Tensor;
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Internal tree node (opaque to the user)
-// ─────────────────────────────────────────────────────────────────────────────
+/// ─────────────────────────────────────────────────────────────────────────────
+/// Internal tree node (opaque to the user)
+/// ─────────────────────────────────────────────────────────────────────────────
 namespace detail { struct TreeNode; }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// DecisionTreeClassifier
-// ─────────────────────────────────────────────────────────────────────────────
+/// ─────────────────────────────────────────────────────────────────────────────
+/// DecisionTreeClassifier
+/// ─────────────────────────────────────────────────────────────────────────────
 class SHAREDMATH_ML_EXPORT DecisionTreeClassifier {
 public:
     enum class Criterion { Gini, Entropy };
@@ -65,9 +74,9 @@ private:
                          const Tensor& X, size_t row) const;
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// DecisionTreeRegressor
-// ─────────────────────────────────────────────────────────────────────────────
+/// ─────────────────────────────────────────────────────────────────────────────
+/// DecisionTreeRegressor
+/// ─────────────────────────────────────────────────────────────────────────────
 class SHAREDMATH_ML_EXPORT DecisionTreeRegressor {
 public:
     explicit DecisionTreeRegressor(
@@ -96,9 +105,9 @@ private:
                          const Tensor& X, size_t row) const;
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// RandomForestClassifier
-// ─────────────────────────────────────────────────────────────────────────────
+/// ─────────────────────────────────────────────────────────────────────────────
+/// RandomForestClassifier
+/// ─────────────────────────────────────────────────────────────────────────────
 class SHAREDMATH_ML_EXPORT RandomForestClassifier {
 public:
     explicit RandomForestClassifier(
@@ -127,9 +136,9 @@ private:
     std::vector<DecisionTreeClassifier> m_trees;
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// RandomForestRegressor
-// ─────────────────────────────────────────────────────────────────────────────
+/// ─────────────────────────────────────────────────────────────────────────────
+/// RandomForestRegressor
+/// ─────────────────────────────────────────────────────────────────────────────
 class SHAREDMATH_ML_EXPORT RandomForestRegressor {
 public:
     explicit RandomForestRegressor(
@@ -155,3 +164,5 @@ private:
 };
 
 } // namespace SharedMath::ML
+
+/// @} // ML_Trees
