@@ -17,7 +17,6 @@
 #   RBJ audio biquads         (FilterDesign.h)
 #   Polyphase resampling      (Resampling.h)
 #   CUDA acceleration stub    (CUDABackend.h)
-
 option(SharedMath_ENABLE_CUDA_DSP
     "Enable CUDA-accelerated DSP primitives (requires CUDAToolkit)"
     OFF)
