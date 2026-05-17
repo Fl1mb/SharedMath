@@ -53,6 +53,7 @@ add_executable(${PROJECT_NAME}Tests
     test_iterative_solvers.cpp
     test_dsp_spectral.cpp
     test_dsp_signal_generator.cpp
+    test_dsp_signal.cpp
     test_dsp_filter_response.cpp
     test_dsp_filter_design_hz.cpp
     test_dsp_signal_processing.cpp

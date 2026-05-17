@@ -7,9 +7,7 @@
 #include <complex>
 #include <vector>
 #include <memory>
-#include <stdexcept>
 #include <cstddef>
-#include <string>
 
 namespace SharedMath::DSP {
 
@@ -43,66 +41,36 @@ public:
     // ── Factory ───────────────────────────────────────────────────────────
 
     // Create with the default CPU backend.
-    static FFTPlan create(size_t n, FFTConfig cfg = {}) {
-        return create(n, cfg, std::make_unique<CPUBackend>());
-    }
+    static FFTPlan create(size_t n, FFTConfig cfg = {});
 
     // Create with a custom backend (e.g. CUDABackend, OpenCLBackend …).
     // The plan takes ownership of the backend.
     static FFTPlan create(size_t n, FFTConfig cfg,
-                          std::unique_ptr<IFFTBackend> backend) {
-        if (n == 0)
-            throw std::invalid_argument("FFTPlan: transform size must be > 0");
-        if (!backend)
-            throw std::invalid_argument("FFTPlan: backend must not be null");
-
-        FFTPlan p;
-        p.n_       = n;
-        p.cfg_     = cfg;
-        p.backend_ = std::move(backend);
-        p.backend_->prepare(n, cfg);
-        return p;
-    }
+                          std::unique_ptr<IFFTBackend> backend);
 
     /// ── Execution ─────────────────────────────────────────────────────────
 
     /// In-place transform on a raw pointer (length must equal size()).
-    void execute(std::complex<double>* data) const {
-        backend_->execute(data);
-    }
+    void execute(std::complex<double>* data) const;
 
     /// In-place transform on a vector (throws on size mismatch).
-    void execute(std::vector<std::complex<double>>& data) const {
-        if (data.size() != n_)
-            throw std::invalid_argument(
-                "FFTPlan::execute: data size (" + std::to_string(data.size()) +
-                ") does not match plan size (" + std::to_string(n_) + ")");
-        backend_->execute(data.data());
-    }
+    void execute(std::vector<std::complex<double>>& data) const;
 
     // Execute and return a copy (non-destructive, allocates a new vector).
     std::vector<std::complex<double>>
-    executeConst(std::vector<std::complex<double>> data) const {
-        execute(data);
-        return data;
-    }
+    executeConst(std::vector<std::complex<double>> data) const;
 
     /// ── Paired forward / inverse factory helpers ──────────────────────────
 
     /// Returns a matching inverse plan (same size, direction flipped, ByN norm).
-    FFTPlan inversePlan(FFTNorm norm = FFTNorm::ByN) const {
-        FFTConfig icfg = cfg_;
-        icfg.direction = FFTDirection::Inverse;
-        icfg.norm      = norm;
-        return create(n_, icfg);
-    }
+    FFTPlan inversePlan(FFTNorm norm = FFTNorm::ByN) const;
 
     /// ── Metadata ──────────────────────────────────────────────────────────
 
     size_t           size()        const noexcept { return n_; }
     bool             isInverse()   const noexcept { return cfg_.direction == FFTDirection::Inverse; }
     const FFTConfig& config()      const noexcept { return cfg_; }
-    const char*      backendName() const noexcept { return backend_->name(); }
+    const char*      backendName() const noexcept;
 
     /// Raw backend access — use to call device-specific methods on custom backends.
     IFFTBackend*       backend()       noexcept { return backend_.get(); }

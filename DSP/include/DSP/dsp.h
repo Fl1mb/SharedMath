@@ -17,6 +17,7 @@
 #include "Spectral.h"
 #include "FilterResponse.h"
 #include "SignalGenerator.h"
+#include "Signal.h"
 #include "FilterDesign.h"
 #include "SignalProcessing.h"
 #include "Streaming.h"
