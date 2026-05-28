@@ -1,41 +1,83 @@
-# DSP (Digital Signal Processing) module — header-only INTERFACE library.
-#
-# Contents:
-#   FFT / RFFT / IFFT         (FFT.h, FFTPlan.h, FFTBackend.h, CPUBackend.h, FFTConfig.h)
-#   Windowing functions       (Window.h)
-#   Convolution / correlation (Convolution.h)
-#   FIR filter design         (FIR.h)
-#   IIR / biquad filter design(IIR.h)
-#   STFT / ISTFT              (STFT.h)
-#   Hilbert transform         (Hilbert.h)
-#   Power spectral density    (Spectral.h)
-#   FIR frequency response    (FilterResponse.h)
-#   Signal generators         (SignalGenerator.h)
-#   Hz-first filter API       (FilterDesign.h)
-#   Practical signal helpers  (SignalProcessing.h)
-#   Stateful streaming filters(Streaming.h)
-#   RBJ audio biquads         (FilterDesign.h)
-#   Polyphase resampling      (Resampling.h)
-#   CUDA acceleration stub    (CUDABackend.h)
+include(GenerateExportHeader)
+
 option(SharedMath_ENABLE_CUDA_DSP
     "Enable CUDA-accelerated DSP primitives (requires CUDAToolkit)"
     OFF)
 
+set(SHAREDMATH_DSP_SOURCES
+    src/BurstDetection.cpp
+    src/CPUBackend.cpp
+    src/Channelization.cpp
+    src/Convolution.cpp
+    src/FFT.cpp
+    src/FFTPlan.cpp
+    src/FIR.cpp
+    src/FilterDesign.cpp
+    src/FilterResponse.cpp
+    src/FrequencyCorrection.cpp
+    src/Hilbert.cpp
+    src/IIR.cpp
+    src/PulseShaping.cpp
+    src/Resampling.cpp
+    src/STFT.cpp
+    src/SignalDetection.cpp
+    src/SignalEstimation.cpp
+    src/SignalGenerator.cpp
+    src/Signal.cpp
+    src/SignalMetrics.cpp
+    src/SignalProcessing.cpp
+    src/Spectral.cpp
+    src/Streaming.cpp
+    src/Waterfall.cpp
+    src/Window.cpp
+)
+
+add_library(SharedMath_DSP ${SHAREDMATH_DSP_SOURCES})
+add_library(SharedMath::DSP ALIAS SharedMath_DSP)
+
+generate_export_header(SharedMath_DSP
+    EXPORT_MACRO_NAME SHAREDMATH_DSP_EXPORT
+    EXPORT_FILE_NAME  ${PROJECT_BINARY_DIR}/include/sharedmath_dsp_export.h
+    STATIC_DEFINE     SHAREDMATH_DSP_STATIC_DEFINE
+)
+
+target_include_directories(SharedMath_DSP
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+        $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/DSP
+)
+
+target_link_libraries(SharedMath_DSP
+    PUBLIC
+        SharedMath_Core
+        SharedMath_LinearAlgebra
+)
+
+target_compile_definitions(SharedMath_DSP PUBLIC
+    $<$<NOT:$<BOOL:${BUILD_SHARED_LIBS}>>:SHAREDMATH_DSP_STATIC_DEFINE>
+)
+
+target_compile_features(SharedMath_DSP PUBLIC cxx_std_17)
+
 if(SharedMath_ENABLE_CUDA_DSP)
     find_package(CUDAToolkit REQUIRED)
-    target_compile_definitions(SharedMath_DSP INTERFACE SHAREDMATH_CUDA_DSP)
+    target_compile_definitions(SharedMath_DSP PUBLIC SHAREDMATH_CUDA_DSP)
     message(STATUS "SharedMath DSP: CUDA backend enabled")
 endif()
 
-add_library(SharedMath_DSP INTERFACE)
-add_library(SharedMath::DSP ALIAS SharedMath_DSP)
+sharedmath_configure_module(SharedMath_DSP)
 
-target_include_directories(SharedMath_DSP INTERFACE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+
+set_target_properties(SharedMath_DSP PROPERTIES
+    CXX_VISIBILITY_PRESET default
+    VISIBILITY_INLINES_HIDDEN OFF
 )
 
-target_link_libraries(SharedMath_DSP INTERFACE
-    SharedMath_Core
-    SharedMath_LinearAlgebra
-)
+if(WIN32 AND BUILD_SHARED_LIBS)
+    set_target_properties(SharedMath_DSP PROPERTIES
+        WINDOWS_EXPORT_ALL_SYMBOLS ON
+    )
+endif()

@@ -617,17 +617,6 @@ parseEinsum(const std::string& s, size_t expected_commas)
     return {lhs, rhs};
 }
 
-// Build a map from index char → current multi-index value.
-// Encode/decode a flat index over a given shape into the map.
-static void decodeFlatIntoMap(size_t flat,
-                               const std::string& labels,
-                               const Tensor& t,
-                               std::map<char, size_t>& idx_map)
-{
-    std::vector<size_t> idx = t.unravel(flat);
-    for (size_t i = 0; i < labels.size(); ++i) idx_map[labels[i]] = idx[i];
-}
-
 Tensor einsum(const std::string& subscripts, const Tensor& a) {
     auto [lhs, out] = parseEinsum(subscripts, 0);
     if (lhs.size() != a.ndim())

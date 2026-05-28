@@ -53,6 +53,7 @@ add_executable(${PROJECT_NAME}Tests
     test_iterative_solvers.cpp
     test_dsp_spectral.cpp
     test_dsp_signal_generator.cpp
+    test_dsp_signal.cpp
     test_dsp_filter_response.cpp
     test_dsp_filter_design_hz.cpp
     test_dsp_signal_processing.cpp
@@ -95,10 +96,18 @@ target_link_libraries(${PROJECT_NAME}Tests
         ${GTEST_MAIN_TARGET}
 )
 
+if(WIN32 AND BUILD_SHARED_LIBS)
+    set_target_properties(${PROJECT_NAME}Tests PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/bin"
+    )
+endif()
+
 enable_testing()
 
 if(GTest_FOUND)
-    gtest_discover_tests(${PROJECT_NAME}Tests)
+    gtest_discover_tests(${PROJECT_NAME}Tests
+        DISCOVERY_MODE PRE_TEST
+    )
 else()
-    add_test(NAME ${PROJECT_NAME}Tests COMMAND ${PROJECT_NAME}Tests)
+    add_test(NAME ${PROJECT_NAME}Tests COMMAND $<TARGET_FILE:${PROJECT_NAME}Tests>)
 endif()

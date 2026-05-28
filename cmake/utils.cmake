@@ -21,8 +21,18 @@ function(sharedmath_configure_module target)
         BUILD_WITH_INSTALL_RPATH  FALSE
         INSTALL_RPATH_USE_LINK_PATH ON
     )
+    if(WIN32 AND BUILD_SHARED_LIBS)
+        set_target_properties(${target} PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/bin"
+        )
+    endif()
     if(MSVC)
-        target_compile_options(${target} PRIVATE /EHsc /W3)
+        target_compile_options(${target} PRIVATE
+            /EHsc
+            /W3
+            /wd4251
+            /wd4275
+        )
     else()
         target_compile_options(${target} PRIVATE -Wall -Wextra -Wpedantic)
     endif()

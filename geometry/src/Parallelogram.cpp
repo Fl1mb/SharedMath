@@ -4,8 +4,8 @@ using namespace SharedMath::Geometry;
 
 bool Parallelogram::isParallelogram(const std::array<Point2D, 4>& vertices){
     // Проверка на уникальность точек
-    for(auto i = 0; i < vertices.size(); ++i){
-        for(auto j = i + 1; j < vertices.size(); j++){
+    for (size_t i = 0; i < vertices.size(); ++i) {
+        for (size_t j = i + 1; j < vertices.size(); ++j) {
             if(vertices[i] == vertices[j]) return false;
         }
     }
@@ -33,7 +33,7 @@ bool Parallelogram::isParallelogram(const std::array<Point2D, 4>& vertices){
 Point2D Parallelogram::findDownLeftPoint(const std::array<Point2D, 4>& points){
     Point2D result = points[0];
     
-    for(auto i = 1; i < points.size(); ++i){
+    for (size_t i = 1; i < points.size(); ++i) {
         if(points[i].x() < result.x() || 
            (abs(points[i].x() - result.x()) < Epsilon && points[i].y() < result.y())){
             result = points[i];
@@ -45,7 +45,7 @@ Point2D Parallelogram::findDownLeftPoint(const std::array<Point2D, 4>& points){
 Point2D Parallelogram::findDownRightPoint(const std::array<Point2D, 4>& points){
     Point2D result = points[0];
     
-    for(auto i = 1; i < points.size(); ++i){
+    for (size_t i = 1; i < points.size(); ++i) {
         if(points[i].y() < result.y() || 
            (abs(points[i].y() - result.y()) < Epsilon && points[i].x() > result.x())){
             result = points[i];
@@ -57,7 +57,7 @@ Point2D Parallelogram::findDownRightPoint(const std::array<Point2D, 4>& points){
 Point2D Parallelogram::findUpLeftPoint(const std::array<Point2D, 4>& points){
     Point2D result = points[0];
     
-    for(auto i = 1; i < points.size(); ++i){
+    for (size_t i = 1; i < points.size(); ++i) {
         if(points[i].x() < result.x() || 
            (abs(points[i].x() - result.x()) < Epsilon && points[i].y() > result.y())){
             result = points[i];
@@ -69,7 +69,7 @@ Point2D Parallelogram::findUpLeftPoint(const std::array<Point2D, 4>& points){
 Point2D Parallelogram::findUpRightPoint(const std::array<Point2D, 4>& points){
     Point2D result = points[0];
     
-    for(auto i = 1; i < points.size(); ++i){
+    for (size_t i = 1; i < points.size(); ++i) {
         if(points[i].x() > result.x() || 
            (abs(points[i].x() - result.x()) < Epsilon && points[i].y() > result.y())){
             result = points[i];

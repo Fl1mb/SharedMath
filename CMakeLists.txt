@@ -147,11 +147,11 @@ if(${PROJECT_NAME}_INSTALL AND NOT CMAKE_SKIP_INSTALL_RULES)
         SharedMath_Core
         SharedMath_Functions
         SharedMath_Graphs
-        SharedMath_DSP
         EXPORT ${PROJECT_NAME}_export
     )
 
     install(TARGETS
+        SharedMath_DSP
         SharedMath_LinearAlgebra
         SharedMath_Geometry
         SharedMath_NumericalMethods
@@ -165,7 +165,7 @@ if(${PROJECT_NAME}_INSTALL AND NOT CMAKE_SKIP_INSTALL_RULES)
     )
 
     if(MSVC AND BUILD_SHARED_LIBS)
-        foreach(_mod LinearAlgebra Geometry NumericalMethods)
+        foreach(_mod DSP LinearAlgebra Geometry NumericalMethods)
             install(FILES $<TARGET_PDB_FILE:SharedMath_${_mod}>
                 DESTINATION ${CMAKE_INSTALL_BINDIR}
                 COMPONENT   dbg

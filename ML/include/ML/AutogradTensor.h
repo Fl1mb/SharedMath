@@ -158,9 +158,6 @@ public:
     AutoTensor operator*(double s) const; ///< Multiply every element by scalar @p s.
     AutoTensor operator/(double s) const; ///< Divide every element by scalar @p s.
 
-    friend AutoTensor operator+(double s, const AutoTensor& t); ///< @p s + t
-    friend AutoTensor operator*(double s, const AutoTensor& t); ///< @p s * t
-
     // ── Linear algebra ──────────────────────────────────────────────────────── //
 
     /**

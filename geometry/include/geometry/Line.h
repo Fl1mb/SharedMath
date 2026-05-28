@@ -55,7 +55,7 @@ namespace SharedMath
             
             double getLength() const{
                 double sum = 0.0;
-                for(auto i = 0; i < N; i++){
+                for (size_t i = 0; i < N; ++i) {
                     double diff = secondPoint[i] - firstPoint[i];
                     sum += diff * diff;
                 }
