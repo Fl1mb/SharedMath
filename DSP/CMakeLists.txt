@@ -69,3 +69,15 @@ if(SharedMath_ENABLE_CUDA_DSP)
 endif()
 
 sharedmath_configure_module(SharedMath_DSP)
+
+
+set_target_properties(SharedMath_DSP PROPERTIES
+    CXX_VISIBILITY_PRESET default
+    VISIBILITY_INLINES_HIDDEN OFF
+)
+
+if(WIN32 AND BUILD_SHARED_LIBS)
+    set_target_properties(SharedMath_DSP PROPERTIES
+        WINDOWS_EXPORT_ALL_SYMBOLS ON
+    )
+endif()
