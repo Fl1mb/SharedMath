@@ -22,7 +22,12 @@ function(sharedmath_configure_module target)
         INSTALL_RPATH_USE_LINK_PATH ON
     )
     if(MSVC)
-        target_compile_options(${target} PRIVATE /EHsc /W3)
+        target_compile_options(${target} PRIVATE
+            /EHsc
+            /W3
+            /wd4251
+            /wd4275
+        )
     else()
         target_compile_options(${target} PRIVATE -Wall -Wextra -Wpedantic)
     endif()

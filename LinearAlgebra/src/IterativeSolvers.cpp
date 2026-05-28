@@ -374,10 +374,8 @@ std::vector<double> minres(const AbstractMatrix& A,
     for (size_t i = 0; i < n; ++i) w_bar[i] = v[i];
 
     double phi_bar = beta1;
-    double c_old = 1.0, s_old = 0.0;
     double c = 1.0,     s = 0.0;
     double beta = beta1, beta_old = 0.0, alpha = 0.0;
-    double eta = beta1;
 
     for (size_t it = 0; it < max_iter; ++it) {
         // Lanczos: z = A*v
@@ -424,7 +422,6 @@ std::vector<double> minres(const AbstractMatrix& A,
         if (beta > 1e-300) {
             for (size_t i = 0; i < n; ++i) v[i] /= beta;
         }
-        c_old = c; s_old = s;
         c = c_new; s = s_new;
     }
     return x;

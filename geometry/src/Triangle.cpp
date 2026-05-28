@@ -179,7 +179,6 @@ bool Triangle::isRight() const {
 }
 
 bool Triangle::isAcute() const {
-    const auto& vertices = getVertices();
     for (size_t i = 0; i < 3; ++i) {
         double angle = getAngle(i);
         if (angle >= M_PI_2 - Epsilon) {
@@ -190,7 +189,6 @@ bool Triangle::isAcute() const {
 }
 
 bool Triangle::isObtuse() const {
-    const auto& vertices = getVertices();
     for (size_t i = 0; i < 3; ++i) {
         double angle = getAngle(i);
         if (angle > M_PI_2 + Epsilon) {
