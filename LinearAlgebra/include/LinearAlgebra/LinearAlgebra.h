@@ -12,3 +12,5 @@
 #include "SparseMatrix.h"
 #include "LinearSolver.h"
 #include "PCA.h"
+#include "ComplexMatrix.h"
+#include "ComplexVector.h"
