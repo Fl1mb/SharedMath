@@ -13,8 +13,4 @@ std::ostream& operator<<(std::ostream& os, const ComplexVector& v) {
     return os;
 }
 
-ComplexVector operator*(Complex s, const ComplexVector& v) {
-    return v * s;
-}
-
 } // namespace SharedMath::LinearAlgebra

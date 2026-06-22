@@ -176,9 +176,4 @@ private:
     }
 };
 
-/// ── Free functions ───────────────────────────────────────────────────────
-
-SHAREDMATH_LINEARALGEBRA_EXPORT
-ComplexVector operator*(Complex s, const ComplexVector& v);
-
 } // namespace SharedMath::LinearAlgebra
