@@ -17,6 +17,10 @@
 #include <cstddef>
 #include <sharedmath_numericalmethods_export.h>
 
+#ifdef SHAREDMATH_CUDA
+#include "NumericalMethods/NumericalMethodsGPU.h"
+#endif
+
 namespace SharedMath::NumericalMethods {
 
 struct NLEIterResult {
@@ -57,5 +61,16 @@ NLEIterResult broyden(
     std::function<std::vector<double>(const std::vector<double>&)> F,
     std::vector<double> x0,
     double tol = 1e-10, size_t max_iter = 100);
+
+#ifdef SHAREDMATH_CUDA
+
+/// GPU-accelerated Broyden: matvec + rank-1 update on GPU, F callback on CPU
+SHAREDMATH_NUMERICALMETHODS_EXPORT
+NLEIterResult broyden_cuda(
+    std::function<std::vector<double>(const std::vector<double>&)> F,
+    std::vector<double> x0,
+    double tol = 1e-10, size_t max_iter = 100);
+
+#endif // SHAREDMATH_CUDA
 
 } // namespace SharedMath::NumericalMethods

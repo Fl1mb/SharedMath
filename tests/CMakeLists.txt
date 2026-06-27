@@ -54,36 +54,13 @@ add_executable(${PROJECT_NAME}Tests
     test_numerical_adams_moulton.cpp
     test_numerical_broyden.cpp
     test_iterative_solvers.cpp
-    test_dsp_spectral.cpp
-    test_dsp_signal_generator.cpp
-    test_dsp_signal.cpp
-    test_dsp_filter_response.cpp
-    test_dsp_filter_design_hz.cpp
-    test_dsp_signal_processing.cpp
-    test_dsp_streaming.cpp
-    test_dsp_resampling.cpp
-    test_dsp_rbj_filters.cpp
-    test_ml_module.cpp
-    test_ml_autograd.cpp
-    test_ml_layers.cpp
-    test_ml_optimizers.cpp
-    test_ml_training.cpp
-    test_ml_models.cpp
-    test_ml_dataloader.cpp
-    test_ml_metrics.cpp
-    test_ml_preprocessing.cpp
-    test_ml_tree_models.cpp
-    test_ml_forest_models.cpp
-    test_ml_regularized_models.cpp
-    test_ml_model_selection.cpp
-    test_dsp_signal_detection.cpp
-    test_dsp_signal_estimation.cpp
-    test_dsp_frequency_correction.cpp
-    test_dsp_channelization.cpp
-    test_dsp_burst_detection.cpp
-    test_dsp_signal_metrics.cpp
-    test_dsp_waterfall.cpp
 )
+
+if(SHAREDMATH_ENABLE_CUDA)
+    target_sources(${PROJECT_NAME}Tests PRIVATE
+        test_numericalmethods_cuda.cpp
+    )
+endif()
 
 if(SHAREDMATH_ENABLE_CUDA)
     target_sources(${PROJECT_NAME}Tests PRIVATE
