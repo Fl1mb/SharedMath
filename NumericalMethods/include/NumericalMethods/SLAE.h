@@ -13,6 +13,10 @@
 #include "LinearAlgebra/AbstractMatrix.h"
 #include <sharedmath_numericalmethods_export.h>
 
+#ifdef SHAREDMATH_CUDA
+#include "NumericalMethods/NumericalMethodsGPU.h"
+#endif
+
 namespace SharedMath::NumericalMethods {
 
 using SharedMath::LinearAlgebra::AbstractMatrix;
@@ -60,5 +64,31 @@ IterResult gmres(const AbstractMatrix& A,
                   size_t restart = 30,
                   std::vector<double> x0 = {},
                   double tol = 1e-10, size_t max_iter = 10000);
+
+#ifdef SHAREDMATH_CUDA
+
+/// GPU-accelerated Jacobi (embarrassingly parallel per iteration)
+SHAREDMATH_NUMERICALMETHODS_EXPORT
+IterResult jacobi_cuda(const AbstractMatrix& A,
+                        const std::vector<double>& b,
+                        std::vector<double> x0 = {},
+                        double tol = 1e-10, size_t max_iter = 10000);
+
+/// GPU-accelerated Conjugate Gradient
+SHAREDMATH_NUMERICALMETHODS_EXPORT
+IterResult conjugate_gradient_cuda(const AbstractMatrix& A,
+                                    const std::vector<double>& b,
+                                    std::vector<double> x0 = {},
+                                    double tol = 1e-10, size_t max_iter = 10000);
+
+/// GPU-accelerated GMRES (restarted)
+SHAREDMATH_NUMERICALMETHODS_EXPORT
+IterResult gmres_cuda(const AbstractMatrix& A,
+                       const std::vector<double>& b,
+                       size_t restart = 30,
+                       std::vector<double> x0 = {},
+                       double tol = 1e-10, size_t max_iter = 10000);
+
+#endif // SHAREDMATH_CUDA
 
 } // namespace SharedMath::NumericalMethods
