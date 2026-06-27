@@ -26,6 +26,8 @@ set(SHAREDMATH_LINALG_SOURCES
     src/PCA.cpp
     src/MatrixFunctions.cpp
     src/IterativeSolvers.cpp
+    src/ComplexMatrix.cpp
+    src/ComplexVector.cpp
 )
 
 if(SHAREDMATH_ENABLE_CUDA)

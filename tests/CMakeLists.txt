@@ -50,6 +50,9 @@ add_executable(${PROJECT_NAME}Tests
     test_numerical_ode.cpp
     test_numerical_integral_equations.cpp
     test_numerical_slae.cpp
+    test_numerical_bdf.cpp
+    test_numerical_adams_moulton.cpp
+    test_numerical_broyden.cpp
     test_iterative_solvers.cpp
     test_dsp_spectral.cpp
     test_dsp_signal_generator.cpp

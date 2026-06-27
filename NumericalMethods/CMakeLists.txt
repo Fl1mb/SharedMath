@@ -6,6 +6,7 @@ add_library(SharedMath_NumericalMethods
     src/ODE.cpp
     src/IntegralEquations.cpp
     src/SLAE.cpp
+    src/NonlinearEquations.cpp
 )
 add_library(SharedMath::NumericalMethods ALIAS SharedMath_NumericalMethods)
 
