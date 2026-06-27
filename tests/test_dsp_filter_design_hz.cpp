@@ -5,6 +5,7 @@
 #include <cmath>
 #include <vector>
 #include <stdexcept>
+#include <algorithm>
 
 using namespace SharedMath::DSP;
 

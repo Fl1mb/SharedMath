@@ -12,6 +12,7 @@
  *  - @ref NumericalMethods_ODE   — ODE Solvers
  *  - @ref NumericalMethods_IE    — Integral Equations
  *  - @ref NumericalMethods_SLAE  — Linear System Solvers (SLAE)
+ *  - @ref NumericalMethods_NLE   — Nonlinear Equation Solvers
  *
  * Include this header to pull in the entire module at once.
  */
@@ -23,3 +24,4 @@
 #include "ODE.h"
 #include "IntegralEquations.h"
 #include "SLAE.h"
+#include "NonlinearEquations.h"
